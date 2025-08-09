@@ -1,20 +1,55 @@
-import React, { useState } from 'react'
-import { ChevronRight, ChevronLeft, House, LogOut } from 'lucide-react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import React, { useState, useMemo } from 'react';
+import { ChevronRight, ChevronLeft, House, LogOut, CheckSquare, Shield } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { useAuthStore } from '../store/AuthStore';
 
 function Navbar() {
-    const { pathname } = useLocation()
-    const [collapsed, setCollapsed] = useState(false)
+    const { pathname } = useLocation();
+    const [collapsed, setCollapsed] = useState(false);
     const navigate = useNavigate();
-    const menuTopItems = [
-        { name: "Home", icon: <House size={20} />, path: "/" }
-    ]
+    const { role, clearAuth } = useAuthStore(); // Get role and clearAuth from the store
+
+    // Define menu items for each role
+    const menuItemsByRole = {
+        user: [
+            { name: "Home", icon: <House size={20} />, path: "/" },
+        ],
+        cata: [
+            { name: "Home", icon: <House size={20} />, path: "/" },
+            { name: "Verify Records", icon: <CheckSquare size={20} />, path: "/verify-records" },
+        ],
+        catb: [
+            { name: "Home", icon: <House size={20} />, path: "/" },
+            { name: "Verify Records", icon: <CheckSquare size={20} />, path: "/verify-records" },
+        ],
+        catc: [
+            { name: "Home", icon: <House size={20} />, path: "/" },
+            { name: "Verify Records", icon: <CheckSquare size={20} />, path: "/verify-records" },
+        ],
+        admin: [
+            { name: "Admin Panel", icon: <Shield size={20} />, path: "/" },
+        ],
+    };
+
+    // Determine which menu items to display
+    const menuTopItems = useMemo(() => menuItemsByRole[role] || [], [role]);
+
+    const handleLogout = () => {
+        clearAuth();
+        localStorage.removeItem('token');
+        navigate('/login');
+    };
 
     const menuBottomItems = [
-        { name: "Logout", icon: <LogOut size={20} />, path: "/logout" }
-    ]
+        { name: "Logout", icon: <LogOut size={20} />, action: handleLogout },
+    ];
 
-    const isActive = (path) => pathname === path
+    const isActive = (path) => pathname === path;
+
+    // Don't render the navbar if there's no role (i.e., user is not logged in)
+    if (!role) {
+        return null;
+    }
 
     return (
         <div className={`h-screen bg-white border-r border-gray-200 transition-all duration-300 flex flex-col ${collapsed ? 'w-20' : 'w-58'}`}>
@@ -41,7 +76,7 @@ function Navbar() {
                                     className={`w-full flex items-center gap-3 p-3 rounded-sm text-left transition-all duration-200 group
                                         ${active
                                             ? 'bg-[#4071f4]'
-                                            : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                                            : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
                                         }`}
                                     title={collapsed ? menuItem.name : undefined}
                                     onClick={() => navigate(menuItem.path)}
@@ -49,7 +84,7 @@ function Navbar() {
                                     <span className={`flex-shrink-0 transition-all duration-200 ${collapsed ? 'pl-0.5' : 'pl-2'} ${active ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'}`}>
                                         {menuItem.icon}
                                     </span>
-                                    <span className={`font-medium pl-1 transition-all duration-200 ${collapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100 text-white'}`}>
+                                    <span className={`font-medium pl-1 transition-all duration-200 ${collapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100 '} ${active?'text-white':'text-gray-500 group-hover:text-gray-700'} `}>
                                         {menuItem.name}
                                     </span>
                                 </button>
@@ -76,7 +111,7 @@ function Navbar() {
                                             : 'hover:bg-gray-50 hover:text-gray-900'
                                         }`}
                                     title={collapsed ? menuItem.name : undefined}
-                                    onClick={() => navigate(menuItem.path)}
+                                    onClick={menuItem.action}
                                 >
                                     <span className={`flex-shrink-0 transition-all duration-200 ${collapsed ? 'pl-0.5' : 'pl-2'} text-[#787878] ${active ? 'text-red-700' : 'text-gray-500'}`}>
                                         {menuItem.icon}
@@ -91,7 +126,7 @@ function Navbar() {
                 </div>
             </div>
         </div>
-    )
+    );
 }
 
-export default Navbar
+export default Navbar;
