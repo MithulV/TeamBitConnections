@@ -13,6 +13,8 @@ function Navbar() {
     const menuItemsByRole = {
         user: [
             { name: "Home", icon: <House size={20} />, path: "/" },
+        { name: "entries", icon: <NotebookText size={20} />, path: "/entries"},
+
         ],
         cata: [
             { name: "Home", icon: <House size={20} />, path: "/" },
@@ -37,10 +39,8 @@ function Navbar() {
         localStorage.removeItem('token');
         navigate('/login');
     };
-    const menuTopItems = [
-        { name: "Home", icon: <House size={20} />, path: "/" },
-        { name: "entries", icon: <NotebookText size={20} />, path: "/entries"},
-    ]
+       const menuTopItems = useMemo(() => menuItemsByRole[role] || [], [role]);
+
 
     const menuBottomItems = [
         { name: "Logout", icon: <LogOut size={20} />, action: handleLogout },
