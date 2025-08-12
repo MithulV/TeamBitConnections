@@ -1,4 +1,26 @@
 @import "tailwindcss";
 body{
-    background:#f7f8fa;
+    background:#F0F0F0;
+}
+@import "@fontsource/quicksand/400.css";
+@import "@fontsource/quicksand/500.css";
+@import "@fontsource/quicksand/600.css";
+@import "@fontsource/quicksand/700.css";
+
+@theme {
+   --font-snpro: "Quicksand", sans-serif;
+}
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.2s ease-out;
 }

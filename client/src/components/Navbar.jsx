@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { ChevronRight, ChevronLeft, House, LogOut, CheckSquare, Shield } from 'lucide-react';
+import { ChevronRight, ChevronLeft, House, LogOut, CheckSquare, Shield,NotebookText } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/AuthStore';
 
@@ -39,6 +39,10 @@ function Navbar() {
         localStorage.removeItem('token');
         navigate('/login');
     };
+    const menuTopItems = [
+        { name: "Home", icon: <House size={20} />, path: "/" },
+        { name: "entries", icon: <NotebookText size={20} />, path: "/entries"},
+    ]
 
     const menuBottomItems = [
         { name: "Logout", icon: <LogOut size={20} />, action: handleLogout },
