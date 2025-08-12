@@ -9,6 +9,7 @@ import MiddleManHome from '../pages/MiddleManHome';
 import MiddleManRecords from '../pages/MiddleManRecords';
 import PrivateRoute from '../pages/PrivateRoutes';
 import { useAuthStore } from '../store/AuthStore';
+import UserEntries from '../pages/UserEntries'
 
 // A helper component to render the correct home page based on role
 const RoleBasedHome = () => {

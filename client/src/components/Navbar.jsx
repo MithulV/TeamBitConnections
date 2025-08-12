@@ -32,8 +32,6 @@ function Navbar() {
     };
 
     // Determine which menu items to display
-    const menuTopItems = useMemo(() => menuItemsByRole[role] || [], [role]);
-
     const handleLogout = () => {
         clearAuth();
         localStorage.removeItem('token');
