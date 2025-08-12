@@ -10,6 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@fontsource/nunito": "^5.2.6",
+    "@fontsource/quicksand": "^5.2.8",
     "@tailwindcss/vite": "^4.1.11",
     "axios": "^1.11.0",
     "lottie-react": "^2.4.1",

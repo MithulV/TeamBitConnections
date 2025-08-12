@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { ChevronRight, ChevronLeft, House, LogOut } from 'lucide-react'
+import { ChevronRight, ChevronLeft, House, LogOut,NotebookText } from 'lucide-react'
 import { useLocation, useNavigate } from 'react-router-dom'
 
 function Navbar() {
@@ -7,7 +7,8 @@ function Navbar() {
     const [collapsed, setCollapsed] = useState(false)
     const navigate = useNavigate();
     const menuTopItems = [
-        { name: "Home", icon: <House size={20} />, path: "/" }
+        { name: "Home", icon: <House size={20} />, path: "/" },
+        { name: "entries", icon: <NotebookText size={20} />, path: "/entries"},
     ]
 
     const menuBottomItems = [
@@ -41,7 +42,7 @@ function Navbar() {
                                     className={`w-full flex items-center gap-3 p-3 rounded-sm text-left transition-all duration-200 group
                                         ${active
                                             ? 'bg-[#4071f4]'
-                                            : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                                            : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
                                         }`}
                                     title={collapsed ? menuItem.name : undefined}
                                     onClick={() => navigate(menuItem.path)}
@@ -49,7 +50,7 @@ function Navbar() {
                                     <span className={`flex-shrink-0 transition-all duration-200 ${collapsed ? 'pl-0.5' : 'pl-2'} ${active ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'}`}>
                                         {menuItem.icon}
                                     </span>
-                                    <span className={`font-medium pl-1 transition-all duration-200 ${collapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100 text-white'}`}>
+                                    <span className={`font-medium pl-1 transition-all duration-200 ${collapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100 '} ${active?'text-white':'text-gray-500 group-hover:text-gray-700'} `}>
                                         {menuItem.name}
                                     </span>
                                 </button>

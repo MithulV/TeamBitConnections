@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { RotateCcw, UserPlus } from 'lucide-react';
+import { RotateCcw, UserPlus, Save } from 'lucide-react';
 
-function FormInput({ onBack }) {
+function FormInput({ onBack, onSave, initialData = null, isEditMode = false }) {
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
@@ -9,17 +9,32 @@ function FormInput({ onBack }) {
     event: '',
     role: '',
     date: '',
-    org: '',
+    eventOrg: '',
     location: ''
   });
 
   useEffect(() => {
-    const today = new Date().toISOString().split('T')[0];
-    setFormData(prev => ({
-      ...prev,
-      date: today
-    }));
-  }, []);
+    if (isEditMode && initialData) {
+      // Pre-fill form with existing data
+      setFormData({
+        name: initialData.name || '',
+        phone: initialData.phone || '',
+        email: initialData.email || '',
+        event: initialData.event || '',
+        role: initialData.role || '',
+        date: initialData.date || '',
+        eventOrg: initialData.eventOrg || '',
+        location: initialData.location || ''
+      });
+    } else {
+      // Set today's date for new entries
+      const today = new Date().toISOString().split('T')[0];
+      setFormData(prev => ({
+        ...prev,
+        date: today
+      }));
+    }
+  }, [isEditMode, initialData]);
 
   const basicInfo = [
     {
@@ -69,11 +84,11 @@ function FormInput({ onBack }) {
       value: formData.date
     },
     {
-      label: "Organization",
+      label: "Event held Organization",
       type: "text",
-      name: "org",
+      name: "eventOrg",
       placeholder: "Enter organization name",
-      value: formData.org
+      value: formData.eventOrg
     },
     {
       label: "Event Location",
@@ -110,31 +125,67 @@ function FormInput({ onBack }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     console.log('Form submitted:', formData);
-    if (onBack) onBack();
+    if (isEditMode && onSave) {
+      // Edit mode - call onSave to update existing contact
+      onSave(formData);
+    } else if (onSave) {
+      // Create mode - call onSave to create new contact
+      onSave(formData);
+      // Optionally call onBack after saving
+      if (onBack) onBack();
+    } else if (onBack) {
+      // Fallback - just go back without saving
+      onBack();
+    }
   };
+
 
   const handleReset = () => {
-    setFormData({
-      name: '',
-      phone: '',
-      email: '',
-      event: '',
-      role: '',
-      date: '',
-      org: '',
-      location: ''
-    });
+    if (isEditMode && initialData) {
+      // Reset to original data when editing
+      setFormData({
+        name: initialData.name || '',
+        phone: initialData.phone || '',
+        email: initialData.email || '',
+        event: initialData.event || '',
+        role: initialData.role || '',
+        date: initialData.date || '',
+        eventOrg: initialData.eventOrg || '',
+        location: initialData.location || ''
+      });
+    } else {
+      // Reset to empty form with today's date when creating new
+      const today = new Date().toISOString().split('T')[0];
+      setFormData({
+        name: '',
+        phone: '',
+        email: '',
+        event: '',
+        role: '',
+        date: today, // Set to today's date instead of empty string
+        eventOrg: '',
+        location: ''
+      });
+    }
   };
 
+
   return (
-    <div className="flex flex-row mx-auto pt-0 pb-2 bg-[#f9fafb] min-h-full">
+    <div className="flex flex-row mx-auto pt-0 pb-2 bg-[#F0F0F0] min-h-full">
       <form onSubmit={handleSubmit} className="w-full">
         <div className="bg-white p-6 rounded-lg bordershadow-sm">
 
           {/* Header */}
           <div className="mb-6">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-2">Contact Information</h2>
-            <p className="text-gray-600">Fill in the details for the new contact. Required fields are marked with an asterisk.</p>
+            <h2 className="text-2xl font-semibold text-gray-800 mb-2">
+              {isEditMode ? 'Edit Contact Information' : 'Contact Information'}
+            </h2>
+            <p className="text-gray-600">
+              {isEditMode
+                ? 'Update the details for this contact. Required fields are marked with an asterisk.'
+                : 'Fill in the details for the new contact. Required fields are marked with an asterisk.'
+              }
+            </p>
           </div>
 
           {/* Side-by-side sections */}
@@ -202,11 +253,18 @@ function FormInput({ onBack }) {
               Reset Form
             </button>
             <button
+              type="button"
+              onClick={onBack}
+              className="px-6 py-2 flex gap-x-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400 font-medium"
+            >
+              Cancel
+            </button>
+            <button
               type="submit"
               className="px-6 py-2 flex gap-x-1.5 bg-[#0077b8] hover:bg-[#005f8f] text-white rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-[#0077b8] font-medium"
             >
-              <UserPlus size={18} className="mt-0.5" />
-              Save Contact
+              {isEditMode ? <Save size={18} className="mt-0.5" /> : <UserPlus size={18} className="mt-0.5" />}
+              {isEditMode ? 'Update Contact' : 'Save Contact'}
             </button>
           </div>
         </div>

@@ -6,7 +6,7 @@ import { Camera, UserPlus, ArrowLeft } from 'lucide-react';
 
 function UserHome() {
   const [activeView, setActiveView] = useState('default'); // 'default', 'camera', 'form'
-
+  const [contacts, setContacts] = useState([]);
   const handleCameraClick = () => {
     setActiveView('camera');
   };
@@ -19,16 +19,39 @@ function UserHome() {
     setActiveView('default');
   };
 
+  const handleSaveContact = async (formData) => {
+    try {
+      // Generate a unique ID for the new contact
+      const newContact = {
+        id: Date.now(), // Simple ID generation
+        ...formData,
+        profileImage: null, // No profile image for manual entry
+        createdAt: new Date().toISOString()
+      };
+
+      // Add to contacts array (you might want to save to database here)
+      setContacts(prevContacts => [...prevContacts, newContact]);
+
+      console.log('New contact saved:', newContact);
+
+      // Optionally show success message or redirect
+      // You could add an alert system here similar to UserEntries
+
+    } catch (error) {
+      console.log('Error saving contact:', error);
+    }
+  };
+
   return (
-    <div className='h-full flex flex-col bg-[#f9fafb]'>
+    <div className='h-full flex flex-col bg-[#ffffff]'>
       {/* User Profile Header */}
-      <div className='p-8 pt-4 pb-3 bg-[#f9fafb] flex-shrink-0'>
+      <div className='p-8 pt-4 pb-3 shadow bg-white flex-shrink-0'>
         <div className='flex items-center justify-between'>
           {/* User Info */}
           <div className='flex items-center gap-4'>
-            <img 
-              src={Avatar} 
-              alt="user profile" 
+            <img
+              src={Avatar}
+              alt="user profile"
               className='w-14 h-14 rounded-full object-cover'
             />
             <div>
@@ -36,12 +59,12 @@ function UserHome() {
               <p className='text-sm text-gray-500'>Welcome back!</p>
             </div>
           </div>
-          
+
           {/* Conditional Action Buttons */}
           {activeView === 'default' ? (
             undefined
           ) : (
-            <button 
+            <button
               onClick={handleBackToDefault}
               className='px-4 py-2 flex items-center gap-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors duration-200 font-medium'
             >
@@ -51,11 +74,11 @@ function UserHome() {
           )}
         </div>
       </div>
-      
+
       <hr className="border-0 border-t border-gray-300 opacity-60" />
 
       {/* Main Content Area - Conditional Rendering */}
-      <div className='flex-1 bg-[#f9fafb]'>
+      <div className='flex-1 bg-[#F0F0F0]'>
         {activeView === 'default' && (
           <div className='text-center py-12 px-6'>
             <h2 className='text-2xl font-semibold text-gray-800 mb-4'>Welcome to your homepage</h2>
@@ -83,7 +106,7 @@ function UserHome() {
 
         {activeView === 'form' && (
           <div className='p-6'>
-            <FormInput onBack={handleBackToDefault} />
+            <FormInput onBack={handleBackToDefault} onSave={handleSaveContact} />
           </div>
         )}
       </div>
