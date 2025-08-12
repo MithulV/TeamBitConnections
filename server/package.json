@@ -19,6 +19,7 @@
     "multer": "^2.0.2",
     "mysql2": "^3.14.3",
     "nodemon": "^3.1.10",
-    "react-router-dom": "^7.7.1"
+    "react-router-dom": "^7.7.1",
+    "tesseract.js": "^6.0.1"
   }
 }
