@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Route, Routes, Navigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
@@ -45,12 +46,14 @@ const MiddleManRoutes = () => {
 };
 
 
+
 function Applayout() {
     return (
         <div className='h-screen flex'>
             <Navbar />
             <main className='w-full h-screen flex-1 overflow-x-hidden overflow-y-auto'>
                 <Routes>
+
                     {/* Public Route */}
                     <Route path="/login" element={<Login />} />
 
@@ -66,6 +69,10 @@ function Applayout() {
                     
                     {/* Fallback route to redirect to home if logged in, or login if not */}
                     <Route path="*" element={<Navigate to="/" />} />
+
+                    <Route path="/" element={<UserHome />} />
+                    <Route path="/entries" element={<UserEntries />} />
+
                 </Routes>
             </main>
         </div>
