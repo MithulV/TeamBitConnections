@@ -1,4 +1,4 @@
-import sql from '../src/config/db.js'
+import db from '../src/config/db.js'
 import jwt from 'jsonwebtoken'
 
 export const loginUser = async (req, res) => {
@@ -7,7 +7,7 @@ export const loginUser = async (req, res) => {
 
     try {
         // Query the login table
-        const rows = await sql`
+        const rows = await db`
             SELECT * FROM login 
             WHERE email = ${email} AND password = ${password}
         `
