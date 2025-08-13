@@ -21,8 +21,8 @@ export const loginUser = async (req, res) => {
                 email: user.email,
                 role: user.role
             }
+            const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '200m' });
 
-            const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1m' })
 
             // Send both token & user details
             res.status(200).json({

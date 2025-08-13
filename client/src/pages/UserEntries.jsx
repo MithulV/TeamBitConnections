@@ -1,8 +1,8 @@
 import React, { useState } from 'react'
 import Avatar from '../assets/Avatar.png';
-import UserAddedCard from '../components/UserAddedCard';
 import FormInput from '../components/FormInput';
 import Alert from '../components/Alert';
+import BasicDetailCard from '../components/BasicDetailCard';
 
 const dummyCardData = [
   {
@@ -296,7 +296,7 @@ function UserEntries() {
         <>
           <div className="grid grid-cols-3 gap-3 p-5">
             {data.map((participant) => (
-              <UserAddedCard
+              <BasicDetailCard
                 key={participant.id}
                 name={participant.name}
                 phone={participant.phone}
@@ -308,7 +308,8 @@ function UserEntries() {
                 location={participant.location}
                 profileImage={participant.profileImage}
                 onDelete={() => handleDeleteClick(participant.id)}
-                onEdit={() => onEdit(participant.id)}
+                onType={() => onEdit(participant.id)}
+                editOrAdd={"edit"}
               />
             ))}
           </div>
