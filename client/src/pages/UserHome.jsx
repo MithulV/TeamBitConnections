@@ -101,7 +101,7 @@ function UserHome() {
 
         {activeView === 'camera' && (
           <div className="h-full">
-            <CameraInput onBack={handleBackToDefault} />
+            <CameraInput onBack={handleBackToDefault}  />
           </div>
         )}
 
