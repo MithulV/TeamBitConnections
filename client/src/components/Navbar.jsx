@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { ChevronRight, ChevronLeft, House, LogOut, CheckSquare, Shield,NotebookText } from 'lucide-react';
+import { ChevronRight, ChevronLeft, House, LogOut, CheckSquare, Shield, NotebookText } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/AuthStore';
 
@@ -33,7 +33,9 @@ function Navbar() {
         ],
     };
 
-    // Determine which menu items to display
+    // Get the menu items for the current role
+    const currentMenuItems = menuItemsByRole[role] || [];
+
     const handleLogout = () => {
         clearAuth();
         localStorage.removeItem('token');
@@ -70,7 +72,7 @@ function Navbar() {
             {/* Top Menu Items */}
             <div className="p-4 flex-1">
                 <div className="space-y-2">
-                    {menuTopItems.map((menuItem, index) => {
+                    {currentMenuItems.map((menuItem, index) => {
                         const active = isActive(menuItem.path)
                         return (
                             <div key={index}>
@@ -86,7 +88,7 @@ function Navbar() {
                                     <span className={`flex-shrink-0 transition-all duration-200 ${collapsed ? 'pl-0.5' : 'pl-2'} ${active ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'}`}>
                                         {menuItem.icon}
                                     </span>
-                                    <span className={`font-medium pl-1 transition-all duration-200 ${collapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100 '} ${active?'text-white':'text-gray-500 group-hover:text-gray-700'} `}>
+                                    <span className={`font-medium pl-1 transition-all duration-200 ${collapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100 '} ${active ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'} `}>
                                         {menuItem.name}
                                     </span>
                                 </button>
