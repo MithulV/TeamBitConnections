@@ -13,8 +13,7 @@ function Navbar() {
     const menuItemsByRole = {
         user: [
             { name: "Home", icon: <House size={20} />, path: "/" },
-        { name: "entries", icon: <NotebookText size={20} />, path: "/entries"},
-
+            { name: "entries", icon: <NotebookText size={20} />, path: "/entries"},
         ],
         cata: [
             { name: "Home", icon: <House size={20} />, path: "/" },
@@ -41,8 +40,8 @@ function Navbar() {
         localStorage.removeItem('token');
         navigate('/login');
     };
-       const menuTopItems = useMemo(() => menuItemsByRole[role] || [], [role]);
-
+    
+    const menuTopItems = useMemo(() => menuItemsByRole[role] || [], [role]);
 
     const menuBottomItems = [
         { name: "Logout", icon: <LogOut size={20} />, action: handleLogout },
@@ -77,7 +76,7 @@ function Navbar() {
                         return (
                             <div key={index}>
                                 <button
-                                    className={`w-full flex items-center gap-3 p-3 rounded-sm text-left transition-all duration-200 group
+                                    className={`w-full flex items-center gap-3 p-3 rounded-sm text-left transition-all duration-200 group overflow-hidden
                                         ${active
                                             ? 'bg-[#4071f4]'
                                             : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
@@ -88,7 +87,11 @@ function Navbar() {
                                     <span className={`flex-shrink-0 transition-all duration-200 ${collapsed ? 'pl-0.5' : 'pl-2'} ${active ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'}`}>
                                         {menuItem.icon}
                                     </span>
-                                    <span className={`font-medium pl-1 transition-all duration-200 ${collapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100 '} ${active ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'} `}>
+                                    <span className={`font-medium whitespace-nowrap transition-all duration-300 ease-in-out ${
+                                        collapsed 
+                                            ? 'opacity-0 translate-x-4 w-0 ml-0' 
+                                            : 'opacity-100 translate-x-0 w-auto ml-1'
+                                    } ${active ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'}`}>
                                         {menuItem.name}
                                     </span>
                                 </button>
@@ -109,7 +112,7 @@ function Navbar() {
                         return (
                             <div key={index}>
                                 <button
-                                    className={`w-full flex items-center gap-3 p-3 rounded-lg text-left transition-all duration-200 group
+                                    className={`w-full flex items-center gap-3 p-3 rounded-lg text-left transition-all duration-200 group overflow-hidden
                                         ${active
                                             ? 'bg-red-50 text-red-700 border border-red-200'
                                             : 'hover:bg-gray-50 hover:text-gray-900'
@@ -120,7 +123,11 @@ function Navbar() {
                                     <span className={`flex-shrink-0 transition-all duration-200 ${collapsed ? 'pl-0.5' : 'pl-2'} text-[#787878] ${active ? 'text-red-700' : 'text-gray-500'}`}>
                                         {menuItem.icon}
                                     </span>
-                                    <span className={`font-medium pl-1 transition-all duration-200 text-[#787878] ${collapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'}`}>
+                                    <span className={`font-medium text-[#787878] whitespace-nowrap transition-all duration-300 ease-in-out ${
+                                        collapsed 
+                                            ? 'opacity-0 translate-x-4 w-0 ml-0' 
+                                            : 'opacity-100 translate-x-0 w-auto ml-1'
+                                    }`}>
                                         {menuItem.name}
                                     </span>
                                 </button>
