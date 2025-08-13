@@ -1,5 +1,5 @@
 import React from 'react'
-import { PhoneOutgoing, Mail, MapPin, Building2, Edit2, Trash2 } from 'lucide-react'
+import { PhoneOutgoing, Mail, MapPin, Building2, Edit2, Trash2, UserRoundPlus } from 'lucide-react'
 
 function Tooltip({ label, children }) {
   const id = React.useId ? React.useId() : `tooltip-${Math.random().toString(36).slice(2, 9)}`
@@ -37,7 +37,11 @@ function Tooltip({ label, children }) {
   )
 }
 
-export default function UserAddedCard({ name, phone, email, event, role, location, org, date, onEdit, onDelete }) {
+export default function BasicDetailCard({ name, phone, email, event, role, location, org, date, onType, onDelete,editOrAdd }) {
+  const icons={
+    edit:<Edit2 size={14}/>,
+    add:<UserRoundPlus size={14}/>
+  }
   return (
     <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-200 hover:shadow-2xl transition-all min-w-0">
       {/* Header: Profile + Actions */}
@@ -107,12 +111,12 @@ export default function UserAddedCard({ name, phone, email, event, role, locatio
         <div className="text-xs text-gray-400">Added {date}</div>
 
         <div className="flex items-center gap-2">
-          <Tooltip label="Edit">
+          <Tooltip label={editOrAdd}>
             <button
-              onClick={onEdit}
+              onClick={onType}
               className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
             >
-              <Edit2 size={14} />
+              {icons[editOrAdd]||null}
             </button>
           </Tooltip>
 
