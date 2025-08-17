@@ -5,98 +5,88 @@ import Alert from '../components/Alert';
 import BasicDetailCard from '../components/BasicDetailCard';
 
 const dummyCardData = [
+ 
   {
-    id: 1,
-    name: "Sarah Johnson",
-    phone: "+1 (555) 123-4567",
-    email: "sarah.johnson@email.com",
-    event: "Tech Innovation Summit 2025",
-    role: "speaker",
-    date: "2025-08-15",
-    org: "Google Inc.",
-    location: "San Francisco, CA",
-    profileImage: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150"
+    "id": 9,
+    "name": "David Lee",
+    "phone": "+1 (555) 258-3691",
+    "email": "david.lee@financehub.com",
+    "event": "FinTech Forward 2025",
+    "role": "attendee",
+    "date": "2025-09-22",
+    "org": "FinanceHub",
+    "location": "Chicago, IL",
+    "profileImage": "https://images.unsplash.com/photo-1568602471122-7832951cc4c5?w=150"
   },
   {
-    id: 2,
-    name: "Michael Chen",
-    phone: "+1 (555) 987-6543",
-    email: "m.chen@startupxyz.com",
-    event: "Startup Pitch Day",
-    role: "attendee",
-    date: "2025-08-20",
-    org: "StartupXYZ",
-    location: "Austin, TX"
+    "id": 10,
+    "name": "Maria Garcia",
+    "phone": "+34 655 123 456",
+    "email": "maria.garcia@edutech.es",
+    "event": "EdTech Global Symposium",
+    "role": "organizer",
+    "date": "2025-10-05",
+    "org": "EduTech Spain",
+    "location": "Madrid, Spain"
   },
   {
-    id: 3,
-    name: "Dr. Emily Rodriguez",
-    phone: "+1 (555) 456-7890",
-    email: "emily.rodriguez@medtech.org",
-    event: "Healthcare Innovation Conference",
-    role: "organizer",
-    date: "2025-09-05",
-    org: "MedTech Solutions",
-    location: "Boston, MA",
-    profileImage: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=150"
+    "id": 11,
+    "name": "Kenji Tanaka",
+    "phone": "+81 90-1234-5678",
+    "email": "kenji.tanaka@cybersec.jp",
+    "event": "Cybersecurity World Forum",
+    "role": "speaker",
+    "date": "2025-10-18",
+    "org": "CyberSecure Japan",
+    "location": "Tokyo, Japan",
+    "profileImage": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150"
   },
   {
-    id: 4,
-    name: "James Wilson",
-    phone: "+1 (555) 321-0987",
-    email: "james@techcorp.com",
-    event: "AI & Machine Learning Expo",
-    role: "sponsor",
-    date: "2025-08-30",
-    org: "TechCorp Industries",
-    location: "Seattle, WA"
+    "id": 12,
+    "name": "Fatima Al-Sayed",
+    "phone": "+971 50 123 4567",
+    "email": "fatima.a@greentech.ae",
+    "event": "Green Energy Summit",
+    "role": "sponsor",
+    "date": "2025-11-02",
+    "org": "GreenTech Innovations UAE",
+    "location": "Dubai, UAE"
   },
   {
-    id: 5,
-    name: "Lisa Thompson",
-    phone: "+1 (555) 654-3210",
-    email: "lisa.thompson@volunteer.org",
-    event: "Community Tech Workshop",
-    role: "volunteer",
-    date: "2025-08-25",
-    org: "Community Volunteers",
-    location: "Denver, CO",
-    profileImage: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150"
+    "id": 13,
+    "name": "Olivia Williams",
+    "phone": "+1 (555) 741-8529",
+    "email": "olivia.w@cloudsolutions.com",
+    "event": "Cloud Computing Expo",
+    "role": "attendee",
+    "date": "2025-09-25",
+    "org": "Cloud Solutions Inc.",
+    "location": "Las Vegas, NV",
+    "profileImage": "https://images.unsplash.com/photo-1521146764736-56c929d59c83?w=150"
   },
   {
-    id: 6,
-    name: "Alex Morgan",
-    phone: "+1 (555) 789-0123",
-    email: "alex.morgan@newstech.com",
-    event: "Digital Media Summit",
-    role: "press",
-    date: "2025-09-10",
-    org: "NewsTech Media",
-    location: "New York, NY"
+    "id": 14,
+    "name": "Ben Carter",
+    "phone": "+44 7700 900123",
+    "email": "ben.carter@vrvision.co.uk",
+    "event": "VR/AR Developers Conference",
+    "role": "volunteer",
+    "date": "2025-10-12",
+    "org": "VR Vision Ltd.",
+    "location": "London, UK"
   },
   {
-    id: 7,
-    name: "Priya Patel",
-    phone: "+91 98765 43210",
-    email: "priya.patel@globalevent.in",
-    event: "Global Innovation Forum",
-    role: "attendee",
-    date: "2025-09-15",
-    org: "Innovation Hub India",
-    location: "Mumbai, India",
-    profileImage: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150"
+    "id": 15,
+    "name": "Chloe Dubois",
+    "phone": "+33 6 12 34 56 78",
+    "email": "chloe.dubois@press.fr",
+    "event": "European Tech Week",
+    "role": "press",
+    "date": "2025-11-10",
+    "org": "TechPress France",
+    "location": "Paris, France"
   },
-  {
-    id: 8,
-    name: "Robert Kim",
-    phone: "+1 (555) 147-2583",
-    email: "robert.kim@designstudio.com",
-    event: "UX/UI Design Conference",
-    role: "speaker",
-    date: "2025-08-28",
-    org: "Creative Design Studio",
-    location: "Portland, OR"
-  }
+  
 ];
 
 const DeleteConfirmationModal = ({ isOpen, onConfirm, onCancel, itemName = "this user" }) => {
