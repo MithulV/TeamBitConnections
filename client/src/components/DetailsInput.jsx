@@ -4,43 +4,60 @@ import { RotateCcw, Save, Plus } from 'lucide-react';
 function DetailsInput({ onBack, onSave, initialData = null, isAddMode = false }) {
   const [formData, setFormData] = useState({
     // Personal Details
-    firstName: '',
-    lastName: '',
+    name: '',
     dateOfBirth: '',
     gender: '',
     nationality: '',
-    
+    maritalStatus: '',
+    category: '',
+    age: '',
+
     // Contact Information
-    primaryPhone: '',
-    secondaryPhone: '',
-    primaryEmail: '',
-    alternateEmail: '',
-    
+    phonePrimary: '',
+    phoneSecondary: '',
+    emailPrimary: '',
+    emailSecondary: '',
+
+    // Emergency Contact
+    emergencyContactName: '',
+    emergencyContactPhone: '',
+    emergencyContactRelationship: '',
+
     // Address Details
     street: '',
     city: '',
     state: '',
-    zipCode: '',
     country: '',
-    
-    // Professional Information
+    zipcode: '',
+
+    // Education
+    pgCourseName: '',
+    pgCollege: '',
+    pgUniversity: '',
+    pgFromDate: '',
+    pgToDate: '',
+    ugCourseName: '',
+    ugCollege: '',
+    ugUniversity: '',
+    ugFromDate: '',
+    ugToDate: '',
+
+    // Experience
     jobTitle: '',
     company: '',
     department: '',
-    workExperience: '',
-    skills: '',
-    
-    // Emergency Contact
-    emergencyContactName: '',
-    emergencyContactPhone: '',
-    emergencyContactRelation: '',
-    
+    expFromDate: '',
+    expToDate: '',
+    expSkills: '',
+
     // Additional Information
-    notes: '',
-    category: '',
-    priority: '',
-    source: '',
-    tags: ''
+    eventName: '',
+    eventRole: '',
+    eventDate: '',
+    eventHeldOrganization: '',
+    eventLocation: '',
+    additionalNote: '',
+    linkedinProfile: '',
   });
 
   useEffect(() => {
@@ -84,218 +101,72 @@ function DetailsInput({ onBack, onSave, initialData = null, isAddMode = false })
 
   // Personal Details Fields
   const personalDetails = [
-    {
-      label: "First Name*",
-      type: "text",
-      name: "firstName",
-      placeholder: "Enter first name",
-      value: formData.firstName
-    },
-    {
-      label: "Last Name*",
-      type: "text",
-      name: "lastName",
-      placeholder: "Enter last name",
-      value: formData.lastName
-    },
-    {
-      label: "Date of Birth",
-      type: "date",
-      name: "dateOfBirth",
-      placeholder: "",
-      value: formData.dateOfBirth
-    },
-    {
-      label: "Gender",
-      type: "select",
-      name: "gender",
-      value: formData.gender,
-      options: ['', 'Male', 'Female', 'Other', 'Prefer not to say']
-    },
-    {
-      label: "Nationality",
-      type: "text",
-      name: "nationality",
-      placeholder: "Enter nationality",
-      value: formData.nationality
-    }
+    { label: "Name*", type: "text", name: "name", placeholder: "Enter full name", value: formData.name },
+    { label: "Date of Birth", type: "date", name: "dateOfBirth", value: formData.dateOfBirth },
+    { label: "Gender", type: "select", name: "gender", value: formData.gender, options: ['', 'Male', 'Female', 'Other', 'Prefer not to say'] },
+    { label: "Nationality", type: "text", name: "nationality", placeholder: "Enter nationality", value: formData.nationality },
+    { label: "Marital Status", type: "select", name: "maritalStatus", value: formData.maritalStatus, options: ['', 'Single', 'Married', 'Divorced', 'Widowed'] },
+    { label: "Category", type: "text", name: "category", placeholder: "Enter category", value: formData.category },
+    { label: "Age", type: "number", name: "age", placeholder: "Enter age", value: formData.age },
   ];
 
   // Contact Information Fields
   const contactInfo = [
-    {
-      label: "Primary Phone*",
-      type: "tel",
-      name: "primaryPhone",
-      placeholder: "Enter primary phone number",
-      value: formData.primaryPhone,
-      inputMode: "numeric"
-    },
-    {
-      label: "Secondary Phone",
-      type: "tel",
-      name: "secondaryPhone",
-      placeholder: "Enter secondary phone number",
-      value: formData.secondaryPhone,
-      inputMode: "numeric"
-    },
-    {
-      label: "Primary Email*",
-      type: "email",
-      name: "primaryEmail",
-      placeholder: "Enter primary email address",
-      value: formData.primaryEmail
-    },
-    {
-      label: "Alternate Email",
-      type: "email",
-      name: "alternateEmail",
-      placeholder: "Enter alternate email address",
-      value: formData.alternateEmail
-    }
-  ];
-
-  // Address Details Fields
-  const addressDetails = [
-    {
-      label: "Street Address",
-      type: "text",
-      name: "street",
-      placeholder: "Enter street address",
-      value: formData.street
-    },
-    {
-      label: "City",
-      type: "text",
-      name: "city",
-      placeholder: "Enter city",
-      value: formData.city
-    },
-    {
-      label: "State/Province",
-      type: "text",
-      name: "state",
-      placeholder: "Enter state or province",
-      value: formData.state
-    },
-    {
-      label: "ZIP/Postal Code",
-      type: "text",
-      name: "zipCode",
-      placeholder: "Enter ZIP or postal code",
-      value: formData.zipCode
-    },
-    {
-      label: "Country",
-      type: "text",
-      name: "country",
-      placeholder: "Enter country",
-      value: formData.country
-    }
-  ];
-
-  // Professional Information Fields
-  const professionalInfo = [
-    {
-      label: "Job Title",
-      type: "text",
-      name: "jobTitle",
-      placeholder: "Enter job title",
-      value: formData.jobTitle
-    },
-    {
-      label: "Company",
-      type: "text",
-      name: "company",
-      placeholder: "Enter company name",
-      value: formData.company
-    },
-    {
-      label: "Department",
-      type: "text",
-      name: "department",
-      placeholder: "Enter department",
-      value: formData.department
-    },
-    {
-      label: "Work Experience (Years)",
-      type: "number",
-      name: "workExperience",
-      placeholder: "Enter years of experience",
-      value: formData.workExperience
-    },
-    {
-      label: "Skills",
-      type: "textarea",
-      name: "skills",
-      placeholder: "Enter relevant skills (comma separated)",
-      value: formData.skills
-    }
+    { label: "Phone No (Primary)*", type: "tel", name: "phonePrimary", placeholder: "Enter primary phone number", value: formData.phonePrimary, inputMode: "numeric" },
+    { label: "Phone No (Secondary)", type: "tel", name: "phoneSecondary", placeholder: "Enter secondary phone number", value: formData.phoneSecondary, inputMode: "numeric" },
+    { label: "Email (Primary)*", type: "email", name: "emailPrimary", placeholder: "Enter primary email address", value: formData.emailPrimary },
+    { label: "Email (Secondary)", type: "email", name: "emailSecondary", placeholder: "Enter secondary email address", value: formData.emailSecondary },
   ];
 
   // Emergency Contact Fields
   const emergencyContact = [
-    {
-      label: "Emergency Contact Name",
-      type: "text",
-      name: "emergencyContactName",
-      placeholder: "Enter emergency contact name",
-      value: formData.emergencyContactName
-    },
-    {
-      label: "Emergency Contact Phone",
-      type: "tel",
-      name: "emergencyContactPhone",
-      placeholder: "Enter emergency contact phone",
-      value: formData.emergencyContactPhone,
-      inputMode: "numeric"
-    },
-    {
-      label: "Relationship",
-      type: "select",
-      name: "emergencyContactRelation",
-      value: formData.emergencyContactRelation,
-      options: ['', 'Spouse', 'Parent', 'Child', 'Sibling', 'Friend', 'Other']
-    }
+    { label: "Contact Name", type: "text", name: "emergencyContactName", placeholder: "Enter contact name", value: formData.emergencyContactName },
+    { label: "Contact Phone", type: "tel", name: "emergencyContactPhone", placeholder: "Enter contact phone", value: formData.emergencyContactPhone, inputMode: "numeric" },
+    { label: "Relationship", type: "text", name: "emergencyContactRelationship", placeholder: "Enter relationship", value: formData.emergencyContactRelationship },
+  ];
+
+  // Address Details Fields
+  const addressDetails = [
+    { label: "Street", type: "text", name: "street", placeholder: "Enter street", value: formData.street },
+    { label: "City", type: "text", name: "city", placeholder: "Enter city", value: formData.city },
+    { label: "State", type: "text", name: "state", placeholder: "Enter state", value: formData.state },
+    { label: "Country", type: "text", name: "country", placeholder: "Enter country", value: formData.country },
+    { label: "Zipcode", type: "text", name: "zipcode", placeholder: "Enter zipcode", value: formData.zipcode },
+  ];
+
+  // Education Fields
+  const educationFields = [
+    { label: "PG Course Name", type: "text", name: "pgCourseName", placeholder: "Enter PG course name", value: formData.pgCourseName },
+    { label: "PG College", type: "text", name: "pgCollege", placeholder: "Enter PG college", value: formData.pgCollege },
+    { label: "PG University", type: "text", name: "pgUniversity", placeholder: "Enter PG university", value: formData.pgUniversity },
+    { label: "PG From Date", type: "date", name: "pgFromDate", value: formData.pgFromDate },
+    { label: "PG To Date", type: "date", name: "pgToDate", value: formData.pgToDate },
+    { label: "UG Course Name", type: "text", name: "ugCourseName", placeholder: "Enter UG course name", value: formData.ugCourseName },
+    { label: "UG College", type: "text", name: "ugCollege", placeholder: "Enter UG college", value: formData.ugCollege },
+    { label: "UG University", type: "text", name: "ugUniversity", placeholder: "Enter UG university", value: formData.ugUniversity },
+    { label: "UG From Date", type: "date", name: "ugFromDate", value: formData.ugFromDate },
+    { label: "UG To Date", type: "date", name: "ugToDate", value: formData.ugToDate },
+  ];
+
+  // Experience Fields
+  const experienceFields = [
+    { label: "Job Title", type: "text", name: "jobTitle", placeholder: "Enter job title", value: formData.jobTitle },
+    { label: "Company", type: "text", name: "company", placeholder: "Enter company name", value: formData.company },
+    { label: "Department", type: "text", name: "department", placeholder: "Enter department", value: formData.department },
+    { label: "From Date", type: "date", name: "expFromDate", value: formData.expFromDate },
+    { label: "To Date", type: "date", name: "expToDate", value: formData.expToDate },
+    { label: "Skills", type: "textarea", name: "expSkills", placeholder: "Enter skills", value: formData.expSkills },
   ];
 
   // Additional Information Fields
   const additionalInfo = [
-    {
-      label: "Category",
-      type: "select",
-      name: "category",
-      value: formData.category,
-      options: ['', 'Client', 'Vendor', 'Employee', 'Partner', 'Event Participant', 'Other']
-    },
-    {
-      label: "Priority Level",
-      type: "select",
-      name: "priority",
-      value: formData.priority,
-      options: ['', 'High', 'Medium', 'Low']
-    },
-    {
-      label: "Source",
-      type: "text",
-      name: "source",
-      placeholder: "How did you find this contact?",
-      value: formData.source
-    },
-    {
-      label: "Tags",
-      type: "text",
-      name: "tags",
-      placeholder: "Enter tags (comma separated)",
-      value: formData.tags
-    },
-    {
-      label: "Additional Notes",
-      type: "textarea",
-      name: "notes",
-      placeholder: "Enter any additional notes",
-      value: formData.notes
-    }
+    { label: "Event Name", type: "text", name: "eventName", placeholder: "Enter event name", value: formData.eventName },
+    { label: "Event Role", type: "text", name: "eventRole", placeholder: "Enter event role", value: formData.eventRole },
+    { label: "Event Date", type: "date", name: "eventDate", value: formData.eventDate },
+    { label: "Event Held Organization", type: "text", name: "eventHeldOrganization", placeholder: "Enter event held organization", value: formData.eventHeldOrganization },
+    { label: "Event Location", type: "text", name: "eventLocation", placeholder: "Enter event location", value: formData.eventLocation },
+    { label: "Additional Note/Logger", type: "textarea", name: "additionalNote", placeholder: "Enter additional note or logger", value: formData.additionalNote },
+    { label: "LinkedIn Profile", type: "url", name: "linkedinProfile", placeholder: "Enter LinkedIn profile URL", value: formData.linkedinProfile },
   ];
 
   const handlePhoneKeyPress = (e) => {
@@ -464,19 +335,27 @@ function DetailsInput({ onBack, onSave, initialData = null, isAddMode = false })
             </div>
           </div>
 
-          {/* Professional Information */}
-          <div className="mb-8">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b border-gray-200 pb-2">Professional Information</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {professionalInfo.map((field, index) => renderField(field, index))}
-            </div>
-          </div>
-
           {/* Emergency Contact */}
           <div className="mb-8">
             <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b border-gray-200 pb-2">Emergency Contact</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {emergencyContact.map((field, index) => renderField(field, index))}
+            </div>
+          </div>
+
+          {/* Education */}
+          <div className="mb-8">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b border-gray-200 pb-2">Education</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {educationFields.map((field, index) => renderField(field, index))}
+            </div>
+          </div>
+
+          {/* Experience */}
+          <div className="mb-8">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b border-gray-200 pb-2">Experience</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {experienceFields.map((field, index) => renderField(field, index))}
             </div>
           </div>
 
