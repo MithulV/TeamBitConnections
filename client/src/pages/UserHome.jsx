@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import CameraInput from '../components/CameraInput';
 import FormInput from '../components/FormInput';
 import Avatar from '../assets/Avatar.png';
-import { Camera, UserPlus, ArrowLeft } from 'lucide-react';
+import { Camera, UserPlus, ArrowLeft, Star } from 'lucide-react';
 
 function UserHome() {
   const [activeView, setActiveView] = useState('default'); // 'default', 'camera', 'form'
@@ -84,7 +84,7 @@ function UserHome() {
           <div className='text-center py-12 px-6'>
             <h2 className='text-2xl font-semibold text-gray-800 mb-4'>Welcome to your homepage</h2>
             <p className='text-gray-600 mb-8'>Choose an option below to get started</p>
-            <div className='grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto'>
+            <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-4xl mx-auto'>
               <div className='p-6 bg-white rounded-lg border-2 border-gray-200 hover:border-[#0077b8] transition-colors cursor-pointer shadow-sm' onClick={handleCameraClick}>
                 <Camera size={40} className='mx-auto mb-4 text-[#0077b8]' />
                 <h3 className='font-semibold mb-2'>Scan Card</h3>
@@ -94,6 +94,11 @@ function UserHome() {
                 <UserPlus size={40} className='mx-auto mb-4 text-[#0077b8]' />
                 <h3 className='font-semibold mb-2'>Add Manually</h3>
                 <p className='text-sm text-gray-600'>Enter card information manually using the form</p>
+              </div>
+              <div className='p-6 bg-white rounded-lg border-2 border-gray-200 hover:border-[#0077b8] transition-colors cursor-pointer shadow-sm' onClick={() => window.location.href = '/important-people'}>
+                <Star size={40} className='mx-auto mb-4 text-[#0077b8]' />
+                <h3 className='font-semibold mb-2'>Important People</h3>
+                <p className='text-sm text-gray-600'>View and manage your most important contacts</p>
               </div>
             </div>
           </div>
