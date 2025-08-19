@@ -10,6 +10,7 @@ import PrivateRoute from '../pages/PrivateRoutes';
 import { useAuthStore } from '../store/AuthStore';
 import UserEntries from '../pages/UserEntries'
 import ProfileView from '../pages/ProfileView';
+import ImportantPeople from '../pages/ImportantPeople';
 
 // A helper component to render the correct home page based on role
 const RoleBasedHome = () => {
@@ -67,6 +68,7 @@ function Applayout() {
                             </MiddleManRoutesWrapper>
                         } />
                         <Route path="/profile/:id" element={<ProfileView />} />
+                        <Route path="/important-people" element={<ImportantPeople />} />
                     </Route>
                     
                     {/* Fallback route to redirect to home if logged in, or login if not */}
@@ -74,6 +76,7 @@ function Applayout() {
 
                     <Route path="/" element={<UserHome />} />
                     <Route path="/entries" element={<UserEntries />} />
+                    <Route path="/important-people" element={<ImportantPeople />} />
 
                 </Routes>
             </main>
