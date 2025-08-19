@@ -189,7 +189,7 @@ function MiddleManRecords() {
     setUserToDelete({ id, name: user?.name || "this user" });
     setShowDeleteModal(true);
   }
-
+      
   const confirmDelete = async () => {
     if (userToDelete) {
       try {

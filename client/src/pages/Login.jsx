@@ -54,7 +54,7 @@ const LoginPage = () => {
                     </div>
                     <div className="relative z-10 flex flex-col justify-between h-full">
                         <div>
-                            <p className="mb-2 text-sm font-light tracking-wider">BIT CONNECTIONS</p>
+                            <p className="mb-2 text-sm font-light tracking-wider text-purple-100">BIT CONNECTIONS</p>
                         </div>
                         <div className="transform transition-all hover:scale-105">
                             <h1 className="mb-3 text-5xl font-bold leading-tight">
@@ -91,13 +91,6 @@ const LoginPage = () => {
                             placeholder="********"
                             className="w-full p-3 border border-gray-300 rounded-lg placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400"
                         />
-                    </div>
-                    <div className="flex justify-between w-full py-4">
-                        <div className="flex items-center">
-                            <input type="checkbox" name="remember-me" id="remember-me" className="mr-2" />
-                            <label htmlFor="remember-me" className="text-md text-gray-600">Remember me</label>
-                        </div>
-                        <a href="#" className="font-semibold text-blue-600 hover:underline">Forgot password</a>
                     </div>
                     <button onClick={handleLogin} className="w-full bg-gradient-to-r from-blue-500 to-purple-500 text-white p-3 rounded-lg mt-4 mb-6 font-semibold hover:from-blue-600 hover:to-purple-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                         Sign in
