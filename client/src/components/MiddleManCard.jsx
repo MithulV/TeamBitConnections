@@ -14,7 +14,7 @@ const DeleteConfirmationModal = ({ isOpen, onConfirm, onCancel, itemName = "this
       ></div>
 
       {/* Modal */}
-      <div className="relative bg-white rounded-lg shadow-2xl max-w-md w-full transform transition-all duration-300 scale-100 animate-fadeIn">
+      <div className="relative bg-white rounded-lg shadow-2xl max-w-md w-full transform transition-all duration-300 scale-100 animate-none">
         {/* Header with Material Design styling */}
         <div className="flex items-start gap-3 p-6 pb-4">
           {/* Warning Icon with circular background */}
@@ -133,9 +133,9 @@ const ContactCard = ({ contact, onDelete }) => {
               <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
                 <Edit size={16} className="text-gray-500" />
               </button>
-              <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+              {/* <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
                 <Notebook size={16} className="text-blue-500" />
-              </button>
+              </button> */}
               <button 
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                 onClick={handleDeleteClick}

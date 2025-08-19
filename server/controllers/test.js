@@ -14,7 +14,7 @@ const upload_datas = async (req, res) => {
     if (req.file) {
       const imageHash = getFileHash(req.file.path);
       const [existing] = await db.query(
-        "SELECT * FROM raw_photos WHERE hash_image = ?",
+        "SELECT * FROM raw_photos WHERE hash_image = ? AND user = ?",
         [imageHash, req.body.user]
       );
 
