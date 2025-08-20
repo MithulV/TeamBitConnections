@@ -4,6 +4,7 @@ import Tesseract from "tesseract.js";
 
 import { Camera, RotateCcw, X, Upload, ImagePlus } from 'lucide-react';
 import axios from 'axios';
+import { useAuthStore } from '../store/AuthStore';
 
 const CameraCapture = ({ onCapture, onBack }) => {
   const webcamRef = useRef(null);
@@ -315,6 +316,7 @@ const PhotoOptionSelector = ({ onSelectCamera, onSelectUpload, onBack }) => {
 function CameraInput({ onBack }) {
   const [capturedImage, setCapturedImage] = useState(null);
   const [mode, setMode] = useState('select'); // 'select', 'camera', 'preview'
+  const { id } = useAuthStore();
 
   const handleCapture = (imageSrc) => {
     setCapturedImage(imageSrc);
@@ -355,6 +357,7 @@ function CameraInput({ onBack }) {
         });
 
         formData.append("image", blob, "photo.png");
+        formData.append("user_id", id);
       }
 
       const res = await axios.post("http://localhost:8000/api/upload-contact", formData, {
