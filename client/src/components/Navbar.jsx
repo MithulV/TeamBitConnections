@@ -18,14 +18,17 @@ function Navbar() {
         cata: [
             { name: "Home", icon: <House size={20} />, path: "/" },
             { name: "Verify Records", icon: <CheckSquare size={20} />, path: "/verify-records" },
+            { name: "Tasks", icon: <NotebookText size={20} />, path: "/tasks" }
         ],
         catb: [
             { name: "Home", icon: <House size={20} />, path: "/" },
             { name: "Verify Records", icon: <CheckSquare size={20} />, path: "/verify-records" },
+            { name: "Tasks", icon: <NotebookText size={20} />, path: "/tasks" }
         ],
         catc: [
             { name: "Home", icon: <House size={20} />, path: "/" },
             { name: "Verify Records", icon: <CheckSquare size={20} />, path: "/verify-records" },
+            { name: "Tasks", icon: <NotebookText size={20} />, path: "/tasks" }
         ],
         admin: [
             { name: "Admin Panel", icon: <Shield size={20} />, path: "/" },
