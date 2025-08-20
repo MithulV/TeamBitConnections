@@ -14,7 +14,6 @@ function Navbar() {
         user: [
             { name: "Home", icon: <House size={20} />, path: "/" },
             { name: "entries", icon: <NotebookText size={20} />, path: "/entries"},
-            { name: "Important People", icon: <Shield size={20} />, path: "/important-people"},
         ],
         cata: [
             { name: "Home", icon: <House size={20} />, path: "/" },
