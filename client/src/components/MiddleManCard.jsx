@@ -125,53 +125,56 @@ const ContactCard = ({ contact, onDelete, onEdit }) => {
     <>
       <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
         {/* Header with Avatar and Actions */}
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex items-center gap-3 min-w-0 flex-1">
-            <div
-              className="w-12 h-12 rounded-full flex items-center justify-center text-white font-semibold text-sm flex-shrink-0"
-              style={{ backgroundColor: contact.avatarColor }}
-            >
-              {(
-                <img
-                  src="https://xsgames.co/randomusers/assets/avatars/male/68.jpg"
-                  className="w-12 h-12 rounded-full object-cover"
-                />
-              ) || getInitials(contact.name)}
+          <div className="flex items-start justify-between mb-4">
+            <div className="flex items-center gap-3 min-w-0 flex-1">
+              <div className="relative">
+                <div
+            className="w-12 h-12 rounded-full flex items-center justify-center text-white font-semibold text-sm flex-shrink-0"
+            style={{ backgroundColor: contact.avatarColor }}
+                >
+            {(
+              <img
+                src="https://xsgames.co/randomusers/assets/avatars/male/68.jpg"
+                className="w-12 h-12 rounded-full object-cover"
+              />
+            ) || getInitials(contact.name)}
+                </div>
+                <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+              </div>
+              <div className="min-w-0 flex-1">
+                <h3
+            className="font-semibold text-gray-900 text-lg truncate"
+            title={contact.name}
+                >
+            {contact.name}
+                </h3>
+                <p
+            className="text-sm text-gray-600 truncate"
+            title={contact.role}
+                >
+            {contact.role}
+                </p>
+              </div>
             </div>
-            <div className="min-w-0 flex-1">
-              <h3
-                className="font-semibold text-gray-900 text-lg truncate"
-                title={contact.name}
-              >
-                {contact.name}
-              </h3>
-              <p
-                className="text-sm text-gray-600 truncate"
-                title={contact.role}
-              >
-                {contact.role}
-              </p>
-            </div>
-          </div>
 
-          <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-            <span
-              className={`px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${getCategoryColor(
-                contact.category
-              )}`}
-            >
-              {contact.category}
-            </span>
-            <div className="flex gap-1">
-              <button
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                onClick={() => onEdit && onEdit(contact)}
+            <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+              <span
+                className={`px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${getCategoryColor(
+            contact.category
+                )}`}
               >
-                <Edit size={16} className="text-gray-500" />
-              </button>
-              {/* <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                <Notebook size={16} className="text-blue-500" />
-              </button> */}
+                {contact.category}
+              </span>
+              <div className="flex gap-1">
+                <button
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            onClick={() => onEdit && onEdit(contact)}
+                >
+            <Edit size={16} className="text-gray-500" />
+                </button>
+                {/* <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+            <Notebook size={16} className="text-blue-500" />
+                </button> */}
               <button
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                 onClick={handleDeleteClick}

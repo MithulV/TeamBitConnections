@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { RotateCcw, Save, Plus } from 'lucide-react';
+import { RotateCcw, Plus, Trash2 } from 'lucide-react';
 
 function DetailsInput({ onBack, onSave, initialData = null, isAddMode = false }) {
   const [formData, setFormData] = useState({
@@ -41,65 +41,55 @@ function DetailsInput({ onBack, onSave, initialData = null, isAddMode = false })
     ugUniversity: '',
     ugFromDate: '',
     ugToDate: '',
+    
+    // NEW: General Skills
+    skills: '',
 
-    // Experience
-    jobTitle: '',
-    company: '',
-    department: '',
-    expFromDate: '',
-    expToDate: '',
-    expSkills: '',
+    // Experience - An array
+    experience: [
+      { jobTitle: '', company: '', department: '', expFromDate: '', expToDate: '', expSkills: '' }
+    ],
 
-    // Additional Information
+    // Additional Information (focused on events)
     eventName: '',
     eventRole: '',
     eventDate: '',
     eventHeldOrganization: '',
     eventLocation: '',
-    additionalNote: '',
     linkedinProfile: '',
+
+    // NEW: Logger for notes
+    logger: '',
   });
 
   useEffect(() => {
     if (isAddMode && initialData) {
-      // Handle your specific data structure - pre-fill with existing data
-      const nameParts = initialData.name ? initialData.name.split(' ') : ['', ''];
-      
-      setFormData({
-        firstName: nameParts[0] || initialData.firstName || '',
-        lastName: nameParts.slice(1).join(' ') || initialData.lastName || '',
-        primaryPhone: initialData.phone || initialData.primaryPhone || '',
-        primaryEmail: initialData.email || initialData.primaryEmail || '',
-        jobTitle: initialData.role || initialData.jobTitle || '',
-        company: initialData.org || initialData.eventOrg || initialData.company || '',
-        city: initialData.location || initialData.city || '',
-        notes: initialData.event ? `Event: ${initialData.event} on ${initialData.date}` : initialData.notes || '',
-        category: initialData.category || 'Event Participant',
-        source: initialData.source || 'Event Registration',
-        
-        // Map other existing fields or set defaults for additional details
+      setFormData(prevData => ({
+        ...prevData,
+        name: initialData.name || '',
         dateOfBirth: initialData.dateOfBirth || '',
         gender: initialData.gender || '',
         nationality: initialData.nationality || '',
-        secondaryPhone: initialData.secondaryPhone || '',
-        alternateEmail: initialData.alternateEmail || '',
-        street: initialData.street || '',
+        maritalStatus: initialData.maritalStatus || '',
+        category: initialData.category || 'Event Participant',
+        phonePrimary: initialData.phone || initialData.primaryPhone || '',
+        emailPrimary: initialData.email || initialData.primaryEmail || '',
+        city: initialData.location || initialData.city || '',
         state: initialData.state || '',
-        zipCode: initialData.zipCode || '',
         country: initialData.country || '',
-        department: initialData.department || '',
-        workExperience: initialData.workExperience || '',
+        // Populate the new separate fields
         skills: initialData.skills || '',
-        emergencyContactName: initialData.emergencyContactName || '',
-        emergencyContactPhone: initialData.emergencyContactPhone || '',
-        emergencyContactRelation: initialData.emergencyContactRelation || '',
-        priority: initialData.priority || '',
-        tags: initialData.tags || ''
-      });
+        logger: initialData.notes || initialData.additionalNote || (initialData.event ? `Event: ${initialData.event} on ${initialData.date}` : ''),
+        // Ensure experience is an array
+        experience: Array.isArray(initialData.experience) && initialData.experience.length > 0
+          ? initialData.experience
+          : [{ jobTitle: '', company: '', department: '', expFromDate: '', expToDate: '', expSkills: '' }],
+      }));
     }
   }, [isAddMode, initialData]);
 
-  // Personal Details Fields
+  // --- Field Definitions (Grouped for clarity) ---
+
   const personalDetails = [
     { label: "Name*", type: "text", name: "name", placeholder: "Enter full name", value: formData.name },
     { label: "Date of Birth", type: "date", name: "dateOfBirth", value: formData.dateOfBirth },
@@ -109,23 +99,17 @@ function DetailsInput({ onBack, onSave, initialData = null, isAddMode = false })
     { label: "Category", type: "text", name: "category", placeholder: "Enter category", value: formData.category },
     { label: "Age", type: "number", name: "age", placeholder: "Enter age", value: formData.age },
   ];
-
-  // Contact Information Fields
   const contactInfo = [
     { label: "Phone No (Primary)*", type: "tel", name: "phonePrimary", placeholder: "Enter primary phone number", value: formData.phonePrimary, inputMode: "numeric" },
     { label: "Phone No (Secondary)", type: "tel", name: "phoneSecondary", placeholder: "Enter secondary phone number", value: formData.phoneSecondary, inputMode: "numeric" },
     { label: "Email (Primary)*", type: "email", name: "emailPrimary", placeholder: "Enter primary email address", value: formData.emailPrimary },
     { label: "Email (Secondary)", type: "email", name: "emailSecondary", placeholder: "Enter secondary email address", value: formData.emailSecondary },
   ];
-
-  // Emergency Contact Fields
   const emergencyContact = [
     { label: "Contact Name", type: "text", name: "emergencyContactName", placeholder: "Enter contact name", value: formData.emergencyContactName },
     { label: "Contact Phone", type: "tel", name: "emergencyContactPhone", placeholder: "Enter contact phone", value: formData.emergencyContactPhone, inputMode: "numeric" },
     { label: "Relationship", type: "text", name: "emergencyContactRelationship", placeholder: "Enter relationship", value: formData.emergencyContactRelationship },
   ];
-
-  // Address Details Fields
   const addressDetails = [
     { label: "Street", type: "text", name: "street", placeholder: "Enter street", value: formData.street },
     { label: "City", type: "text", name: "city", placeholder: "Enter city", value: formData.city },
@@ -133,8 +117,6 @@ function DetailsInput({ onBack, onSave, initialData = null, isAddMode = false })
     { label: "Country", type: "text", name: "country", placeholder: "Enter country", value: formData.country },
     { label: "Zipcode", type: "text", name: "zipcode", placeholder: "Enter zipcode", value: formData.zipcode },
   ];
-
-  // Education Fields
   const educationFields = [
     { label: "PG Course Name", type: "text", name: "pgCourseName", placeholder: "Enter PG course name", value: formData.pgCourseName },
     { label: "PG College", type: "text", name: "pgCollege", placeholder: "Enter PG college", value: formData.pgCollege },
@@ -147,251 +129,170 @@ function DetailsInput({ onBack, onSave, initialData = null, isAddMode = false })
     { label: "UG From Date", type: "date", name: "ugFromDate", value: formData.ugFromDate },
     { label: "UG To Date", type: "date", name: "ugToDate", value: formData.ugToDate },
   ];
-
-  // Experience Fields
-  const experienceFields = [
-    { label: "Job Title", type: "text", name: "jobTitle", placeholder: "Enter job title", value: formData.jobTitle },
-    { label: "Company", type: "text", name: "company", placeholder: "Enter company name", value: formData.company },
-    { label: "Department", type: "text", name: "department", placeholder: "Enter department", value: formData.department },
-    { label: "From Date", type: "date", name: "expFromDate", value: formData.expFromDate },
-    { label: "To Date", type: "date", name: "expToDate", value: formData.expToDate },
-    { label: "Skills", type: "textarea", name: "expSkills", placeholder: "Enter skills", value: formData.expSkills },
-  ];
-
-  // Additional Information Fields
+  // Updated to remove logger
   const additionalInfo = [
     { label: "Event Name", type: "text", name: "eventName", placeholder: "Enter event name", value: formData.eventName },
     { label: "Event Role", type: "text", name: "eventRole", placeholder: "Enter event role", value: formData.eventRole },
     { label: "Event Date", type: "date", name: "eventDate", value: formData.eventDate },
-    { label: "Event Held Organization", type: "text", name: "eventHeldOrganization", placeholder: "Enter event held organization", value: formData.eventHeldOrganization },
+    { label: "Event Held Organization", type: "text", name: "eventHeldOrganization", placeholder: "Enter organization", value: formData.eventHeldOrganization },
     { label: "Event Location", type: "text", name: "eventLocation", placeholder: "Enter event location", value: formData.eventLocation },
-    { label: "Additional Note/Logger", type: "textarea", name: "additionalNote", placeholder: "Enter additional note or logger", value: formData.additionalNote },
     { label: "LinkedIn Profile", type: "url", name: "linkedinProfile", placeholder: "Enter LinkedIn profile URL", value: formData.linkedinProfile },
   ];
 
+  // --- Handlers ---
+
   const handlePhoneKeyPress = (e) => {
-    const char = String.fromCharCode(e.which);
-    if (!/[0-9]/.test(char)) {
+    if (!/[0-9]/.test(String.fromCharCode(e.which))) {
       e.preventDefault();
     }
   };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    if (name.includes('Phone')) {
-      const numbersOnly = value.replace(/[^0-9]/g, '');
-      setFormData(prev => ({
-        ...prev,
-        [name]: numbersOnly
-      }));
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        [name]: value
-      }));
-    }
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  const handleExperienceChange = (index, e) => {
+    const { name, value } = e.target;
+    const updatedExperience = [...formData.experience];
+    updatedExperience[index][name] = value;
+    setFormData(prev => ({ ...prev, experience: updatedExperience }));
+  };
+
+  const addExperience = () => {
+    setFormData(prev => ({
+      ...prev,
+      experience: [...prev.experience, { jobTitle: '', company: '', department: '', expFromDate: '', expToDate: '', expSkills: '' }]
+    }));
+  };
+
+  const removeExperience = (index) => {
+    if (formData.experience.length > 1) {
+      const updatedExperience = formData.experience.filter((_, i) => i !== index);
+      setFormData(prev => ({ ...prev, experience: updatedExperience }));
+    }
+  };
+  
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log('Details form submitted:', formData);
-    if (onSave) {
-      onSave(formData);
-      if (onBack) onBack(); // Always go back after adding details
-    }
+    onSave?.(formData);
+    onBack?.();
   };
 
   const handleReset = () => {
-    if (isAddMode && initialData) {
-      // Reset to original mapped data when adding mode
-      const nameParts = initialData.name ? initialData.name.split(' ') : ['', ''];
-      setFormData({
-        firstName: nameParts[0] || initialData.firstName || '',
-        lastName: nameParts.slice(1).join(' ') || initialData.lastName || '',
-        primaryPhone: initialData.phone || initialData.primaryPhone || '',
-        primaryEmail: initialData.email || initialData.primaryEmail || '',
-        jobTitle: initialData.role || initialData.jobTitle || '',
-        company: initialData.org || initialData.eventOrg || initialData.company || '',
-        city: initialData.location || initialData.city || '',
-        notes: initialData.event ? `Event: ${initialData.event} on ${initialData.date}` : initialData.notes || '',
-        category: initialData.category || 'Event Participant',
-        source: initialData.source || 'Event Registration',
-        dateOfBirth: initialData.dateOfBirth || '',
-        gender: initialData.gender || '',
-        nationality: initialData.nationality || '',
-        secondaryPhone: initialData.secondaryPhone || '',
-        alternateEmail: initialData.alternateEmail || '',
-        street: initialData.street || '',
-        state: initialData.state || '',
-        zipCode: initialData.zipCode || '',
-        country: initialData.country || '',
-        department: initialData.department || '',
-        workExperience: initialData.workExperience || '',
-        skills: initialData.skills || '',
-        emergencyContactName: initialData.emergencyContactName || '',
-        emergencyContactPhone: initialData.emergencyContactPhone || '',
-        emergencyContactRelation: initialData.emergencyContactRelation || '',
-        priority: initialData.priority || '',
-        tags: initialData.tags || ''
+     // Resets to the initial empty state structure
+     setFormData({
+        name: '', dateOfBirth: '', gender: '', nationality: '', maritalStatus: '', category: '', age: '',
+        phonePrimary: '', phoneSecondary: '', emailPrimary: '', emailSecondary: '',
+        emergencyContactName: '', emergencyContactPhone: '', emergencyContactRelationship: '',
+        street: '', city: '', state: '', country: '', zipcode: '',
+        pgCourseName: '', pgCollege: '', pgUniversity: '', pgFromDate: '', pgToDate: '', ugCourseName: '', ugCollege: '', ugUniversity: '', ugFromDate: '', ugToDate: '',
+        skills: '',
+        experience: [{ jobTitle: '', company: '', department: '', expFromDate: '', expToDate: '', expSkills: '' }],
+        eventName: '', eventRole: '', eventDate: '', eventHeldOrganization: '', eventLocation: '', linkedinProfile: '',
+        logger: '',
       });
-    } else {
-      // Reset to completely empty form for new entries
-      setFormData({
-        firstName: '', lastName: '', dateOfBirth: '', gender: '', nationality: '',
-        primaryPhone: '', secondaryPhone: '', primaryEmail: '', alternateEmail: '',
-        street: '', city: '', state: '', zipCode: '', country: '',
-        jobTitle: '', company: '', department: '', workExperience: '', skills: '',
-        emergencyContactName: '', emergencyContactPhone: '', emergencyContactRelation: '',
-        notes: '', category: '', priority: '', source: '', tags: ''
-      });
-    }
   };
 
   const renderField = (field, index) => (
     <div key={index} className="space-y-2">
-      <label htmlFor={field.name} className="block text-sm font-medium text-gray-700">
-        {field.label}
-      </label>
+      <label htmlFor={field.name} className="block text-sm font-medium text-gray-700">{field.label}</label>
       {field.type === 'select' ? (
-        <select
-          id={field.name}
-          name={field.name}
-          value={field.value}
-          onChange={handleInputChange}
-          required={field.label.includes('*')}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0077b8] focus:border-transparent transition-colors"
-        >
-          {field.options.map((option, i) => (
-            <option key={i} value={option}>{option}</option>
-          ))}
+        <select id={field.name} name={field.name} value={field.value} onChange={handleInputChange} required={field.label.includes('*')} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0077b8]">
+          {field.options.map(option => <option key={option} value={option}>{option}</option>)}
         </select>
       ) : field.type === 'textarea' ? (
-        <textarea
-          id={field.name}
-          name={field.name}
-          value={field.value}
-          placeholder={field.placeholder}
-          onChange={handleInputChange}
-          required={field.label.includes('*')}
-          rows={3}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0077b8] focus:border-transparent transition-colors resize-vertical"
-        />
+        <textarea id={field.name} name={field.name} value={field.value} placeholder={field.placeholder} onChange={handleInputChange} required={field.label.includes('*')} rows={3} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0077b8] resize-vertical" />
       ) : (
-        <input
-          type={field.type}
-          id={field.name}
-          name={field.name}
-          value={field.value}
-          placeholder={field.placeholder}
-          onKeyPress={field.name.includes('Phone') ? handlePhoneKeyPress : undefined}
-          inputMode={field.inputMode}
-          onChange={handleInputChange}
-          required={field.label.includes('*')}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0077b8] focus:border-transparent transition-colors"
-        />
+        <input type={field.type} id={field.name} name={field.name} value={field.value} placeholder={field.placeholder} onKeyPress={field.name.includes('Phone') ? handlePhoneKeyPress : undefined} inputMode={field.inputMode} onChange={handleInputChange} required={field.label.includes('*')} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0077b8]" />
       )}
     </div>
   );
-
+  
   return (
     <div className="flex flex-row mx-auto pt-0 pb-2 bg-[#F0F0F0] min-h-full">
       <form onSubmit={handleSubmit} className="w-full">
-        <div className="bg-white p-6 rounded-lg shadow-sm">
+        <div className="bg-white p-6 rounded-lg shadow-sm space-y-8">
           
-          {/* Header */}
-          <div className="mb-6">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-2">
-              Add Additional Details
-            </h2>
-            <p className="text-gray-600">
-              {isAddMode
-                ? 'Add comprehensive details to this existing contact. Required fields are marked with an asterisk.'
-                : 'Fill in the comprehensive details for the new contact. Required fields are marked with an asterisk.'
-              }
-            </p>
+          <div>
+            <h2 className="text-2xl font-semibold text-gray-800 mb-2">Add Additional Details</h2>
+            <p className="text-gray-600">Fill in the comprehensive details. Required fields are marked with an asterisk (*).</p>
           </div>
 
-          {/* Personal Details */}
-          <div className="mb-8">
+          <div>
             <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b border-gray-200 pb-2">Personal Details</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {personalDetails.map((field, index) => renderField(field, index))}
-            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">{personalDetails.map(renderField)}</div>
           </div>
-
-          {/* Contact Information */}
-          <div className="mb-8">
+          <div>
             <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b border-gray-200 pb-2">Contact Information</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {contactInfo.map((field, index) => renderField(field, index))}
-            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">{contactInfo.map(renderField)}</div>
           </div>
-
-          {/* Address Details */}
-          <div className="mb-8">
+          <div>
             <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b border-gray-200 pb-2">Address Details</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {addressDetails.map((field, index) => renderField(field, index))}
-            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">{addressDetails.map(renderField)}</div>
           </div>
-
-          {/* Emergency Contact */}
-          <div className="mb-8">
+          <div>
             <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b border-gray-200 pb-2">Emergency Contact</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {emergencyContact.map((field, index) => renderField(field, index))}
-            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">{emergencyContact.map(renderField)}</div>
           </div>
-
-          {/* Education */}
-          <div className="mb-8">
+          <div>
             <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b border-gray-200 pb-2">Education</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {educationFields.map((field, index) => renderField(field, index))}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">{educationFields.map(renderField)}</div>
+          </div>
+          
+          {/* === NEW SKILLS SECTION === */}
+          <div>
+            <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b border-gray-200 pb-2">Skills</h3>
+            <div className="space-y-2">
+              <label htmlFor="skills" className="block text-sm font-medium text-gray-700">General Skills</label>
+              <textarea id="skills" name="skills" value={formData.skills} placeholder="Enter general skills, separated by commas (e.g., Python, Public Speaking, SEO)" onChange={handleInputChange} rows={3} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0077b8] resize-vertical"/>
             </div>
           </div>
-
-          {/* Experience */}
-          <div className="mb-8">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b border-gray-200 pb-2">Experience</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {experienceFields.map((field, index) => renderField(field, index))}
+          
+          {/* === EXPERIENCE SECTION === */}
+          <div>
+            <div className="flex justify-between items-center mb-4 border-b border-gray-200 pb-2">
+              <h3 className="text-lg font-semibold text-gray-800">Experience</h3>
+              <button type="button" onClick={addExperience} className="flex items-center px-3 py-1.5 text-sm bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-md font-medium"><Plus size={16} className="mr-1" />Add More</button>
+            </div>
+            <div className="space-y-6">
+              {formData.experience.map((exp, index) => (
+                <div key={index} className="p-4  rounded-lg bg-gray-50/50 relative">
+                  {formData.experience.length > 1 && <button type="button" onClick={() => removeExperience(index)} className="absolute top-2 right-2 p-1 text-gray-400 hover:text-red-500 rounded-full hover:bg-red-100" title="Remove Experience"><Trash2 size={16} /></button>}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="space-y-2"><label htmlFor={`jobTitle-${index}`} className="block text-sm font-medium text-gray-700">Job Title</label><input type="text" name="jobTitle" id={`jobTitle-${index}`} value={exp.jobTitle} onChange={e => handleExperienceChange(index, e)} placeholder="e.g., Software Engineer" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0077b8]" /></div>
+                    <div className="space-y-2"><label htmlFor={`company-${index}`} className="block text-sm font-medium text-gray-700">Company</label><input type="text" name="company" id={`company-${index}`} value={exp.company} onChange={e => handleExperienceChange(index, e)} placeholder="e.g., Tech Solutions Inc." className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0077b8]" /></div>
+                    <div className="space-y-2"><label htmlFor={`department-${index}`} className="block text-sm font-medium text-gray-700">Department</label><input type="text" name="department" id={`department-${index}`} value={exp.department} onChange={e => handleExperienceChange(index, e)} placeholder="e.g., Product Development" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0077b8]" /></div>
+                    <div className="space-y-2"><label htmlFor={`expFromDate-${index}`} className="block text-sm font-medium text-gray-700">From Date</label><input type="date" name="expFromDate" id={`expFromDate-${index}`} value={exp.expFromDate} onChange={e => handleExperienceChange(index, e)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0077b8]" /></div>
+                    <div className="space-y-2"><label htmlFor={`expToDate-${index}`} className="block text-sm font-medium text-gray-700">To Date</label><input type="date" name="expToDate" id={`expToDate-${index}`} value={exp.expToDate} onChange={e => handleExperienceChange(index, e)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0077b8]" /></div>
+                    <div className="space-y-2 md:col-span-2 lg:col-span-1"><label htmlFor={`expSkills-${index}`} className="block text-sm font-medium text-gray-700">Job-specific Skills</label><textarea name="expSkills" id={`expSkills-${index}`} value={exp.expSkills} onChange={e => handleExperienceChange(index, e)} rows="1" placeholder="e.g., React, Node.js" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0077b8] resize-vertical"></textarea></div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
-
-          {/* Additional Information */}
-          <div className="mb-8">
+          
+          <div>
             <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b border-gray-200 pb-2">Additional Information</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {additionalInfo.map((field, index) => renderField(field, index))}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">{additionalInfo.map(renderField)}</div>
+          </div>
+
+          {/* === NEW LOGGER SECTION === */}
+          <div>
+            <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b border-gray-200 pb-2">Logger / Notes</h3>
+            <div className="space-y-2">
+                <label htmlFor="logger" className="block text-sm font-medium text-gray-700">Add a note</label>
+                <textarea id="logger" name="logger" value={formData.logger} placeholder="Log an interaction, comment, or any other relevant information." onChange={handleInputChange} rows={4} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0077b8] resize-vertical"/>
             </div>
           </div>
 
-          {/* Action Buttons */}
+          {/* --- ACTION BUTTONS --- */}
           <div className="flex flex-col pt-4 sm:flex-row gap-4 justify-end">
-            <button
-              type="button"
-              onClick={handleReset}
-              className="px-6 py-2 flex gap-x-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400 font-medium"
-            >
-              <RotateCcw size={18} className="mt-1" />
-              Reset Form
-            </button>
-            <button
-              type="button"
-              onClick={onBack}
-              className="px-6 py-2 flex gap-x-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400 font-medium"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="px-6 py-2 flex gap-x-1.5 bg-[#0077b8] hover:bg-[#005f8f] text-white rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-[#0077b8] font-medium"
-            >
-              <Plus size={18} className="mt-0.5" />
-              Add Details
-            </button>
+            <button type="button" onClick={handleReset} className="px-6 py-2 flex items-center justify-center gap-x-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors font-medium"><RotateCcw size={18} />Reset Form</button>
+            <button type="button" onClick={onBack} className="px-6 py-2 flex items-center justify-center gap-x-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors font-medium">Cancel</button>
+            <button type="submit" className="px-6 py-2 flex items-center justify-center gap-x-1.5 bg-[#0077b8] hover:bg-[#005f8f] text-white rounded-lg transition-colors font-medium"><Plus size={18} />Add Details</button>
           </div>
+          
         </div>
       </form>
     </div>

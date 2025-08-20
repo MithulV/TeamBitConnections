@@ -6,6 +6,7 @@ import UserHome from '../pages/UserHome';
 import Admin from '../pages/admin';
 import MiddleManHome from '../pages/MiddleManHome';
 import MiddleManRecords from '../pages/MiddleManRecords';
+import MiddleManTasks from '../pages/MiddleManTasks';
 import PrivateRoute from '../pages/PrivateRoutes';
 import { useAuthStore } from '../store/AuthStore';
 import UserEntries from '../pages/UserEntries'
@@ -67,6 +68,7 @@ function Applayout() {
                                 <MiddleManRecords />
                             </MiddleManRoutesWrapper>
                         } />
+                        <Route path="/tasks" element={<MiddleManTasks />} />
                         <Route path="/profile/:id" element={<ProfileView />} />
                         <Route path="/edit/:id" element={<DetailsInput />} />
                     </Route>
