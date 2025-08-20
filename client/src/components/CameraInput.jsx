@@ -1,6 +1,9 @@
 import React, { useRef, useState, useCallback, useEffect } from 'react';
 import Webcam from 'react-webcam';
+import Tesseract from "tesseract.js";
+
 import { Camera, RotateCcw, X, Upload, ImagePlus } from 'lucide-react';
+import axios from 'axios';
 
 const CameraCapture = ({ onCapture, onBack }) => {
   const webcamRef = useRef(null);
@@ -98,7 +101,7 @@ const CameraCapture = ({ onCapture, onBack }) => {
               ref={webcamRef}
               screenshotFormat="image/png"
               screenshotQuality={1}
-              mirrored={facingMode === "user"} 
+              mirrored={facingMode === "user"}
               onUserMedia={onUserMedia}
               onUserMediaError={onUserMediaError}
               videoConstraints={{
@@ -178,6 +181,8 @@ const PhotoOptionSelector = ({ onSelectCamera, onSelectUpload, onBack }) => {
       reader.readAsDataURL(file);
     }
   };
+
+
 
   const handleFileInputChange = (e) => {
     const file = e.target.files[0];
@@ -276,8 +281,8 @@ const PhotoOptionSelector = ({ onSelectCamera, onSelectUpload, onBack }) => {
       <div className="flex-shrink-0 bg-white border-t border-gray-200 p-6">
         <div
           className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${isDragActive
-              ? 'border-[#0077b8] bg-blue-50 text-[#0077b8]'
-              : 'border-gray-300 text-gray-600 hover:border-gray-400'
+            ? 'border-[#0077b8] bg-blue-50 text-[#0077b8]'
+            : 'border-gray-300 text-gray-600 hover:border-gray-400'
             }`}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
@@ -326,9 +331,41 @@ function CameraInput({ onBack }) {
     setMode('select');
   };
 
-  const handleUsePhoto = () => {
-    console.log("Using captured/uploaded image:", capturedImage);
-    if (onBack) onBack();
+  const handleUsePhoto = async () => {
+    try {
+      let formData = new FormData();
+
+      if (mode == 'select') {
+        // If it's a file upload
+        formData.append("image", uploadFile);
+      } else if (capturedImage) {
+        // If it's a camera capture (Base64 → Blob)
+        const byteString = atob(capturedImage.split(",")[1]);
+        const mimeString = capturedImage.split(",")[0].split(":")[1].split(";")[0];
+        const ab = new ArrayBuffer(byteString.length);
+        const ia = new Uint8Array(ab);
+        for (let i = 0; i < byteString.length; i++) {
+          ia[i] = byteString.charCodeAt(i);
+        }
+        const blob = new Blob([ab], { type: mimeString });
+        Tesseract.recognize(blob, "eng", {
+          logger: (m) => console.log(m)  // progress
+        }).then(({ data: { text } }) => {
+          console.log("OCR Result:", text);
+        });
+
+        formData.append("image", blob, "photo.png");
+      }
+
+      const res = await axios.post("http://localhost:8000/api/upload-contact", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      console.log("Upload success:", res.data);
+      if (onBack) onBack();
+    } catch (err) {
+      console.error("Upload failed:", err);
+    }
   };
 
   const handleBackToSelect = () => {
