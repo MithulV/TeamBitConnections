@@ -1,8 +1,22 @@
-import React, { useState } from 'react';
-import { Edit, ExternalLink, Trash2, MapPin, Building, Phone, Mail, Notebook } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from "react";
+import {
+  Edit,
+  ExternalLink,
+  Trash2,
+  MapPin,
+  Building,
+  Phone,
+  Mail,
+  Notebook,
+} from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
-const DeleteConfirmationModal = ({ isOpen, onConfirm, onCancel, itemName = "this contact" }) => {
+const DeleteConfirmationModal = ({
+  isOpen,
+  onConfirm,
+  onCancel,
+  itemName = "this contact",
+}) => {
   if (!isOpen) return null;
 
   return (
@@ -37,7 +51,9 @@ const DeleteConfirmationModal = ({ isOpen, onConfirm, onCancel, itemName = "this
         {/* Content */}
         <div className="px-6 pb-6">
           <p className="text-gray-600 text-sm leading-relaxed pl-13">
-            Are you sure you want to delete <span className="font-medium">{itemName}</span>? This action cannot be undone.
+            Are you sure you want to delete{" "}
+            <span className="font-medium">{itemName}</span>? This action cannot
+            be undone.
           </p>
         </div>
 
@@ -61,7 +77,7 @@ const DeleteConfirmationModal = ({ isOpen, onConfirm, onCancel, itemName = "this
   );
 };
 
-const ContactCard = ({ contact, onDelete }) => {
+const ContactCard = ({ contact, onDelete, onEdit }) => {
   const navigate = useNavigate();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
@@ -86,15 +102,23 @@ const ContactCard = ({ contact, onDelete }) => {
 
   const getCategoryColor = (category) => {
     switch (category) {
-      case 'A': return 'bg-red-100 text-red-700';
-      case 'B': return 'bg-yellow-100 text-yellow-700';
-      case 'C': return 'bg-green-100 text-green-700';
-      default: return 'bg-gray-100 text-gray-700';
+      case "A":
+        return "bg-red-100 text-red-700";
+      case "B":
+        return "bg-yellow-100 text-yellow-700";
+      case "C":
+        return "bg-green-100 text-green-700";
+      default:
+        return "bg-gray-100 text-gray-700";
     }
   };
 
   const getInitials = (name) => {
-    return name.split(' ').map(n => n[0]).join('').toUpperCase();
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase();
   };
 
   return (
@@ -103,40 +127,52 @@ const ContactCard = ({ contact, onDelete }) => {
         {/* Header with Avatar and Actions */}
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center gap-3 min-w-0 flex-1">
-            <div 
+            <div
               className="w-12 h-12 rounded-full flex items-center justify-center text-white font-semibold text-sm flex-shrink-0"
               style={{ backgroundColor: contact.avatarColor }}
             >
-              {<img src="https://xsgames.co/randomusers/assets/avatars/male/68.jpg" className='w-12 h-12 rounded-full object-cover'/> || getInitials(contact.name)}
+              {(
+                <img
+                  src="https://xsgames.co/randomusers/assets/avatars/male/68.jpg"
+                  className="w-12 h-12 rounded-full object-cover"
+                />
+              ) || getInitials(contact.name)}
             </div>
             <div className="min-w-0 flex-1">
-              <h3 
-                className="font-semibold text-gray-900 text-lg truncate" 
+              <h3
+                className="font-semibold text-gray-900 text-lg truncate"
                 title={contact.name}
               >
                 {contact.name}
               </h3>
-              <p 
-                className="text-sm text-gray-600 truncate" 
+              <p
+                className="text-sm text-gray-600 truncate"
                 title={contact.role}
               >
                 {contact.role}
               </p>
             </div>
           </div>
-          
+
           <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-            <span className={`px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${getCategoryColor(contact.category)}`}>
+            <span
+              className={`px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${getCategoryColor(
+                contact.category
+              )}`}
+            >
               {contact.category}
             </span>
             <div className="flex gap-1">
-              <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+              <button
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                onClick={() => onEdit && onEdit(contact)}
+              >
                 <Edit size={16} className="text-gray-500" />
               </button>
               {/* <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
                 <Notebook size={16} className="text-blue-500" />
               </button> */}
-              <button 
+              <button
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                 onClick={handleDeleteClick}
               >
@@ -145,24 +181,32 @@ const ContactCard = ({ contact, onDelete }) => {
             </div>
           </div>
         </div>
-
+               
         {/* Contact Details */}
         <div className="space-y-3 mb-4">
           <div className="flex items-center gap-2 text-sm text-gray-600 min-w-0">
             <Building size={14} className="flex-shrink-0" />
-            <span className="truncate" title={contact.company}>{contact.company}</span>
+            <span className="truncate" title={contact.company}>
+              {contact.company}
+            </span>
             <MapPin size={14} className="ml-2 flex-shrink-0" />
-            <span className="truncate" title={contact.location}>{contact.location}</span>
+            <span className="truncate" title={contact.location}>
+              {contact.location}
+            </span>
           </div>
-          
+
           <div className="space-y-2 text-sm text-gray-600">
             <div className="flex items-center gap-2 min-w-0">
               <Phone size={14} className="flex-shrink-0" />
-              <span className="truncate" title={contact.phone}>{contact.phone}</span>
+              <span className="truncate" title={contact.phone}>
+                {contact.phone}
+              </span>
             </div>
             <div className="flex items-center gap-2 min-w-0">
               <Mail size={14} className="flex-shrink-0" />
-              <span className="truncate" title={contact.email}>{contact.email}</span>
+              <span className="truncate" title={contact.email}>
+                {contact.email}
+              </span>
             </div>
           </div>
         </div>
@@ -171,7 +215,7 @@ const ContactCard = ({ contact, onDelete }) => {
         <div className="flex justify-between items-center">
           <div className="flex flex-wrap gap-2 flex-1 mr-3">
             {contact.skills?.slice(0, 2).map((skill, index) => (
-              <span 
+              <span
                 key={index}
                 className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs font-medium truncate max-w-[100px] inline-block"
                 title={skill}
@@ -180,17 +224,22 @@ const ContactCard = ({ contact, onDelete }) => {
               </span>
             ))}
             {contact.skills && contact.skills.length > 2 && (
-              <span 
+              <span
                 className="px-2 py-1 bg-gray-200 text-gray-600 rounded text-xs font-medium"
-                title={`+${contact.skills.length - 2} more skills: ${contact.skills.slice(2).join(', ')}`}
+                title={`+${
+                  contact.skills.length - 2
+                } more skills: ${contact.skills.slice(2).join(", ")}`}
               >
                 +{contact.skills.length - 2}
               </span>
             )}
           </div>
-          
-          <button className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors flex items-center gap-2 flex-shrink-0" onClick={handleViewProfile}>
-            <ExternalLink size={14}/>
+
+          <button
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors flex items-center gap-2 flex-shrink-0"
+            onClick={handleViewProfile}
+          >
+            <ExternalLink size={14} />
             View Profile
           </button>
         </div>
