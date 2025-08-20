@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import CameraInput from '../components/CameraInput';
 import FormInput from '../components/FormInput';
