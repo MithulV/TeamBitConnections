@@ -4,6 +4,7 @@ import Alert from "../components/Alert";
 import Avatar from "../assets/Avatar.png";
 import DetailsInput from "../components/DetailsInput";
 import Header from "../components/Header";
+
 const dummyCardData = [
   {
     id: 1,
@@ -174,6 +175,14 @@ function MiddleManRecords() {
   const [userToDelete, setUserToDelete] = useState(null);
   const [isAdding, setIsAdding] = useState(false);
   const [AddingUser, setAddingUser] = useState(null);
+  const [activeView, setActiveView] = useState("formData"); // 'formData' or 'visitingCards'
+
+  // Sample visiting card images (replace with your actual images)
+  const visitingCards = [
+    { id: 1, image: "https://example.com/card1.jpg" },
+    { id: 2, image: "https://example.com/card2.jpg" },
+    // Add more visiting card images
+  ];
 
   const [alert, setAlert] = useState({
     isOpen: false,
@@ -280,6 +289,30 @@ function MiddleManRecords() {
       <Header />
       <div className="p-6">
         <div className="max-w-7xl mx-auto">
+          {/* View Toggle Buttons */}
+          <div className="flex gap-4 mb-6">
+            <button
+              onClick={() => setActiveView("formData")}
+              className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
+                activeView === "formData"
+                  ? "bg-blue-600 text-white shadow-md"
+                  : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
+              }`}
+            >
+              Form Data
+            </button>
+            <button
+              onClick={() => setActiveView("visitingCards")}
+              className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
+                activeView === "visitingCards"
+                  ? "bg-blue-600 text-white shadow-md"
+                  : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
+              }`}
+            >
+              Visiting Cards
+            </button>
+          </div>
+
           {isAdding && AddingUser ? (
             // Show FormInput when editing
             <div className="bg-white rounded-lg shadow-sm">
@@ -293,25 +326,42 @@ function MiddleManRecords() {
           ) : (
             // Show user cards when not adding
             <>
-              <div className="grid grid-cols-3 gap-3">
-                {data.map((participant) => (
-                  <BasicDetailCard
-                    key={participant.id}
-                    name={participant.name}
-                    phone={participant.phone}
-                    email={participant.email}
-                    event={participant.event}
-                    role={participant.role}
-                    date={participant.date}
-                    org={participant.org}
-                    location={participant.location}
-                    profileImage={participant.profileImage}
-                    onDelete={() => handleDeleteClick(participant.id)}
-                    onType={() => onAdd(participant.id)}
-                    editOrAdd={"add"}
-                  />
-                ))}
-              </div>
+              {activeView === "formData" ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {data.map((participant) => (
+                    <BasicDetailCard
+                      key={participant.id}
+                      name={participant.name}
+                      phone={participant.phone}
+                      email={participant.email}
+                      event={participant.event}
+                      role={participant.role}
+                      date={participant.date}
+                      org={participant.org}
+                      location={participant.location}
+                      profileImage={participant.profileImage || Avatar}
+                      onDelete={() => handleDeleteClick(participant.id)}
+                      onType={() => onAdd(participant.id)}
+                      editOrAdd={"add"}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {visitingCards.map((card) => (
+                    <div
+                      key={card.id}
+                      className="bg-white rounded-lg shadow-md p-4"
+                    >
+                      <img
+                        src={card.image}
+                        alt={`Visiting Card ${card.id}`}
+                        className="w-full h-auto object-cover rounded"
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
               <DeleteConfirmationModal
                 isOpen={showDeleteModal}
                 onConfirm={confirmDelete}

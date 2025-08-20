@@ -15,7 +15,7 @@ function Header() {
             className="w-12 h-12 rounded-full object-cover shadow-sm"
           />
           <div>
-            <p className="text-lg font-semibold text-gray-800">
+            <p className="text-lg font-semibold text-gray-800 ">
               {email || "user@gmail.com"}
             </p>
             <p className="text-sm text-gray-500">Welcome back!</p>
