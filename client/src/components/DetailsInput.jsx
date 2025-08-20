@@ -292,7 +292,7 @@ function DetailsInput({ onBack, onSave, initialData = null, isAddMode = false })
             <button type="button" onClick={onBack} className="px-6 py-2 flex items-center justify-center gap-x-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors font-medium">Cancel</button>
             <button type="submit" className="px-6 py-2 flex items-center justify-center gap-x-1.5 bg-[#0077b8] hover:bg-[#005f8f] text-white rounded-lg transition-colors font-medium"><Plus size={18} />Add Details</button>
           </div>
-
+          
         </div>
       </form>
     </div>

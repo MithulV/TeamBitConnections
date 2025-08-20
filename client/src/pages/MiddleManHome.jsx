@@ -3,6 +3,7 @@ import { Search, ChevronDown } from "lucide-react";
 import StatusBar from "../components/StatusBar";
 import ContactCard from "../components/MiddleManCard";
 import DetailsInput from "../components/DetailsInput";
+import Header from "../components/Header";
 
 const MiddleManHome = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -108,7 +109,9 @@ const MiddleManHome = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-gray-50">
+      <Header />
+      <div className="p-6">
       <div className="max-w-7xl mx-auto">
         {isAdding ? (
           <div className="p-5">
@@ -197,6 +200,7 @@ const MiddleManHome = () => {
             )}
           </>
         )}
+      </div>
       </div>
     </div>
   );
