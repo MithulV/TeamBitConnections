@@ -1,8 +1,10 @@
-import React, { useState } from 'react'
-import BasicDetailCard from '../components/BasicDetailCard'
-import Alert from '../components/Alert';
-import Avatar from '../assets/Avatar.png';
-import DetailsInput from '../components/DetailsInput';
+import React, { useState } from "react";
+import BasicDetailCard from "../components/BasicDetailCard";
+import Alert from "../components/Alert";
+import Avatar from "../assets/Avatar.png";
+import DetailsInput from "../components/DetailsInput";
+import Header from "../components/Header";
+
 const dummyCardData = [
   {
     id: 1,
@@ -14,7 +16,8 @@ const dummyCardData = [
     date: "2025-08-15",
     org: "Google Inc.",
     location: "San Francisco, CA",
-    profileImage: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150"
+    profileImage:
+      "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150",
   },
   {
     id: 2,
@@ -25,7 +28,7 @@ const dummyCardData = [
     role: "attendee",
     date: "2025-08-20",
     org: "StartupXYZ",
-    location: "Austin, TX"
+    location: "Austin, TX",
   },
   {
     id: 3,
@@ -37,7 +40,8 @@ const dummyCardData = [
     date: "2025-09-05",
     org: "MedTech Solutions",
     location: "Boston, MA",
-    profileImage: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=150"
+    profileImage:
+      "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=150",
   },
   {
     id: 4,
@@ -48,7 +52,7 @@ const dummyCardData = [
     role: "sponsor",
     date: "2025-08-30",
     org: "TechCorp Industries",
-    location: "Seattle, WA"
+    location: "Seattle, WA",
   },
   {
     id: 5,
@@ -60,7 +64,8 @@ const dummyCardData = [
     date: "2025-08-25",
     org: "Community Volunteers",
     location: "Denver, CO",
-    profileImage: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150"
+    profileImage:
+      "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150",
   },
   {
     id: 6,
@@ -71,7 +76,7 @@ const dummyCardData = [
     role: "press",
     date: "2025-09-10",
     org: "NewsTech Media",
-    location: "New York, NY"
+    location: "New York, NY",
   },
   {
     id: 7,
@@ -83,7 +88,8 @@ const dummyCardData = [
     date: "2025-09-15",
     org: "Innovation Hub India",
     location: "Mumbai, India",
-    profileImage: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150"
+    profileImage:
+      "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150",
   },
   {
     id: 8,
@@ -94,10 +100,15 @@ const dummyCardData = [
     role: "speaker",
     date: "2025-08-28",
     org: "Creative Design Studio",
-    location: "Portland, OR"
-  }
+    location: "Portland, OR",
+  },
 ];
-const DeleteConfirmationModal = ({ isOpen, onConfirm, onCancel, itemName = "this user" }) => {
+const DeleteConfirmationModal = ({
+  isOpen,
+  onConfirm,
+  onCancel,
+  itemName = "this user",
+}) => {
   if (!isOpen) return null;
 
   return (
@@ -132,7 +143,9 @@ const DeleteConfirmationModal = ({ isOpen, onConfirm, onCancel, itemName = "this
         {/* Content */}
         <div className="px-6 pb-6">
           <p className="text-gray-600 text-sm leading-relaxed pl-13">
-            Are you sure you want to delete <span className="font-medium">{itemName}</span>? This action cannot be undone.
+            Are you sure you want to delete{" "}
+            <span className="font-medium">{itemName}</span>? This action cannot
+            be undone.
           </p>
         </div>
 
@@ -162,75 +175,88 @@ function MiddleManRecords() {
   const [userToDelete, setUserToDelete] = useState(null);
   const [isAdding, setIsAdding] = useState(false);
   const [AddingUser, setAddingUser] = useState(null);
+  const [activeView, setActiveView] = useState("formData"); // 'formData' or 'visitingCards'
+
+  // Sample visiting card images (replace with your actual images)
+  const visitingCards = [
+    { id: 1, image: "https://example.com/card1.jpg" },
+    { id: 2, image: "https://example.com/card2.jpg" },
+    // Add more visiting card images
+  ];
 
   const [alert, setAlert] = useState({
     isOpen: false,
-    severity: 'success',
-    message: ''
+    severity: "success",
+    message: "",
   });
 
   const showAlert = (severity, message) => {
     setAlert({
       isOpen: true,
       severity,
-      message
+      message,
     });
   };
 
   const closeAlert = () => {
-    setAlert(prev => ({
+    setAlert((prev) => ({
       ...prev,
-      isOpen: false
+      isOpen: false,
     }));
   };
 
   const handleDeleteClick = (id) => {
-    const user = data.find(user => user.id === id);
+    const user = data.find((user) => user.id === id);
     setUserToDelete({ id, name: user?.name || "this user" });
     setShowDeleteModal(true);
-  }
-      
+  };
+
   const confirmDelete = async () => {
     if (userToDelete) {
       try {
-        setData(prevData => prevData.filter(item => item.id !== userToDelete.id));
+        setData((prevData) =>
+          prevData.filter((item) => item.id !== userToDelete.id)
+        );
         setShowDeleteModal(false);
-        showAlert('success', `${userToDelete.name} has been successfully deleted.`);
+        showAlert(
+          "success",
+          `${userToDelete.name} has been successfully deleted.`
+        );
         setUserToDelete(null);
       } catch (error) {
-        showAlert('error', 'Failed to delete user. Please try again.');
+        showAlert("error", "Failed to delete user. Please try again.");
         console.log("Error deleting user", userToDelete.id, error);
       }
     }
-  }
+  };
 
   const cancelDelete = () => {
     setShowDeleteModal(false);
     setUserToDelete(null);
-  }
+  };
 
   const onAdd = async (id) => {
     try {
-      const user = data.find(user => user.id === id);
+      const user = data.find((user) => user.id === id);
       if (user) {
         setAddingUser(user);
         setIsAdding(true);
       }
     } catch (error) {
-      showAlert('error', 'Failed to load user data for Adding.');
+      showAlert("error", "Failed to load user data for Adding.");
       console.log("Error editing user", error);
     }
-  }
+  };
 
   const handleAddComplete = (updatedData) => {
     try {
       if (updatedData && AddingUser) {
         // Update the user in the data array
-        setData(prevData => prevData.map(user =>
-          user.id === AddingUser.id
-            ? { ...user, ...updatedData }
-            : user
-        ));
+        setData((prevData) =>
+          prevData.map((user) =>
+            user.id === AddingUser.id ? { ...user, ...updatedData } : user
+          )
+        );
 
         // Show success alert
         showAlert(`success has been successfully Added.`);
@@ -241,17 +267,17 @@ function MiddleManRecords() {
       setAddingUser(null);
     } catch (error) {
       console.log("Error updating user", error);
-      showAlert('error', 'Failed to add user. Please try again.');
+      showAlert("error", "Failed to add user. Please try again.");
     }
-  }
+  };
 
   const handleAddCancel = () => {
     setIsAdding(false);
     setAddingUser(null);
-  }
+  };
 
   return (
-    <div className='w-full h-full'>
+    <div className="min-h-screen bg-gray-50">
       <Alert
         isOpen={alert.isOpen}
         severity={alert.severity}
@@ -260,67 +286,94 @@ function MiddleManRecords() {
         position="bottom"
         duration={4000}
       />
-      {/* Header with User Info - Always visible */}
-      <div className='p-8 pt-4 pb-3 shadow bg-white flex-shrink-0'>
-        <div className='flex items-center justify-between'>
-          {/* User Info */}
-          <div className='flex items-center gap-4'>
-            <img
-              src={Avatar}
-              alt="user profile"
-              className='w-14 h-14 rounded-full object-cover'
-            />
-            <div>
-              <p className='text-xl font-semibold text-gray-800'>user@gmail.com</p>
-              <p className='text-sm text-gray-500'>Welcome back!</p>
-            </div>
+      <Header />
+      <div className="p-6">
+        <div className="max-w-7xl mx-auto">
+          {/* View Toggle Buttons */}
+          <div className="flex gap-4 mb-6">
+            <button
+              onClick={() => setActiveView("formData")}
+              className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
+                activeView === "formData"
+                  ? "bg-blue-600 text-white shadow-md"
+                  : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
+              }`}
+            >
+              Form Data
+            </button>
+            <button
+              onClick={() => setActiveView("visitingCards")}
+              className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
+                activeView === "visitingCards"
+                  ? "bg-blue-600 text-white shadow-md"
+                  : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
+              }`}
+            >
+              Visiting Cards
+            </button>
           </div>
+
+          {isAdding && AddingUser ? (
+            // Show FormInput when editing
+            <div className="bg-white rounded-lg shadow-sm">
+              <DetailsInput
+                onBack={handleAddCancel}
+                onSave={handleAddComplete}
+                initialData={AddingUser}
+                isAddMode={true}
+              />
+            </div>
+          ) : (
+            // Show user cards when not adding
+            <>
+              {activeView === "formData" ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {data.map((participant) => (
+                    <BasicDetailCard
+                      key={participant.id}
+                      name={participant.name}
+                      phone={participant.phone}
+                      email={participant.email}
+                      event={participant.event}
+                      role={participant.role}
+                      date={participant.date}
+                      org={participant.org}
+                      location={participant.location}
+                      profileImage={participant.profileImage || Avatar}
+                      onDelete={() => handleDeleteClick(participant.id)}
+                      onType={() => onAdd(participant.id)}
+                      editOrAdd={"add"}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {visitingCards.map((card) => (
+                    <div
+                      key={card.id}
+                      className="bg-white rounded-lg shadow-md p-4"
+                    >
+                      <img
+                        src={card.image}
+                        alt={`Visiting Card ${card.id}`}
+                        className="w-full h-auto object-cover rounded"
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+              <DeleteConfirmationModal
+                isOpen={showDeleteModal}
+                onConfirm={confirmDelete}
+                onCancel={cancelDelete}
+                itemName={userToDelete?.name}
+              />
+            </>
+          )}
         </div>
       </div>
-
-      {/* Conditional Content */}
-      {isAdding && AddingUser ? (
-        // Show FormInput when editing
-        <div className='p-5'>
-          <DetailsInput
-            onBack={handleAddCancel}
-            onSave={handleAddComplete}
-            initialData={AddingUser}
-            isAddMode={true}
-          />
-        </div>
-      ) : (
-        // Show user cards when not adding
-        <>
-          <div className="grid grid-cols-3 gap-3 p-5">
-            {data.map((participant) => (
-              <BasicDetailCard
-                key={participant.id}
-                name={participant.name}
-                phone={participant.phone}
-                email={participant.email}
-                event={participant.event}
-                role={participant.role}
-                date={participant.date}
-                org={participant.org}
-                location={participant.location}
-                profileImage={participant.profileImage}
-                onDelete={() => handleDeleteClick(participant.id)}
-                onType={() => onAdd(participant.id)}
-                editOrAdd={"add"}
-              />
-            ))}
-          </div>
-          <DeleteConfirmationModal
-            isOpen={showDeleteModal}
-            onConfirm={confirmDelete}
-            onCancel={cancelDelete}
-            itemName={userToDelete?.name}
-          />
-        </>
-      )}
     </div>
-  )
+  );
 }
 
-export default MiddleManRecords
+export default MiddleManRecords;
