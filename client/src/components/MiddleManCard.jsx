@@ -181,7 +181,7 @@ const ContactCard = ({ contact, onDelete, onEdit }) => {
             </div>
           </div>
         </div>
-
+               
         {/* Contact Details */}
         <div className="space-y-3 mb-4">
           <div className="flex items-center gap-2 text-sm text-gray-600 min-w-0">
