@@ -1,16 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { RotateCcw, UserPlus, Save } from 'lucide-react';
+import { useAuthStore } from '../store/AuthStore';
 
 function FormInput({ onBack, onSave, initialData = null, isEditMode = false }) {
   const [formData, setFormData] = useState({
     name: '',
-    phone: '',
-    email: '',
-    event: '',
-    role: '',
-    date: '',
-    eventOrg: '',
-    location: ''
+    phoneNumber: '',
+    emailAddress: '',
+    events: [{
+      eventName: '',
+      eventRole: '',
+      eventDate: '',
+      eventHeldOrganization: '',
+      eventLocation: ''
+    }]
   });
 
   useEffect(() => {
@@ -18,20 +21,31 @@ function FormInput({ onBack, onSave, initialData = null, isEditMode = false }) {
       // Pre-fill form with existing data
       setFormData({
         name: initialData.name || '',
-        phone: initialData.phone || '',
-        email: initialData.email || '',
-        event: initialData.event || '',
-        role: initialData.role || '',
-        date: initialData.date || '',
-        eventOrg: initialData.eventOrg || '',
-        location: initialData.location || ''
+        phoneNumber: initialData.phoneNumber || '',
+        emailAddress: initialData.emailAddress || '',
+        events: initialData.events && initialData.events.length > 0 ? initialData.events.map(event => ({
+          eventName: event.eventName || '',
+          eventRole: event.eventRole || '',
+          eventDate: event.eventDate || '',
+          eventHeldOrganization: event.eventHeldOrganization || '',
+          eventLocation: event.eventLocation || ''
+        })) : [{
+          eventName: '',
+          eventRole: '',
+          eventDate: '',
+          eventHeldOrganization: '',
+          eventLocation: ''
+        }]
       });
     } else {
       // Set today's date for new entries
       const today = new Date().toISOString().split('T')[0];
       setFormData(prev => ({
         ...prev,
-        date: today
+        events: [{
+          ...prev.events[0],
+          eventDate: today
+        }]
       }));
     }
   }, [isEditMode, initialData]);
@@ -47,17 +61,17 @@ function FormInput({ onBack, onSave, initialData = null, isEditMode = false }) {
     {
       label: "Phone Number*",
       type: "tel",
-      name: "phone",
+      name: "phoneNumber",
       placeholder: "Enter phone number",
-      value: formData.phone,
+      value: formData.phoneNumber,
       inputMode: "numeric"
     },
     {
       label: "Email Address",
       type: "email",
-      name: "email",
+      name: "emailAddress",
       placeholder: "Enter email address",
-      value: formData.email
+      value: formData.emailAddress
     },
   ];
 
@@ -65,37 +79,37 @@ function FormInput({ onBack, onSave, initialData = null, isEditMode = false }) {
     {
       label: "Event Name*",
       type: "text",
-      name: "event",
+      name: "eventName",
       placeholder: "Enter event name",
-      value: formData.event
+      value: formData.events[0].eventName
     },
     {
       label: "Event Role*",
       type: "text",
-      name: "role",
+      name: "eventRole",
       placeholder: "Enter your role",
-      value: formData.role
+      value: formData.events[0].eventRole
     },
     {
       label: "Event Date*",
       type: "date",
-      name: "date",
+      name: "eventDate",
       placeholder: "",
-      value: formData.date
+      value: formData.events[0].eventDate
     },
     {
       label: "Event held Organization",
       type: "text",
-      name: "eventOrg",
+      name: "eventHeldOrganization",
       placeholder: "Enter organization name",
-      value: formData.eventOrg
+      value: formData.events[0].eventHeldOrganization
     },
     {
       label: "Event Location",
       type: "text",
-      name: "location",
+      name: "eventLocation",
       placeholder: "Enter event location",
-      value: formData.location
+      value: formData.events[0].eventLocation
     }
   ];
 
@@ -108,17 +122,29 @@ function FormInput({ onBack, onSave, initialData = null, isEditMode = false }) {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    if (name === 'phone') {
-      const numbersOnly = value.replace(/[^0-9]/g, '');
+    const eventFields = ["eventName", "eventRole", "eventDate", "eventHeldOrganization", "eventLocation"];
+
+    if (eventFields.includes(name)) {
       setFormData(prev => ({
         ...prev,
-        [name]: numbersOnly
+        events: [{
+          ...prev.events[0],
+          [name]: value
+        }]
       }));
     } else {
-      setFormData(prev => ({
-        ...prev,
-        [name]: value
-      }));
+      if (name === 'phoneNumber') {
+        const numbersOnly = value.replace(/[^0-9]/g, '');
+        setFormData(prev => ({
+          ...prev,
+          [name]: numbersOnly
+        }));
+      } else {
+        setFormData(prev => ({
+          ...prev,
+          [name]: value
+        }));
+      }
     }
   };
 
@@ -139,36 +165,44 @@ function FormInput({ onBack, onSave, initialData = null, isEditMode = false }) {
     }
   };
 
-
   const handleReset = () => {
     if (isEditMode && initialData) {
       // Reset to original data when editing
       setFormData({
         name: initialData.name || '',
-        phone: initialData.phone || '',
-        email: initialData.email || '',
-        event: initialData.event || '',
-        role: initialData.role || '',
-        date: initialData.date || '',
-        eventOrg: initialData.eventOrg || '',
-        location: initialData.location || ''
+        phoneNumber: initialData.phoneNumber || '',
+        emailAddress: initialData.emailAddress || '',
+        events: initialData.events && initialData.events.length > 0 ? initialData.events.map(event => ({
+          eventName: event.eventName || '',
+          eventRole: event.eventRole || '',
+          eventDate: event.eventDate || '',
+          eventHeldOrganization: event.eventHeldOrganization || '',
+          eventLocation: event.eventLocation || ''
+        })) : [{
+          eventName: '',
+          eventRole: '',
+          eventDate: '',
+          eventHeldOrganization: '',
+          eventLocation: ''
+        }]
       });
     } else {
       // Reset to empty form with today's date when creating new
       const today = new Date().toISOString().split('T')[0];
       setFormData({
         name: '',
-        phone: '',
-        email: '',
-        event: '',
-        role: '',
-        date: today, // Set to today's date instead of empty string
-        eventOrg: '',
-        location: ''
+        phoneNumber: '',
+        emailAddress: '',
+        events: [{
+          eventName: '',
+          eventRole: '',
+          eventDate: today,
+          eventHeldOrganization: '',
+          eventLocation: ''
+        }]
       });
     }
   };
-
 
   return (
     <div className="flex flex-row mx-auto pt-0 pb-2 bg-[#F0F0F0] min-h-full">
@@ -205,7 +239,7 @@ function FormInput({ onBack, onSave, initialData = null, isEditMode = false }) {
                       name={item.name}
                       value={item.value}
                       placeholder={item.placeholder}
-                      onKeyPress={item.name === 'phone' ? handlePhoneKeyPress : undefined}
+                      onKeyPress={item.name === 'phoneNumber' ? handlePhoneKeyPress : undefined}
                       inputMode={item.inputMode}
                       onChange={handleInputChange}
                       required={item.label.includes('*')}
