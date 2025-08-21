@@ -4,18 +4,35 @@ import db from "../src/config/db.js";
 export const CreateContact = async (req, res) => {
     const {
         // --- Contact Fields ---
-        name, phoneNumber, emailAddress, verified, dob, gender, nationality, marital_status, category,
-        secondary_email, secondary_phone_number, created_by, emergency_contact_name, emergency_contact_relationship,
-        emergency_contact_phone_number, skills, logger, linkedin_url,
+        name,
+        phoneNumber,
+        emailAddress,
+        verified,
+        dob,
+        gender,
+        nationality,
+        marital_status,
+        category,
+        secondary_email,
+        secondary_phone_number,
+        created_by,
+        emergency_contact_name,
+        emergency_contact_relationship,
+        emergency_contact_phone_number,
+        skills,
+        logger,
+        linkedin_url,
 
         // --- SINGLE OBJECTS ---
-        address, education,
-        
+        address,
+        education,
+
         // --- ARRAYS of OBJECTS ---
-        experiences, events
+        experiences,
+        events,
     } = req.body;
 
-    console.log(req.body)
+    console.log(req.body);
 
     // --- Core Validation ---
     if (!name || !phoneNumber || !emailAddress) {
@@ -34,48 +51,66 @@ export const CreateContact = async (req, res) => {
                     ${name}, ${phoneNumber}, ${emailAddress}, ${verified || null}, ${dob || null}, ${gender || null},
                     ${nationality || null}, ${marital_status || null}, ${category || null}, ${secondary_email || null},
                     ${secondary_phone_number || null}, ${created_by || null}, ${emergency_contact_name || null},
-                    ${emergency_contact_relationship || null}, ${emergency_contact_phone_number || null}, ${skills || null},
+                    ${emergency_contact_relationship || null}, ${emergency_contact_phone_number || null}, ${
+                skills || null
+            },
                     ${logger || null}, ${linkedin_url || null}
                 ) RETURNING *
             `;
             const contactId = contact.contact_id;
-            
-            let createdAddress = null, createdEducation = null;
-            let createdExperiences = [], createdEvents = [];
+
+            let createdAddress = null,
+                createdEducation = null;
+            let createdExperiences = [],
+                createdEvents = [];
 
             // 2. Insert Address (if provided)
             if (address) {
-                [createdAddress] = await t`INSERT INTO contact_address (contact_id, street, city, state, country, zipcode) VALUES (${contactId}, ${address.street}, ${address.city}, ${address.state}, ${address.country}, ${address.zipcode}) RETURNING *`;
+                [createdAddress] =
+                    await t`INSERT INTO contact_address (contact_id, street, city, state, country, zipcode) VALUES (${contactId}, ${address.street}, ${address.city}, ${address.state}, ${address.country}, ${address.zipcode}) RETURNING *`;
             }
 
             // 3. Insert Education (if provided)
             if (education) {
-                [createdEducation] = await t`INSERT INTO contact_education (contact_id, pg_course_name, ug_course_name) VALUES (${contactId}, ${education.pg_course_name}, ${education.ug_course_name}) RETURNING *`;
+                [createdEducation] =
+                    await t`INSERT INTO contact_education (contact_id, pg_course_name, ug_course_name) VALUES (${contactId}, ${education.pg_course_name}, ${education.ug_course_name}) RETURNING *`;
             }
 
             // 4. Insert Experiences Array (if provided)
             if (experiences && experiences.length > 0) {
                 for (const exp of experiences) {
-                    const [newExp] = await t`INSERT INTO contact_experience (contact_id, job_title, company, from_date, to_date) VALUES (${contactId}, ${exp.job_title}, ${exp.company}, ${exp.from_date}, ${exp.to_date}) RETURNING *`;
+                    const [newExp] =
+                        await t`INSERT INTO contact_experience (contact_id, job_title, company, from_date, to_date) VALUES (${contactId}, ${exp.job_title}, ${exp.company}, ${exp.from_date}, ${exp.to_date}) RETURNING *`;
                     createdExperiences.push(newExp);
                 }
             }
-            
+
             // 5. Insert Events Array (if provided)
             if (events && events.length > 0) {
                 for (const event of events) {
-                     const [newEvent] = await t`INSERT INTO event (contact_id, event_name, event_role, event_date, event_held_orgranization, event_location, verified) VALUES (${contactId}, ${event.eventName}, ${event.eventRole}, ${event.eventDate}, ${event.eventHeldOrganization}, ${event.eventLocation}, ${event.verified || false}) RETURNING *`;
+                    const [newEvent] =
+                        await t`INSERT INTO event (contact_id, event_name, event_role, event_date, event_held_orgranization, event_location, verified) VALUES (${contactId}, ${
+                            event.eventName
+                        }, ${event.eventRole}, ${event.eventDate}, ${event.eventHeldOrganization}, ${
+                            event.eventLocation
+                        }, ${event.verified || false}) RETURNING *`;
                     createdEvents.push(newEvent);
                 }
             }
 
-            return { contact, address: createdAddress, education: createdEducation, experiences: createdExperiences, events: createdEvents };
+            return {
+                contact,
+                address: createdAddress,
+                education: createdEducation,
+                experiences: createdExperiences,
+                events: createdEvents,
+            };
         });
 
         return res.status(201).json({ message: "Contact created successfully!", data: result });
     } catch (err) {
         console.error(err);
-        if (err.code === '23505') {
+        if (err.code === "23505") {
             return res.status(409).json({ message: "A contact with this email already exists." });
         }
         return res.status(500).json({ message: "Server Error!", error: err.message });
@@ -85,6 +120,7 @@ export const CreateContact = async (req, res) => {
 // READ: Get all contacts with their related data
 export const GetContacts = async (req, res) => {
     try {
+        const { userId } = req.params;
         const contacts = await db`
             SELECT
                 c.*,
@@ -94,6 +130,8 @@ export const GetContacts = async (req, res) => {
                 (SELECT json_agg(e) FROM event e WHERE e.contact_id = c.contact_id) as events
             FROM
                 contact c
+            WHERE
+                created_by = ${userId}
             ORDER BY
                 c.contact_id DESC
         `;
@@ -128,7 +166,7 @@ export const UpdateContact = async (req, res) => {
         if (!updatedContact) {
             return res.status(404).json({ message: "Contact not found." });
         }
-        
+
         return res.status(200).json({ message: "Contact updated successfully!", data: updatedContact });
     } catch (err) {
         console.error(err);
@@ -153,7 +191,7 @@ export const DeleteContact = async (req, res) => {
             await t`DELETE FROM contact_education WHERE contact_id = ${id}`;
             await t`DELETE FROM contact_experience WHERE contact_id = ${id}`;
             await t`DELETE FROM event WHERE contact_id = ${id}`;
-            
+
             // Finally, delete the parent contact record
             await t`DELETE FROM contact WHERE contact_id = ${id}`;
         });
@@ -179,13 +217,15 @@ export const AddEventToExistingContact = async (req, res) => {
     try {
         const [newEvent] = await db`
             INSERT INTO event (contact_id, event_name, event_role, event_date, event_held_orgranization, event_location, verified)
-            VALUES (${contactId}, ${eventName}, ${eventRole}, ${eventDate}, ${eventHeldOrganization}, ${eventLocation}, ${verified || false})
+            VALUES (${contactId}, ${eventName}, ${eventRole}, ${eventDate}, ${eventHeldOrganization}, ${eventLocation}, ${
+            verified || false
+        })
             RETURNING *
         `;
         return res.status(201).json({ message: "New event added successfully!", data: newEvent });
     } catch (err) {
         console.error(err);
-        if (err.code === '23503') return res.status(404).json({ message: "Contact not found." });
+        if (err.code === "23503") return res.status(404).json({ message: "Contact not found." });
         return res.status(500).json({ message: "Server Error!", error: err.message });
     }
 };
@@ -222,10 +262,9 @@ export const SearchContacts = async (req, res) => {
                 name
             LIMIT 10
         `;
-        
+
         // If no contacts are found, it will correctly return an empty array.
         return res.status(200).json(contacts);
-
     } catch (err) {
         console.error(err);
         return res.status(500).json({ message: "Server Error!", error: err.message });

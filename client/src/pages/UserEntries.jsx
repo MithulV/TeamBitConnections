@@ -172,39 +172,6 @@ function UserEntries() {
   const [profileData, setProfileData] = useState([]);
   const [imageData, setImageData] = useState([]);
 
-  const visitingCards = [
-    {
-      id: 1,
-      image:
-        "https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=400&h=250&fit=crop",
-    },
-    {
-      id: 2,
-      image:
-        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=250&fit=crop",
-    },
-    {
-      id: 3,
-      image:
-        "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=400&h=250&fit=crop",
-    },
-    {
-      id: 4,
-      image:
-        "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=400&h=250&fit=crop",
-    },
-    {
-      id: 5,
-      image:
-        "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=250&fit=crop",
-    },
-    {
-      id: 6,
-      image:
-        "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=400&h=250&fit=crop",
-    },
-  ];
-
   const [alert, setAlert] = useState({
     isOpen: false,
     severity: "success",
@@ -330,7 +297,7 @@ function UserEntries() {
   const { id } = useAuthStore();
   const handleSelectContact = () => {
     axios
-      .get(`http://localhost:8000/api/contacts`)
+      .get(`http://localhost:8000/api/contacts/${id}`)
       .then((response) => {
         console.log("Contacts fetched successfully:", response.data);
         setProfileData(response.data);
