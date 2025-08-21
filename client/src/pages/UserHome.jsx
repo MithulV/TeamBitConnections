@@ -4,8 +4,11 @@ import FormInput from "../components/FormInput";
 import Avatar from "../assets/Avatar.png";
 import { Camera, UserPlus, ArrowLeft } from "lucide-react";
 import Header from "../components/Header";
+import axios from "axios";
+import { useAuthStore } from "../store/AuthStore";
 
 function UserHome() {
+  const { userId } = useAuthStore()
   const [activeView, setActiveView] = useState("default"); // 'default', 'camera', 'form'
   const [contacts, setContacts] = useState([]);
   const handleCameraClick = () => {
@@ -24,14 +27,19 @@ function UserHome() {
     try {
       // Generate a unique ID for the new contact
       const newContact = {
-        id: Date.now(), // Simple ID generation
         ...formData,
-        profileImage: null, // No profile image for manual entry
-        createdAt: new Date().toISOString(),
+        created_by: userId,
       };
 
       // Add to contacts array (you might want to save to database here)
       setContacts((prevContacts) => [...prevContacts, newContact]);
+      try {
+        const response = await axios.post('http://localhost:8000/api/create-contact', newContact);
+        console.log(response)
+      }
+      catch (err) {
+        console.log(err);
+      }
 
       console.log("New contact saved:", newContact);
 
@@ -48,20 +56,20 @@ function UserHome() {
       <Header />
 
       {/* <div className="p-8 pt-4 pb-3 shadow bg-white flex-shrink-0"> */}
-        <div className="flex items-center justify-between">
-          {/* User Info */}
+      <div className="flex items-center justify-between">
+        {/* User Info */}
 
-          {/* Conditional Action Buttons */}
-          {activeView === "default" ? undefined : (
-            <button
-              onClick={handleBackToDefault}
-              className="px-4 py-2 flex items-center gap-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors duration-200 font-medium"
-            >
-              <ArrowLeft size={20} />
-              Back
-            </button>
-          )}
-        </div>
+        {/* Conditional Action Buttons */}
+        {activeView === "default" ? undefined : (
+          <button
+            onClick={handleBackToDefault}
+            className="px-4 py-2 flex items-center gap-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors duration-200 font-medium"
+          >
+            <ArrowLeft size={20} />
+            Back
+          </button>
+        )}
+      </div>
       {/* </div> */}
 
       <hr className="border-0 border-t border-gray-300 opacity-60" />
