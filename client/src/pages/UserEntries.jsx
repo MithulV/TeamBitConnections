@@ -6,9 +6,8 @@ import BasicDetailCard from "../components/BasicDetailCard";
 import Header from "../components/Header";
 import axios from "axios";
 
-import {parseISO, format } from "date-fns"
-
-
+import { parseISO, format } from "date-fns";
+import { useAuthStore } from "../store/AuthStore";
 
 const dummyCardData = [
   {
@@ -171,6 +170,7 @@ function UserEntries() {
   const [activeView, setActiveView] = useState("formDetails"); // 'formDetails' or 'visitingCards'
 
   const [profileData, setProfileData] = useState([]);
+  const [imageData, setImageData] = useState([]);
 
   const visitingCards = [
     {
@@ -256,11 +256,37 @@ function UserEntries() {
     setUserToDelete(null);
   };
 
-  const onEdit = async (id) => {
+  const onEdit = async (participant) => {
     try {
-      const user = data.find((user) => user.id === id);
-      if (user) {
-        setEditingUser(user);
+      if (participant) {
+        // Convert participant data to match the expected form structure
+        console.log(participant);
+        const userToEdit = {
+          id: participant.contact_id,
+          name: participant.name,
+          phoneNumber: participant.phone_number, // Fixed: was participant.phoneNumber
+          emailAddress: participant.email_address,
+          events:
+            participant.events?.length > 0
+              ? participant.events.map((event) => ({
+                  eventName: event.event_name || "",
+                  eventRole: event.event_role || "",
+                  eventDate: event.event_date || "",
+                  eventHeldOrganization: event.event_held_orgranization || "", // note spelling in your backend
+                  eventLocation: event.event_location || "",
+                }))
+              : [
+                  {
+                    eventName: "",
+                    eventRole: "",
+                    eventDate: "",
+                    eventHeldOrganization: "",
+                    eventLocation: "",
+                  },
+                ],
+        };
+
+        setEditingUser(userToEdit);
         setIsEditing(true);
       }
     } catch (error) {
@@ -301,10 +327,10 @@ function UserEntries() {
     setIsEditing(false);
     setEditingUser(null);
   };
-
+  const { id } = useAuthStore();
   const handleSelectContact = () => {
     axios
-      .get("http://localhost:8000/api/contacts")
+      .get(`http://localhost:8000/api/contacts`)
       .then((response) => {
         console.log("Contacts fetched successfully:", response.data);
         setProfileData(response.data);
@@ -315,6 +341,21 @@ function UserEntries() {
   };
   useEffect(() => {
     handleSelectContact();
+  }, []);
+
+  const handleSelectImage = () => {
+    axios
+      .get(`http://localhost:8000/api/get-contact-images/${id}`)
+      .then((response) => {
+        console.log("Contact images fetched successfully:", response.data);
+        setImageData(response.data);
+      })
+      .catch((error) => {
+        console.error("Error fetching contact images:", error);
+      });
+  };
+  useEffect(() => {
+    handleSelectImage();
   }, []);
 
   return (
@@ -384,12 +425,15 @@ function UserEntries() {
                   email={participant.email_address}
                   event={participant.events[0].event_name}
                   role={participant.events[0].event_role}
-                  date={format(parseISO(participant.created_at), "MMMM dd, yyyy")}
+                  date={format(
+                    parseISO(participant.created_at),
+                    "MMMM dd, yyyy"
+                  )}
                   org={participant.org}
                   location={participant.location}
                   profileImage={participant.profileImage || Avatar}
                   onDelete={() => handleDeleteClick(participant.id)}
-                  onType={() => onEdit(participant.id)}
+                  onType={() => onEdit(participant)}
                   editOrAdd={"edit"}
                 />
               ))}
@@ -397,21 +441,23 @@ function UserEntries() {
           ) : (
             <div className="p-6">
               <div className="max-w-7xl mx-auto">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {visitingCards.map((card) => (
-                    <div
-                      key={card.id}
-                      className="bg-white rounded-lg shadow-md p-4 hover:shadow-lg transition-shadow duration-200"
-                    >
-                      <div className="aspect-w-16 aspect-h-10">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+                  {Array.isArray(imageData?.data) &&
+                    imageData.data.map((card, index) => (
+                      <div
+                        key={card.id ?? index}
+                        className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200 aspect-[3/4]"
+                      >
                         <img
-                          src={card.image}
+                          src={`http://localhost:8000/${card.file_path.replace(
+                            /\\/g,
+                            "/"
+                          )}`}
                           alt={`Visiting Card ${card.id}`}
-                          className="w-full h-48 object-cover rounded"
+                          className="w-full h-full object-cover"
                         />
                       </div>
-                    </div>
-                  ))}
+                    ))}
                 </div>
               </div>
             </div>
