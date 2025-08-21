@@ -8,7 +8,7 @@ import axios from "axios";
 import { useAuthStore } from "../store/AuthStore";
 
 function UserHome() {
-  const { userId } = useAuthStore()
+  const { id } = useAuthStore()
   const [activeView, setActiveView] = useState("default"); // 'default', 'camera', 'form'
   const [contacts, setContacts] = useState([]);
   const handleCameraClick = () => {
@@ -28,8 +28,10 @@ function UserHome() {
       // Generate a unique ID for the new contact
       const newContact = {
         ...formData,
-        created_by: userId,
+        created_by: id,
       };
+
+      console.log(userId, newContact)
 
       // Add to contacts array (you might want to save to database here)
       setContacts((prevContacts) => [...prevContacts, newContact]);

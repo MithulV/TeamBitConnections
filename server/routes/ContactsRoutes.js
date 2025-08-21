@@ -10,7 +10,7 @@ import {
 import { upload, UploadImage, GetPicturesByUserId } from "../controllers/PhotoControllers.js";
 
 const router = express.Router();
-router.get("/contacts", GetContacts);
+router.get("/contacts/:userId", GetContacts);
 router.get("/search-contact", SearchContacts);
 router.post("/create-contact", CreateContact);
 router.post("/upload-contact/", upload.single("image"), UploadImage);
