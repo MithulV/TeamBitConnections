@@ -5,8 +5,8 @@ export const CreateContact = async (req, res) => {
     const {
         // --- Contact Fields ---
         name, phoneNumber, emailAddress, verified, dob, gender, nationality, marital_status, category,
-        secondary_email, secondary_phone_number, created_by, emergency_contact_name, emergency_contact_relation,
-        emergency_contact_phone, skills, logger, linkedin_url,
+        secondary_email, secondary_phone_number, created_by, emergency_contact_name, emergency_contact_relationship,
+        emergency_contact_phone_number, skills, logger, linkedin_url,
 
         // --- SINGLE OBJECTS ---
         address, education,
@@ -14,6 +14,8 @@ export const CreateContact = async (req, res) => {
         // --- ARRAYS of OBJECTS ---
         experiences, events
     } = req.body;
+
+    console.log(req.body)
 
     // --- Core Validation ---
     if (!name || !phoneNumber || !emailAddress) {
@@ -27,12 +29,12 @@ export const CreateContact = async (req, res) => {
                 INSERT INTO contact (
                     name, phone_number, email_address, verified, dob, gender, nationality, marital_status, category,
                     secondary_email, secondary_phone_number, created_by, emergency_contact_name,
-                    emergency_contact_relation, emergency_contact_phone, skills, logger, linkedin_url
+                    emergency_contact_relationship, emergency_contact_phone_number, skills, logger, linkedin_url
                 ) VALUES (
                     ${name}, ${phoneNumber}, ${emailAddress}, ${verified || null}, ${dob || null}, ${gender || null},
                     ${nationality || null}, ${marital_status || null}, ${category || null}, ${secondary_email || null},
                     ${secondary_phone_number || null}, ${created_by || null}, ${emergency_contact_name || null},
-                    ${emergency_contact_relation || null}, ${emergency_contact_phone || null}, ${skills || null},
+                    ${emergency_contact_relationship || null}, ${emergency_contact_phone_number || null}, ${skills || null},
                     ${logger || null}, ${linkedin_url || null}
                 ) RETURNING *
             `;
