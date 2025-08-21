@@ -85,7 +85,7 @@ export default function BasicDetailCard({ name, phone, email, event, role, locat
       </div>
 
       {/* Details */}
-      <div className="flex flex-row items-center gap-x-6 mt-4 text-sm text-gray-600">
+      {/* <div className="flex flex-row items-center gap-x-6 mt-4 text-sm text-gray-600">
         <div className="flex items-center gap-2 min-w-0">
           <MapPin size={14} className="shrink-0 text-brand" />
           <Tooltip label={location}>
@@ -95,7 +95,7 @@ export default function BasicDetailCard({ name, phone, email, event, role, locat
         </div>
 
         {/* Vertical divider */}
-        <div className="h-4 w-px bg-gray-300"></div>
+        {/* <div className="h-4 w-px bg-gray-300"></div>
 
         <div className="flex items-center gap-2 min-w-0">
           <Building2 size={14} className="shrink-0 text-brand" />
@@ -104,11 +104,11 @@ export default function BasicDetailCard({ name, phone, email, event, role, locat
           </Tooltip>
 
         </div>
-      </div>
+      </div> */} 
 
       {/* Date and Action Buttons */}
       <div className="flex items-center justify-between mt-2 pt-0.5 border-t border-gray-100">
-        <div className="text-xs text-gray-400">Added {date}</div>
+        <div className="text-xs text-gray-500">Added  : {date}</div>
 
         <div className="flex items-center gap-2">
           <Tooltip label={editOrAdd}>
