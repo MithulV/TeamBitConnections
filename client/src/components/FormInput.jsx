@@ -3,6 +3,7 @@ import { RotateCcw, UserPlus, Save } from 'lucide-react';
 import { useAuthStore } from '../store/AuthStore';
 
 function FormInput({ onBack, onSave, initialData = null, isEditMode = false }) {
+  console.log(initialData)
   const [formData, setFormData] = useState({
     name: '',
     phoneNumber: '',
