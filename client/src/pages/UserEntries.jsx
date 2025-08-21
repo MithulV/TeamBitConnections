@@ -1,95 +1,107 @@
-import React, { useState } from 'react'
-import Avatar from '../assets/Avatar.png';
-import FormInput from '../components/FormInput';
-import Alert from '../components/Alert';
-import BasicDetailCard from '../components/BasicDetailCard';
-import Header from '../components/Header';
+import React, { useEffect, useState } from "react";
+import Avatar from "../assets/Avatar.png";
+import FormInput from "../components/FormInput";
+import Alert from "../components/Alert";
+import BasicDetailCard from "../components/BasicDetailCard";
+import Header from "../components/Header";
+import axios from "axios";
+
+import {parseISO, format } from "date-fns"
+
+
+
 const dummyCardData = [
- 
   {
-    "id": 9,
-    "name": "David Lee",
-    "phone": "+1 (555) 258-3691",
-    "email": "david.lee@financehub.com",
-    "event": "FinTech Forward 2025",
-    "role": "attendee",
-    "date": "2025-09-22",
-    "org": "FinanceHub",
-    "location": "Chicago, IL",
-    "profileImage": "https://images.unsplash.com/photo-1568602471122-7832951cc4c5?w=150"
+    id: 9,
+    name: "David Lee",
+    phone: "+1 (555) 258-3691",
+    email: "david.lee@financehub.com",
+    event: "FinTech Forward 2025",
+    role: "attendee",
+    date: "2025-09-22",
+    org: "FinanceHub",
+    location: "Chicago, IL",
+    profileImage:
+      "https://images.unsplash.com/photo-1568602471122-7832951cc4c5?w=150",
   },
   {
-    "id": 10,
-    "name": "Maria Garcia",
-    "phone": "+34 655 123 456",
-    "email": "maria.garcia@edutech.es",
-    "event": "EdTech Global Symposium",
-    "role": "organizer",
-    "date": "2025-10-05",
-    "org": "EduTech Spain",
-    "location": "Madrid, Spain"
+    id: 10,
+    name: "Maria Garcia",
+    phone: "+34 655 123 456",
+    email: "maria.garcia@edutech.es",
+    event: "EdTech Global Symposium",
+    role: "organizer",
+    date: "2025-10-05",
+    org: "EduTech Spain",
+    location: "Madrid, Spain",
   },
   {
-    "id": 11,
-    "name": "Kenji Tanaka",
-    "phone": "+81 90-1234-5678",
-    "email": "kenji.tanaka@cybersec.jp",
-    "event": "Cybersecurity World Forum",
-    "role": "speaker",
-    "date": "2025-10-18",
-    "org": "CyberSecure Japan",
-    "location": "Tokyo, Japan",
-    "profileImage": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150"
+    id: 11,
+    name: "Kenji Tanaka",
+    phone: "+81 90-1234-5678",
+    email: "kenji.tanaka@cybersec.jp",
+    event: "Cybersecurity World Forum",
+    role: "speaker",
+    date: "2025-10-18",
+    org: "CyberSecure Japan",
+    location: "Tokyo, Japan",
+    profileImage:
+      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150",
   },
   {
-    "id": 12,
-    "name": "Fatima Al-Sayed",
-    "phone": "+971 50 123 4567",
-    "email": "fatima.a@greentech.ae",
-    "event": "Green Energy Summit",
-    "role": "sponsor",
-    "date": "2025-11-02",
-    "org": "GreenTech Innovations UAE",
-    "location": "Dubai, UAE"
+    id: 12,
+    name: "Fatima Al-Sayed",
+    phone: "+971 50 123 4567",
+    email: "fatima.a@greentech.ae",
+    event: "Green Energy Summit",
+    role: "sponsor",
+    date: "2025-11-02",
+    org: "GreenTech Innovations UAE",
+    location: "Dubai, UAE",
   },
   {
-    "id": 13,
-    "name": "Olivia Williams",
-    "phone": "+1 (555) 741-8529",
-    "email": "olivia.w@cloudsolutions.com",
-    "event": "Cloud Computing Expo",
-    "role": "attendee",
-    "date": "2025-09-25",
-    "org": "Cloud Solutions Inc.",
-    "location": "Las Vegas, NV",
-    "profileImage": "https://images.unsplash.com/photo-1521146764736-56c929d59c83?w=150"
+    id: 13,
+    name: "Olivia Williams",
+    phone: "+1 (555) 741-8529",
+    email: "olivia.w@cloudsolutions.com",
+    event: "Cloud Computing Expo",
+    role: "attendee",
+    date: "2025-09-25",
+    org: "Cloud Solutions Inc.",
+    location: "Las Vegas, NV",
+    profileImage:
+      "https://images.unsplash.com/photo-1521146764736-56c929d59c83?w=150",
   },
   {
-    "id": 14,
-    "name": "Ben Carter",
-    "phone": "+44 7700 900123",
-    "email": "ben.carter@vrvision.co.uk",
-    "event": "VR/AR Developers Conference",
-    "role": "volunteer",
-    "date": "2025-10-12",
-    "org": "VR Vision Ltd.",
-    "location": "London, UK"
+    id: 14,
+    name: "Ben Carter",
+    phone: "+44 7700 900123",
+    email: "ben.carter@vrvision.co.uk",
+    event: "VR/AR Developers Conference",
+    role: "volunteer",
+    date: "2025-10-12",
+    org: "VR Vision Ltd.",
+    location: "London, UK",
   },
   {
-    "id": 15,
-    "name": "Chloe Dubois",
-    "phone": "+33 6 12 34 56 78",
-    "email": "chloe.dubois@press.fr",
-    "event": "European Tech Week",
-    "role": "press",
-    "date": "2025-11-10",
-    "org": "TechPress France",
-    "location": "Paris, France"
+    id: 15,
+    name: "Chloe Dubois",
+    phone: "+33 6 12 34 56 78",
+    email: "chloe.dubois@press.fr",
+    event: "European Tech Week",
+    role: "press",
+    date: "2025-11-10",
+    org: "TechPress France",
+    location: "Paris, France",
   },
-  
 ];
 
-const DeleteConfirmationModal = ({ isOpen, onConfirm, onCancel, itemName = "this user" }) => {
+const DeleteConfirmationModal = ({
+  isOpen,
+  onConfirm,
+  onCancel,
+  itemName = "this user",
+}) => {
   if (!isOpen) return null;
 
   return (
@@ -124,7 +136,9 @@ const DeleteConfirmationModal = ({ isOpen, onConfirm, onCancel, itemName = "this
         {/* Content */}
         <div className="px-6 pb-6">
           <p className="text-gray-600 text-sm leading-relaxed pl-13">
-            Are you sure you want to delete <span className="font-medium">{itemName}</span>? This action cannot be undone.
+            Are you sure you want to delete{" "}
+            <span className="font-medium">{itemName}</span>? This action cannot
+            be undone.
           </p>
         </div>
 
@@ -154,78 +168,124 @@ function UserEntries() {
   const [userToDelete, setUserToDelete] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
+  const [activeView, setActiveView] = useState("formDetails"); // 'formDetails' or 'visitingCards'
+
+  const [profileData, setProfileData] = useState([]);
+
+  const visitingCards = [
+    {
+      id: 1,
+      image:
+        "https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=400&h=250&fit=crop",
+    },
+    {
+      id: 2,
+      image:
+        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=250&fit=crop",
+    },
+    {
+      id: 3,
+      image:
+        "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=400&h=250&fit=crop",
+    },
+    {
+      id: 4,
+      image:
+        "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=400&h=250&fit=crop",
+    },
+    {
+      id: 5,
+      image:
+        "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=250&fit=crop",
+    },
+    {
+      id: 6,
+      image:
+        "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=400&h=250&fit=crop",
+    },
+  ];
 
   const [alert, setAlert] = useState({
     isOpen: false,
-    severity: 'success',
-    message: ''
+    severity: "success",
+    message: "",
   });
 
   const showAlert = (severity, message) => {
     setAlert({
       isOpen: true,
       severity,
-      message
+      message,
     });
   };
 
   const closeAlert = () => {
-    setAlert(prev => ({
+    setAlert((prev) => ({
       ...prev,
-      isOpen: false
+      isOpen: false,
     }));
   };
 
   const handleDeleteClick = (id) => {
-    const user = data.find(user => user.id === id);
+    const user = data.find((user) => user.id === id);
     setUserToDelete({ id, name: user?.name || "this user" });
     setShowDeleteModal(true);
-  }
+  };
 
   const confirmDelete = async () => {
     if (userToDelete) {
       try {
-        setData(prevData => prevData.filter(item => item.id !== userToDelete.id));
+        setData((prevData) =>
+          prevData.filter((item) => item.id !== userToDelete.id)
+        );
         setShowDeleteModal(false);
-        showAlert('success', `${userToDelete.name} has been successfully deleted.`);
+        showAlert(
+          "success",
+          `${userToDelete.name} has been successfully deleted.`
+        );
         setUserToDelete(null);
       } catch (error) {
-        showAlert('error', 'Failed to delete user. Please try again.');
+        showAlert("error", "Failed to delete user. Please try again.");
         console.log("Error deleting user", userToDelete.id, error);
       }
     }
-  }
+  };
 
   const cancelDelete = () => {
     setShowDeleteModal(false);
     setUserToDelete(null);
-  }
+  };
 
   const onEdit = async (id) => {
     try {
-      const user = data.find(user => user.id === id);
+      const user = data.find((user) => user.id === id);
       if (user) {
         setEditingUser(user);
         setIsEditing(true);
       }
     } catch (error) {
-      showAlert('error', 'Failed to load user data for editing.');
+      showAlert("error", "Failed to load user data for editing.");
       console.log("Error editing user", error);
     }
-  }
+  };
 
   const handleEditComplete = (updatedData) => {
     try {
       if (updatedData && editingUser) {
         // Update the user in the data array
-        setData(prevData => prevData.map(user =>
-          user.id === editingUser.id
-            ? { ...user, ...updatedData }
-            : user
-        ));
+        setData((prevData) =>
+          prevData.map((user) =>
+            user.id === editingUser.id ? { ...user, ...updatedData } : user
+          )
+        );
 
         // Show success alert
-        showAlert('success', `${updatedData.name || editingUser.name} has been successfully updated.`);
+        showAlert(
+          "success",
+          `${
+            updatedData.name || editingUser.name
+          } has been successfully updated.`
+        );
       }
 
       // Close the edit form
@@ -233,17 +293,32 @@ function UserEntries() {
       setEditingUser(null);
     } catch (error) {
       console.log("Error updating user", error);
-      showAlert('error', 'Failed to update user. Please try again.');
+      showAlert("error", "Failed to update user. Please try again.");
     }
-  }
+  };
 
   const handleEditCancel = () => {
     setIsEditing(false);
     setEditingUser(null);
-  }
+  };
+
+  const handleSelectContact = () => {
+    axios
+      .get("http://localhost:8000/api/contacts")
+      .then((response) => {
+        console.log("Contacts fetched successfully:", response.data);
+        setProfileData(response.data);
+      })
+      .catch((error) => {
+        console.error("Error fetching contacts:", error);
+      });
+  };
+  useEffect(() => {
+    handleSelectContact();
+  }, []);
 
   return (
-    <div className='w-full h-full'>
+    <div className="w-full h-full">
       <Alert
         isOpen={alert.isOpen}
         severity={alert.severity}
@@ -253,12 +328,41 @@ function UserEntries() {
         duration={4000}
       />
       {/* Header with User Info - Always visible */}
+
       <Header />
+
+      {/* View Toggle Buttons */}
+      <div className="p-6 pb-0">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex gap-4 mb-6">
+            <button
+              onClick={() => setActiveView("formDetails")}
+              className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
+                activeView === "formDetails"
+                  ? "bg-blue-600 text-white shadow-md"
+                  : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
+              }`}
+            >
+              Form Details
+            </button>
+            <button
+              onClick={() => setActiveView("visitingCards")}
+              className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
+                activeView === "visitingCards"
+                  ? "bg-blue-600 text-white shadow-md"
+                  : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
+              }`}
+            >
+              Visiting Cards
+            </button>
+          </div>
+        </div>
+      </div>
 
       {/* Conditional Content */}
       {isEditing && editingUser ? (
         // Show FormInput when editing
-        <div className='p-5'>
+        <div className="p-5">
           <FormInput
             onBack={handleEditCancel}
             onSave={handleEditComplete}
@@ -269,25 +373,49 @@ function UserEntries() {
       ) : (
         // Show user cards when not editing
         <>
-          <div className="grid grid-cols-3 gap-3 p-5">
-            {data.map((participant) => (
-              <BasicDetailCard
-                key={participant.id}
-                name={participant.name}
-                phone={participant.phone}
-                email={participant.email}
-                event={participant.event}
-                role={participant.role}
-                date={participant.date}
-                org={participant.org}
-                location={participant.location}
-                profileImage={participant.profileImage}
-                onDelete={() => handleDeleteClick(participant.id)}
-                onType={() => onEdit(participant.id)}
-                editOrAdd={"edit"}
-              />
-            ))}
-          </div>
+          {activeView === "formDetails" ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
+              {profileData.map((participant, index) => (
+                // <h1>hello</h1>
+                <BasicDetailCard
+                  key={index}
+                  name={participant.name}
+                  phone={participant.phone_number}
+                  email={participant.email_address}
+                  event={participant.events[0].event_name}
+                  role={participant.events[0].event_role}
+                  date={format(parseISO(participant.created_at), "MMMM dd, yyyy")}
+                  org={participant.org}
+                  location={participant.location}
+                  profileImage={participant.profileImage || Avatar}
+                  onDelete={() => handleDeleteClick(participant.id)}
+                  onType={() => onEdit(participant.id)}
+                  editOrAdd={"edit"}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="p-6">
+              <div className="max-w-7xl mx-auto">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {visitingCards.map((card) => (
+                    <div
+                      key={card.id}
+                      className="bg-white rounded-lg shadow-md p-4 hover:shadow-lg transition-shadow duration-200"
+                    >
+                      <div className="aspect-w-16 aspect-h-10">
+                        <img
+                          src={card.image}
+                          alt={`Visiting Card ${card.id}`}
+                          className="w-full h-48 object-cover rounded"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
           <DeleteConfirmationModal
             isOpen={showDeleteModal}
             onConfirm={confirmDelete}
@@ -297,7 +425,7 @@ function UserEntries() {
         </>
       )}
     </div>
-  )
+  );
 }
 
-export default UserEntries
+export default UserEntries;
