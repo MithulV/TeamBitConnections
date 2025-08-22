@@ -3,11 +3,13 @@ import { RotateCcw, UserPlus, Save } from 'lucide-react';
 import { useAuthStore } from '../store/AuthStore';
 
 function FormInput({ onBack, onSave, initialData = null, isEditMode = false }) {
+  const {id} = useAuthStore();
   console.log(initialData)
   const [formData, setFormData] = useState({
     name: '',
     phoneNumber: '',
     emailAddress: '',
+    created_by: id,
     events: [{
       eventName: '',
       eventRole: '',
@@ -23,6 +25,7 @@ function FormInput({ onBack, onSave, initialData = null, isEditMode = false }) {
       setFormData({
         name: initialData.name || '',
         phoneNumber: initialData.phoneNumber || '',
+        created_by:id,
         emailAddress: initialData.emailAddress || '',
         events: initialData.events && initialData.events.length > 0 ? initialData.events.map(event => ({
           eventName: event.eventName || '',
@@ -158,7 +161,6 @@ function FormInput({ onBack, onSave, initialData = null, isEditMode = false }) {
     } else if (onSave) {
       // Create mode - call onSave to create new contact
       onSave(formData);
-      // Optionally call onBack after saving
       if (onBack) onBack();
     } else if (onBack) {
       // Fallback - just go back without saving

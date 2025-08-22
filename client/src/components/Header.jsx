@@ -5,7 +5,7 @@ import { useAuthStore } from "../store/AuthStore";
 function Header() {
   const { email } = useAuthStore();
   return (
-    <div className="sticky top-0 z-50 px-8 py-2.5 shadow-sm bg-white border-b border-gray-200">
+    <div className="sticky top-0 z-50 px-8 py-2.5 bg-white">
       <div className="flex items-center justify-between max-w-7xl mx-auto">
         {/* User Info */}
         <div className="flex items-center gap-4">
