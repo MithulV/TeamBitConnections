@@ -7,16 +7,16 @@ function FormInput({ onBack, onSave, initialData = null, isEditMode = false }) {
   console.log(initialData)
   const [formData, setFormData] = useState({
     name: '',
-    phoneNumber: '',
-    emailAddress: '',
+    phone_number: '',
+    email_address: '',
     created_by: id,
     events: [{
-      eventId: '',
-      eventName: '',
-      eventRole: '',
-      eventDate: '',
-      eventHeldOrganization: '',
-      eventLocation: ''
+      event_id: '',
+      event_name: '',
+      event_role: '',
+      event_date: '',
+      event_held_organization: '',
+      event_location: ''
     }]
   });
 
@@ -25,23 +25,23 @@ function FormInput({ onBack, onSave, initialData = null, isEditMode = false }) {
       // Pre-fill form with existing data
       setFormData({
         name: initialData.name || '',
-        phoneNumber: initialData.phoneNumber || '',
+        phone_number: initialData.phoneNumber || '',
         created_by: id,
-        emailAddress: initialData.emailAddress || '',
+        email_address: initialData.emailAddress || '',
         events: initialData.events && initialData.events.length > 0 ? initialData.events.map(event => ({
-          eventId: event.eventId || '',
-          eventName: event.eventName || '',
-          eventRole: event.eventRole || '',
-          eventDate: event.eventDate || '',
-          eventHeldOrganization: event.eventHeldOrganization || '',
-          eventLocation: event.eventLocation || ''
+          event_id: event.eventId || '',
+          event_name: event.eventName || '',
+          event_role: event.eventRole || '',
+          event_date: event.eventDate || '',
+          event_held_organization: event.eventHeldOrganization || '',
+          event_location: event.eventLocation || ''
         })) : [{
-          eventId: '',
-          eventName: '',
-          eventRole: '',
-          eventDate: '',
-          eventHeldOrganization: '',
-          eventLocation: ''
+          event_id: '',
+          event_name: '',
+          event_role: '',
+          event_date: '',
+          event_held_organization: '',
+          event_location: ''
         }]
       });
     } else {
@@ -68,17 +68,17 @@ function FormInput({ onBack, onSave, initialData = null, isEditMode = false }) {
     {
       label: "Phone Number*",
       type: "tel",
-      name: "phoneNumber",
+      name: "phone_number",
       placeholder: "Enter phone number",
-      value: formData.phoneNumber,
+      value: formData.phone_number,
       inputMode: "numeric"
     },
     {
       label: "Email Address",
       type: "email",
-      name: "emailAddress",
+      name: "email_address",
       placeholder: "Enter email address",
-      value: formData.emailAddress
+      value: formData.email_address
     },
   ];
 
@@ -86,37 +86,37 @@ function FormInput({ onBack, onSave, initialData = null, isEditMode = false }) {
     {
       label: "Event Name*",
       type: "text",
-      name: "eventName",
+      name: "event_name",
       placeholder: "Enter event name",
-      value: formData.events[0].eventName
+      value: formData.events[0].event_name
     },
     {
       label: "Event Role*",
       type: "text",
-      name: "eventRole",
+      name: "event_role",
       placeholder: "Enter your role",
-      value: formData.events[0].eventRole
+      value: formData.events[0].event_role
     },
     {
       label: "Event Date*",
       type: "date",
-      name: "eventDate",
+      name: "event_date",
       placeholder: "",
-      value: formData.events[0].eventDate
+      value: formData.events[0].event_date
     },
     {
       label: "Event held Organization",
       type: "text",
-      name: "eventHeldOrganization",
+      name: "event_held_organization",
       placeholder: "Enter organization name",
-      value: formData.events[0].eventHeldOrganization
+      value: formData.events[0].event_held_organization
     },
     {
       label: "Event Location",
       type: "text",
-      name: "eventLocation",
+      name: "event_location",
       placeholder: "Enter event location",
-      value: formData.events[0].eventLocation
+      value: formData.events[0].event_location
     }
   ];
 
@@ -129,7 +129,7 @@ function FormInput({ onBack, onSave, initialData = null, isEditMode = false }) {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    const eventFields = ["eventName", "eventRole", "eventDate", "eventHeldOrganization", "eventLocation"];
+    const eventFields = ["event_name", "event_role", "event_date", "event_held_organization", "event_location"];
 
     if (eventFields.includes(name)) {
       setFormData(prev => ({
@@ -140,7 +140,7 @@ function FormInput({ onBack, onSave, initialData = null, isEditMode = false }) {
         }]
       }));
     } else {
-      if (name === 'phoneNumber') {
+      if (name === 'phone_number') {
         const numbersOnly = value.replace(/[^0-9]/g, '');
         setFormData(prev => ({
           ...prev,
@@ -176,22 +176,22 @@ function FormInput({ onBack, onSave, initialData = null, isEditMode = false }) {
       // Reset to original data when editing
       setFormData({
         name: initialData.name || '',
-        phoneNumber: initialData.phoneNumber || '',
-        emailAddress: initialData.emailAddress || '',
+        phone_number: initialData.phoneNumber || '',
+        email_address: initialData.emailAddress || '',
         events: initialData.events && initialData.events.length > 0 ? initialData.events.map(event => ({
-          eventId: event.eventId || '',
-          eventName: event.eventName || '',
-          eventRole: event.eventRole || '',
-          eventDate: event.eventDate || '',
-          eventHeldOrganization: event.eventHeldOrganization || '',
-          eventLocation: event.eventLocation || ''
+          event_id: event.eventId || '',
+          event_name: event.eventName || '',
+          event_role: event.eventRole || '',
+          event_date: event.eventDate || '',
+          event_held_organization: event.eventHeldOrganization || '',
+          event_location: event.eventLocation || ''
         })) : [{
-          eventId: '',
-          eventName: '',
-          eventRole: '',
-          eventDate: '',
-          eventHeldOrganization: '',
-          eventLocation: ''
+          event_id: '',
+          event_name: '',
+          event_role: '',
+          event_date: '',
+          event_held_organization: '',
+          event_location: ''
         }]
       });
     } else {
@@ -199,14 +199,14 @@ function FormInput({ onBack, onSave, initialData = null, isEditMode = false }) {
       const today = new Date().toISOString().split('T')[0];
       setFormData({
         name: '',
-        phoneNumber: '',
-        emailAddress: '',
+        phone_number: '',
+        email_address: '',
         events: [{
-          eventName: '',
-          eventRole: '',
-          eventDate: today,
-          eventHeldOrganization: '',
-          eventLocation: ''
+          event_name: '',
+          event_role: '',
+          event_date: today,
+          event_held_organization: '',
+          event_location: ''
         }]
       });
     }
