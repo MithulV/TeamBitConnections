@@ -102,7 +102,7 @@ const CameraCapture = ({ onCapture, onBack }) => {
               ref={webcamRef}
               screenshotFormat="image/png"
               screenshotQuality={1}
-              mirrored={facingMode === "user"}
+              mirrored={true}
               onUserMedia={onUserMedia}
               onUserMediaError={onUserMediaError}
               videoConstraints={{

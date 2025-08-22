@@ -6,11 +6,30 @@ import { Camera, UserPlus, ArrowLeft } from "lucide-react";
 import Header from "../components/Header";
 import axios from "axios";
 import { useAuthStore } from "../store/AuthStore";
-
+import Alert from "../components/Alert";
 function UserHome() {
   const { id } = useAuthStore()
   const [activeView, setActiveView] = useState("default"); // 'default', 'camera', 'form'
-  const [contacts, setContacts] = useState([]);
+  const [alert, setAlert] = useState({
+    isOpen: false,
+    severity: "success",
+    message: "",
+  });
+
+  const showAlert = (severity, message) => {
+    setAlert({
+      isOpen: true,
+      severity,
+      message,
+    });
+  };
+
+  const closeAlert = () => {
+    setAlert((prev) => ({
+      ...prev,
+      isOpen: false,
+    }));
+  };
   const handleCameraClick = () => {
     setActiveView("camera");
   };
@@ -25,47 +44,39 @@ function UserHome() {
 
   const handleSaveContact = async (formData) => {
     try {
-      // Generate a unique ID for the new contact
-      const newContact = {
-        ...formData,
-        created_by: id,
-      };
-
-      console.log(userId, newContact)
-
-      // Add to contacts array (you might want to save to database here)
-      setContacts((prevContacts) => [...prevContacts, newContact]);
-      try {
-        const response = await axios.post('http://localhost:8000/api/create-contact', newContact);
-        console.log(response)
-      }
-      catch (err) {
-        console.log(err);
-      }
-
-      console.log("New contact saved:", newContact);
-
-      // Optionally show success message or redirect
-      // You could add an alert system here similar to UserEntries
+      console.log(formData);
+      const response = await axios.post(`http://localhost:8000/api/create-contact`, formData);
+      console.log(response);
+      showAlert(
+        "success", `contact has been successfully added.`
+      );
     } catch (error) {
       console.log("Error saving contact:", error);
+      showAlert(
+        "error", `failed to add contact.`
+      );
     }
   };
 
   return (
     <div className="h-full flex flex-col bg-[#ffffff]">
-      {/* User Profile Header */}
-      <Header />
-
+      <Alert
+        isOpen={alert.isOpen}
+        severity={alert.severity}
+        message={alert.message}
+        onClose={closeAlert}
+        position="bottom"
+        duration={4000}
+      />
       {/* <div className="p-8 pt-4 pb-3 shadow bg-white flex-shrink-0"> */}
-      <div className="flex items-center justify-between">
-        {/* User Info */}
-
+      <div className="flex  items-center justify-between">
+        {/* User Profile Header */}
+        <Header />
         {/* Conditional Action Buttons */}
         {activeView === "default" ? undefined : (
           <button
             onClick={handleBackToDefault}
-            className="px-4 py-2 flex items-center gap-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors duration-200 font-medium"
+            className="px-4 py-2 mr-5 flex items-center gap-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors duration-200 font-medium"
           >
             <ArrowLeft size={20} />
             Back
@@ -113,7 +124,7 @@ function UserHome() {
 
         {activeView === "camera" && (
           <div className="h-full">
-            <CameraInput onBack={handleBackToDefault} />
+            <CameraInput onBack={handleBackToDefault} onSave={handleSaveContact} />
           </div>
         )}
 
