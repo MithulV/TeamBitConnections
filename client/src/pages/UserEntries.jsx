@@ -9,92 +9,6 @@ import axios from "axios";
 import { parseISO, format } from "date-fns";
 import { useAuthStore } from "../store/AuthStore";
 
-const dummyCardData = [
-  {
-    id: 9,
-    name: "David Lee",
-    phone: "+1 (555) 258-3691",
-    email: "david.lee@financehub.com",
-    event: "FinTech Forward 2025",
-    role: "attendee",
-    date: "2025-09-22",
-    org: "FinanceHub",
-    location: "Chicago, IL",
-    profileImage:
-      "https://images.unsplash.com/photo-1568602471122-7832951cc4c5?w=150",
-  },
-  {
-    id: 10,
-    name: "Maria Garcia",
-    phone: "+34 655 123 456",
-    email: "maria.garcia@edutech.es",
-    event: "EdTech Global Symposium",
-    role: "organizer",
-    date: "2025-10-05",
-    org: "EduTech Spain",
-    location: "Madrid, Spain",
-  },
-  {
-    id: 11,
-    name: "Kenji Tanaka",
-    phone: "+81 90-1234-5678",
-    email: "kenji.tanaka@cybersec.jp",
-    event: "Cybersecurity World Forum",
-    role: "speaker",
-    date: "2025-10-18",
-    org: "CyberSecure Japan",
-    location: "Tokyo, Japan",
-    profileImage:
-      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150",
-  },
-  {
-    id: 12,
-    name: "Fatima Al-Sayed",
-    phone: "+971 50 123 4567",
-    email: "fatima.a@greentech.ae",
-    event: "Green Energy Summit",
-    role: "sponsor",
-    date: "2025-11-02",
-    org: "GreenTech Innovations UAE",
-    location: "Dubai, UAE",
-  },
-  {
-    id: 13,
-    name: "Olivia Williams",
-    phone: "+1 (555) 741-8529",
-    email: "olivia.w@cloudsolutions.com",
-    event: "Cloud Computing Expo",
-    role: "attendee",
-    date: "2025-09-25",
-    org: "Cloud Solutions Inc.",
-    location: "Las Vegas, NV",
-    profileImage:
-      "https://images.unsplash.com/photo-1521146764736-56c929d59c83?w=150",
-  },
-  {
-    id: 14,
-    name: "Ben Carter",
-    phone: "+44 7700 900123",
-    email: "ben.carter@vrvision.co.uk",
-    event: "VR/AR Developers Conference",
-    role: "volunteer",
-    date: "2025-10-12",
-    org: "VR Vision Ltd.",
-    location: "London, UK",
-  },
-  {
-    id: 15,
-    name: "Chloe Dubois",
-    phone: "+33 6 12 34 56 78",
-    email: "chloe.dubois@press.fr",
-    event: "European Tech Week",
-    role: "press",
-    date: "2025-11-10",
-    org: "TechPress France",
-    location: "Paris, France",
-  },
-];
-
 const DeleteConfirmationModal = ({
   isOpen,
   onConfirm,
@@ -162,13 +76,11 @@ const DeleteConfirmationModal = ({
 };
 
 function UserEntries() {
-  const [data, setData] = useState(dummyCardData);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [userToDelete, setUserToDelete] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [activeView, setActiveView] = useState("formDetails"); // 'formDetails' or 'visitingCards'
-
   const [profileData, setProfileData] = useState([]);
   const [imageData, setImageData] = useState([]);
 
@@ -194,17 +106,17 @@ function UserEntries() {
   };
 
   const handleDeleteClick = (id) => {
-    const user = data.find((user) => user.id === id);
-    setUserToDelete({ id, name: user?.name || "this user" });
+    const user = profileData.find((user) => user.id === id);
+    //console.log("user:",user);
+    setUserToDelete({ id:user?.contact_id, name: user?.name || "this user" });
     setShowDeleteModal(true);
   };
 
   const confirmDelete = async () => {
     if (userToDelete) {
       try {
-        setData((prevData) =>
-          prevData.filter((item) => item.id !== userToDelete.id)
-        );
+        console.log(userToDelete);
+        const response = await axios.delete(`http://localhost:8000/api/delete-contact/${userToDelete.id}`)
         setShowDeleteModal(false);
         showAlert(
           "success",
@@ -262,17 +174,11 @@ function UserEntries() {
     }
   };
 
-  const handleEditComplete = (updatedData) => {
+  const handleEditComplete = async(updatedData) => {
     try {
       if (updatedData && editingUser) {
-        // Update the user in the data array
-        setData((prevData) =>
-          prevData.map((user) =>
-            user.id === editingUser.id ? { ...user, ...updatedData } : user
-          )
-        );
-
-        // Show success alert
+        const response = await axios.put(`http://localhost:8000/api/update-contact/${editingUser.id}`,updatedData);
+        console.log(response);
         showAlert(
           "success",
           `${updatedData.name || editingUser.name
@@ -294,32 +200,29 @@ function UserEntries() {
     setEditingUser(null);
   };
   const { id } = useAuthStore();
-  const handleSelectContact = () => {
-    axios
-      .get(`http://localhost:8000/api/contacts/${id}`)
-      .then((response) => {
-        console.log("Contacts fetched successfully:", response.data);
-        setProfileData(response.data);
-      })
-      .catch((error) => {
-        console.error("Error fetching contacts:", error);
-      });
+  const handleSelectContact = async () => {
+    try {
+      const response = await axios.get(`http://localhost:8000/api/contacts/${id}`);
+      console.log("Contacts fetched successfully:", response.data);
+      setProfileData(response.data);
+    } catch (error) {
+      console.error("Error fetching contacts:", error);
+    }
   };
   useEffect(() => {
     handleSelectContact();
   }, []);
 
-  const handleSelectImage = () => {
-    axios
-      .get(`http://localhost:8000/api/get-contact-images/${id}`)
-      .then((response) => {
-        console.log("Contact images fetched successfully:", response.data);
-        setImageData(response.data);
-      })
-      .catch((error) => {
-        console.error("Error fetching contact images:", error);
-      });
+  const handleSelectImage = async () => {
+    try {
+      const response = await axios.get(`http://localhost:8000/api/get-contact-images/${id}`);
+      console.log("Contact images fetched successfully:", response.data);
+      setImageData(response.data);
+    } catch (error) {
+      console.error("Error fetching contact images:", error);
+    }
   };
+
   useEffect(() => {
     handleSelectImage();
   }, []);
@@ -381,7 +284,7 @@ function UserEntries() {
           {activeView === "formDetails" ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
               {profileData.map((participant, index) => {
-                console.log(participant)
+                //console.log(participant)
                 // <h1>hello</h1>
                 return (
                   <BasicDetailCard
