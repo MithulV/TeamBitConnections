@@ -37,10 +37,10 @@ function Tooltip({ label, children }) {
   )
 }
 
-export default function BasicDetailCard({ name, phone, email, event, role, location, org, date, onType, onDelete,editOrAdd }) {
-  const icons={
-    edit:<Edit2 size={14}/>,
-    add:<UserRoundPlus size={14}/>
+export default function BasicDetailCard({ name, phone, email, event, role, location, org, date, onType, onDelete, editOrAdd }) {
+  const icons = {
+    edit: <Edit2 size={14} />,
+    add: <UserRoundPlus size={14} />
   }
   return (
     <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-200 hover:shadow-2xl transition-all min-w-0">
@@ -85,26 +85,26 @@ export default function BasicDetailCard({ name, phone, email, event, role, locat
       </div>
 
       {/* Details */}
-      {/* <div className="flex flex-row items-center gap-x-6 mt-4 text-sm text-gray-600">
-        <div className="flex items-center gap-2 min-w-0">
+      <div className="flex flex-row items-center gap-x-4 mt-4 text-sm text-gray-600">
+        <div className="flex items-center gap-2 min-w-0 flex-1">
           <MapPin size={14} className="shrink-0 text-brand" />
           <Tooltip label={location}>
-            <span className="truncate">{location}</span>
+            <span className="truncate block min-w-0">{location}</span>
           </Tooltip>
 
         </div>
 
         {/* Vertical divider */}
-        {/* <div className="h-4 w-px bg-gray-300"></div>
+        <div className="h-4 w-px bg-gray-300"></div>
 
-        <div className="flex items-center gap-2 min-w-0">
+        <div className="flex items-center gap-2 min-w-0 flex-1">
           <Building2 size={14} className="shrink-0 text-brand" />
           <Tooltip label={org}>
-            <span className="truncate">{org}</span>
+            <span className="truncate block min-w-0">{org}</span>
           </Tooltip>
 
         </div>
-      </div> */} 
+      </div>
 
       {/* Date and Action Buttons */}
       <div className="flex items-center justify-between mt-2 pt-0.5 border-t border-gray-100">
@@ -116,7 +116,7 @@ export default function BasicDetailCard({ name, phone, email, event, role, locat
               onClick={onType}
               className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
             >
-              {icons[editOrAdd]||null}
+              {icons[editOrAdd] || null}
             </button>
           </Tooltip>
 
