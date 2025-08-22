@@ -41,7 +41,7 @@ function UserHome() {
   const handleBackToDefault = () => {
     setActiveView("default");
   };
-  
+
 
   const handleSaveContact = async (formData) => {
     try {
@@ -58,7 +58,51 @@ function UserHome() {
       );
     }
   };
+  const handleSavePhoto = async (mode, capturedImage) => {
+    try {
+      let formData = new FormData();
 
+      if (mode == 'select') {
+        // If it's a file upload
+        formData.append("image", uploadFile);
+        formData.append("user_id", id);
+      } else if (capturedImage) {
+        // If it's a camera capture (Base64 → Blob)
+        const byteString = atob(capturedImage.split(",")[1]);
+        const mimeString = capturedImage.split(",")[0].split(":")[1].split(";")[0];
+        const ab = new ArrayBuffer(byteString.length);
+        const ia = new Uint8Array(ab);
+        for (let i = 0; i < byteString.length; i++) {
+          ia[i] = byteString.charCodeAt(i);
+        }
+        const blob = new Blob([ab], { type: mimeString });
+
+        // Tesseract.recognize(blob, "eng", {
+        //   logger: (m) => console.log(m)  // progress
+        // }).then(({ data: { text } }) => {
+        //   console.log("OCR Result:", text);
+        // });
+
+        formData.append("image", blob, "photo.png");
+        formData.append("user_id", id);
+      }
+
+      const res = await axios.post("http://localhost:8000/api/upload-contact", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      console.log("Upload success:", res.data);
+      handleBackToDefault();
+      showAlert(
+        "success", `contact has been successfully added.`
+      );
+    } catch (err) {
+      console.error("Upload failed:", err);
+      showAlert(
+        "error", `failed to add contact.`
+      );
+    }
+  };
   return (
     <div className="h-full flex flex-col bg-[#ffffff]">
       <Alert
@@ -125,7 +169,7 @@ function UserHome() {
 
         {activeView === "camera" && (
           <div className="h-full">
-            <CameraInput onBack={handleBackToDefault} onSave={handleSaveContact} />
+            <CameraInput onBack={handleBackToDefault} onSave={handleSavePhoto} />
           </div>
         )}
 
