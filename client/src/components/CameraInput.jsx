@@ -6,7 +6,7 @@ import { Camera, RotateCcw, X, Upload, ImagePlus } from 'lucide-react';
 import axios from 'axios';
 import { useAuthStore } from '../store/AuthStore';
 
-const CameraCapture = ({ onCapture, onBack }) => {
+const CameraCapture = ({ onCapture, onBack,onSave }) => {
   const webcamRef = useRef(null);
   const [facingMode, setFacingMode] = useState("environment");
   const [isReady, setIsReady] = useState(false);
@@ -313,7 +313,7 @@ const PhotoOptionSelector = ({ onSelectCamera, onSelectUpload, onBack }) => {
 
 // Main CameraInput Component
 // Main CameraInput Component
-function CameraInput({ onBack }) {
+function CameraInput({ onBack,onSave }) {
   const [capturedImage, setCapturedImage] = useState(null);
   const [mode, setMode] = useState('select'); // 'select', 'camera', 'preview'
   const { id } = useAuthStore();
@@ -334,41 +334,8 @@ function CameraInput({ onBack }) {
   };
 
   const handleUsePhoto = async () => {
-    try {
-      let formData = new FormData();
-
-      if (mode == 'select') {
-        // If it's a file upload
-        formData.append("image", uploadFile);
-      } else if (capturedImage) {
-        // If it's a camera capture (Base64 → Blob)
-        const byteString = atob(capturedImage.split(",")[1]);
-        const mimeString = capturedImage.split(",")[0].split(":")[1].split(";")[0];
-        const ab = new ArrayBuffer(byteString.length);
-        const ia = new Uint8Array(ab);
-        for (let i = 0; i < byteString.length; i++) {
-          ia[i] = byteString.charCodeAt(i);
-        }
-        const blob = new Blob([ab], { type: mimeString });
-        
-        // Tesseract.recognize(blob, "eng", {
-        //   logger: (m) => console.log(m)  // progress
-        // }).then(({ data: { text } }) => {
-        //   console.log("OCR Result:", text);
-        // });
-
-        formData.append("image", blob, "photo.png");
-        formData.append("user_id", id);
-      }
-
-      const res = await axios.post("http://localhost:8000/api/upload-contact", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-
-      console.log("Upload success:", res.data);
-      if (onBack) onBack();
-    } catch (err) {
-      console.error("Upload failed:", err);
+    if(onSave){
+      onSave(mode,capturedImage);
     }
   };
 
