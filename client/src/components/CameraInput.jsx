@@ -350,11 +350,12 @@ function CameraInput({ onBack }) {
           ia[i] = byteString.charCodeAt(i);
         }
         const blob = new Blob([ab], { type: mimeString });
-        Tesseract.recognize(blob, "eng", {
-          logger: (m) => console.log(m)  // progress
-        }).then(({ data: { text } }) => {
-          console.log("OCR Result:", text);
-        });
+        
+        // Tesseract.recognize(blob, "eng", {
+        //   logger: (m) => console.log(m)  // progress
+        // }).then(({ data: { text } }) => {
+        //   console.log("OCR Result:", text);
+        // });
 
         formData.append("image", blob, "photo.png");
         formData.append("user_id", id);
