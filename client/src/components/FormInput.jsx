@@ -3,7 +3,7 @@ import { RotateCcw, UserPlus, Save } from 'lucide-react';
 import { useAuthStore } from '../store/AuthStore';
 
 function FormInput({ onBack, onSave, initialData = null, isEditMode = false }) {
-  const {id} = useAuthStore();
+  const { id } = useAuthStore();
   console.log(initialData)
   const [formData, setFormData] = useState({
     name: '',
@@ -11,6 +11,7 @@ function FormInput({ onBack, onSave, initialData = null, isEditMode = false }) {
     emailAddress: '',
     created_by: id,
     events: [{
+      eventId: '',
       eventName: '',
       eventRole: '',
       eventDate: '',
@@ -25,15 +26,17 @@ function FormInput({ onBack, onSave, initialData = null, isEditMode = false }) {
       setFormData({
         name: initialData.name || '',
         phoneNumber: initialData.phoneNumber || '',
-        created_by:id,
+        created_by: id,
         emailAddress: initialData.emailAddress || '',
         events: initialData.events && initialData.events.length > 0 ? initialData.events.map(event => ({
+          eventId: event.eventId || '',
           eventName: event.eventName || '',
           eventRole: event.eventRole || '',
           eventDate: event.eventDate || '',
           eventHeldOrganization: event.eventHeldOrganization || '',
           eventLocation: event.eventLocation || ''
         })) : [{
+          eventId: '',
           eventName: '',
           eventRole: '',
           eventDate: '',
@@ -176,12 +179,14 @@ function FormInput({ onBack, onSave, initialData = null, isEditMode = false }) {
         phoneNumber: initialData.phoneNumber || '',
         emailAddress: initialData.emailAddress || '',
         events: initialData.events && initialData.events.length > 0 ? initialData.events.map(event => ({
+          eventId: event.eventId || '',
           eventName: event.eventName || '',
           eventRole: event.eventRole || '',
           eventDate: event.eventDate || '',
           eventHeldOrganization: event.eventHeldOrganization || '',
           eventLocation: event.eventLocation || ''
         })) : [{
+          eventId: '',
           eventName: '',
           eventRole: '',
           eventDate: '',

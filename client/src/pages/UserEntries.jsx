@@ -108,7 +108,7 @@ function UserEntries() {
   const handleDeleteClick = (id) => {
     const user = profileData.find((user) => user.id === id);
     //console.log("user:",user);
-    setUserToDelete({ id:user?.contact_id, name: user?.name || "this user" });
+    setUserToDelete({ id: user?.contact_id, name: user?.name || "this user" });
     setShowDeleteModal(true);
   };
 
@@ -148,6 +148,7 @@ function UserEntries() {
           events:
             participant.events?.length > 0
               ? participant.events.map((event) => ({
+                eventId: event.event_id,
                 eventName: event.event_name || "",
                 eventRole: event.event_role || "",
                 eventDate: event.event_date || "",
@@ -156,6 +157,7 @@ function UserEntries() {
               }))
               : [
                 {
+                  eventId: "",
                   eventName: "",
                   eventRole: "",
                   eventDate: "",
@@ -174,10 +176,10 @@ function UserEntries() {
     }
   };
 
-  const handleEditComplete = async(updatedData) => {
+  const handleEditComplete = async (updatedData) => {
     try {
       if (updatedData && editingUser) {
-        const response = await axios.put(`http://localhost:8000/api/update-contact/${editingUser.id}`,updatedData);
+        const response = await axios.put(`http://localhost:8000/api/update-contact/${editingUser.id}`, updatedData);
         console.log(response);
         showAlert(
           "success",
