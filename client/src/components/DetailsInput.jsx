@@ -41,7 +41,7 @@ function DetailsInput({ onBack, onSave, initialData = null, isAddMode = false })
     ugUniversity: '',
     ugFromDate: '',
     ugToDate: '',
-    
+
     // NEW: General Skills
     skills: '',
 
@@ -64,25 +64,78 @@ function DetailsInput({ onBack, onSave, initialData = null, isAddMode = false })
 
   useEffect(() => {
     if (isAddMode && initialData) {
+      // Helper to format date strings from ISO to YYYY-MM-DD
+      const formatDate = (dateString) => {
+        if (!dateString) return '';
+        return dateString.split('T')[0];
+      };
+
+      // Safely access the first event, if it exists
+      const firstEvent = initialData.events && initialData.events[0] ? initialData.events[0] : {};
+
       setFormData(prevData => ({
         ...prevData,
+
+        // --- Personal Details ---
         name: initialData.name || '',
-        dateOfBirth: initialData.dateOfBirth || '',
+        dateOfBirth: formatDate(initialData.dob), // Format the date correctly
         gender: initialData.gender || '',
         nationality: initialData.nationality || '',
-        maritalStatus: initialData.maritalStatus || '',
+        maritalStatus: initialData.marital_status || '',
         category: initialData.category || 'Event Participant',
-        phonePrimary: initialData.phone || initialData.primaryPhone || '',
-        emailPrimary: initialData.email || initialData.primaryEmail || '',
-        city: initialData.location || initialData.city || '',
-        state: initialData.state || '',
-        country: initialData.country || '',
-        // Populate the new separate fields
+        age: '', // 'age' is not in the JSON, so it's initialized as empty
+
+        // --- Contact Info ---
+        phonePrimary: initialData.phone_number || '',
+        phoneSecondary: initialData.secondary_phone_number || '',
+        emailPrimary: initialData.email_address || '',
+        emailSecondary: initialData.secondary_email || '',
+
+        // --- Emergency Contact ---
+        emergencyContactName: initialData.emergency_contact_name || '',
+        emergencyContactPhone: initialData.emergency_contact_phone_number || '',
+        emergencyContactRelationship: initialData.emergency_contact_relationship || '',
+
+        // --- Address Details (from nested 'address' object) ---
+        street: initialData.address?.street || '',
+        city: initialData.address?.city || '',
+        state: initialData.address?.state || '',
+        country: initialData.address?.country || '',
+        zipcode: initialData.address?.zipcode || '',
+
+        // --- Education Fields (from nested 'education' object) ---
+        pgCourseName: initialData.education?.pg_course_name || '',
+        pgCollege: initialData.education?.pg_college || '',
+        pgUniversity: initialData.education?.pg_university || '',
+        pgFromDate: initialData.education?.pg_from_date || '',
+        pgToDate: initialData.education?.pg_to_date || '',
+        ugCourseName: initialData.education?.ug_course_name || '',
+        ugCollege: initialData.education?.ug_college || '',
+        ugUniversity: initialData.education?.ug_university || '',
+        ugFromDate: initialData.education?.ug_from_date || '',
+        ugToDate: initialData.education?.ug_to_date || '',
+
+        // --- Professional and Additional Info ---
         skills: initialData.skills || '',
-        logger: initialData.notes || initialData.additionalNote || (initialData.event ? `Event: ${initialData.event} on ${initialData.date}` : ''),
-        // Ensure experience is an array
-        experience: Array.isArray(initialData.experience) && initialData.experience.length > 0
-          ? initialData.experience
+        linkedinProfile: initialData.linkedin_url || '',
+
+        // --- Event Details (from the first item in the 'events' array) ---
+        eventName: firstEvent.event_name || '',
+        eventRole: firstEvent.event_role || '',
+        eventDate: firstEvent.event_date || '',
+        eventHeldOrganization: firstEvent.event_held_orgranization || '',
+        eventLocation: firstEvent.event_location || '',
+
+        // --- Experience History (from 'experiences' array) ---
+        experience: Array.isArray(initialData.experiences) && initialData.experiences.length > 0
+          ? initialData.experiences.map(exp => ({
+            jobTitle: exp.job_title || '',
+            company: exp.company || '',
+            department: exp.department || '',
+            expFromDate: exp.from_date || '',
+            expToDate: exp.to_date || '',
+            expSkills: '', // 'expSkills' is not in the source JSON
+          }))
           : [{ jobTitle: '', company: '', department: '', expFromDate: '', expToDate: '', expSkills: '' }],
       }));
     }
@@ -172,7 +225,7 @@ function DetailsInput({ onBack, onSave, initialData = null, isAddMode = false })
       setFormData(prev => ({ ...prev, experience: updatedExperience }));
     }
   };
-  
+
   const handleSubmit = (e) => {
     e.preventDefault();
     onSave?.(formData);
@@ -180,18 +233,18 @@ function DetailsInput({ onBack, onSave, initialData = null, isAddMode = false })
   };
 
   const handleReset = () => {
-     // Resets to the initial empty state structure
-     setFormData({
-        name: '', dateOfBirth: '', gender: '', nationality: '', maritalStatus: '', category: '', age: '',
-        phonePrimary: '', phoneSecondary: '', emailPrimary: '', emailSecondary: '',
-        emergencyContactName: '', emergencyContactPhone: '', emergencyContactRelationship: '',
-        street: '', city: '', state: '', country: '', zipcode: '',
-        pgCourseName: '', pgCollege: '', pgUniversity: '', pgFromDate: '', pgToDate: '', ugCourseName: '', ugCollege: '', ugUniversity: '', ugFromDate: '', ugToDate: '',
-        skills: '',
-        experience: [{ jobTitle: '', company: '', department: '', expFromDate: '', expToDate: '', expSkills: '' }],
-        eventName: '', eventRole: '', eventDate: '', eventHeldOrganization: '', eventLocation: '', linkedinProfile: '',
-        logger: '',
-      });
+    // Resets to the initial empty state structure
+    setFormData({
+      name: '', dateOfBirth: '', gender: '', nationality: '', maritalStatus: '', category: '', age: '',
+      phonePrimary: '', phoneSecondary: '', emailPrimary: '', emailSecondary: '',
+      emergencyContactName: '', emergencyContactPhone: '', emergencyContactRelationship: '',
+      street: '', city: '', state: '', country: '', zipcode: '',
+      pgCourseName: '', pgCollege: '', pgUniversity: '', pgFromDate: '', pgToDate: '', ugCourseName: '', ugCollege: '', ugUniversity: '', ugFromDate: '', ugToDate: '',
+      skills: '',
+      experience: [{ jobTitle: '', company: '', department: '', expFromDate: '', expToDate: '', expSkills: '' }],
+      eventName: '', eventRole: '', eventDate: '', eventHeldOrganization: '', eventLocation: '', linkedinProfile: '',
+      logger: '',
+    });
   };
 
   const renderField = (field, index) => (
@@ -208,12 +261,12 @@ function DetailsInput({ onBack, onSave, initialData = null, isAddMode = false })
       )}
     </div>
   );
-  
+
   return (
     <div className="flex flex-row mx-auto pt-0 pb-2 bg-[#F0F0F0] min-h-full">
       <form onSubmit={handleSubmit} className="w-full">
         <div className="bg-white p-6 rounded-lg shadow-sm space-y-8">
-          
+
           <div>
             <h2 className="text-2xl font-semibold text-gray-800 mb-2">Add Additional Details</h2>
             <p className="text-gray-600">Fill in the comprehensive details. Required fields are marked with an asterisk (*).</p>
@@ -239,16 +292,16 @@ function DetailsInput({ onBack, onSave, initialData = null, isAddMode = false })
             <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b border-gray-200 pb-2">Education</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">{educationFields.map(renderField)}</div>
           </div>
-          
+
           {/* === NEW SKILLS SECTION === */}
           <div>
             <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b border-gray-200 pb-2">Skills</h3>
             <div className="space-y-2">
               <label htmlFor="skills" className="block text-sm font-medium text-gray-700">General Skills</label>
-              <textarea id="skills" name="skills" value={formData.skills} placeholder="Enter general skills, separated by commas (e.g., Python, Public Speaking, SEO)" onChange={handleInputChange} rows={3} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0077b8] resize-vertical"/>
+              <textarea id="skills" name="skills" value={formData.skills} placeholder="Enter general skills, separated by commas (e.g., Python, Public Speaking, SEO)" onChange={handleInputChange} rows={3} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0077b8] resize-vertical" />
             </div>
           </div>
-          
+
           {/* === EXPERIENCE SECTION === */}
           <div>
             <div className="flex justify-between items-center mb-4 border-b border-gray-200 pb-2">
@@ -271,7 +324,7 @@ function DetailsInput({ onBack, onSave, initialData = null, isAddMode = false })
               ))}
             </div>
           </div>
-          
+
           <div>
             <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b border-gray-200 pb-2">Additional Information</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">{additionalInfo.map(renderField)}</div>
@@ -281,8 +334,8 @@ function DetailsInput({ onBack, onSave, initialData = null, isAddMode = false })
           <div>
             <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b border-gray-200 pb-2">Logger / Notes</h3>
             <div className="space-y-2">
-                <label htmlFor="logger" className="block text-sm font-medium text-gray-700">Add a note</label>
-                <textarea id="logger" name="logger" value={formData.logger} placeholder="Log an interaction, comment, or any other relevant information." onChange={handleInputChange} rows={4} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0077b8] resize-vertical"/>
+              <label htmlFor="logger" className="block text-sm font-medium text-gray-700">Add a note</label>
+              <textarea id="logger" name="logger" value={formData.logger} placeholder="Log an interaction, comment, or any other relevant information." onChange={handleInputChange} rows={4} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0077b8] resize-vertical" />
             </div>
           </div>
 
@@ -292,7 +345,7 @@ function DetailsInput({ onBack, onSave, initialData = null, isAddMode = false })
             <button type="button" onClick={onBack} className="px-6 py-2 flex items-center justify-center gap-x-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors font-medium">Cancel</button>
             <button type="submit" className="px-6 py-2 flex items-center justify-center gap-x-1.5 bg-[#0077b8] hover:bg-[#005f8f] text-white rounded-lg transition-colors font-medium"><Plus size={18} />Add Details</button>
           </div>
-          
+
         </div>
       </form>
     </div>
