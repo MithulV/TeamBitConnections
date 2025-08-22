@@ -1,108 +1,13 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import BasicDetailCard from "../components/BasicDetailCard";
 import Alert from "../components/Alert";
 import Avatar from "../assets/Avatar.png";
 import DetailsInput from "../components/DetailsInput";
 import Header from "../components/Header";
+import { useAuthStore } from "../store/AuthStore";
+import axios from "axios";
+import { format, parseISO } from "date-fns";
 
-const dummyCardData = [
-  {
-    id: 1,
-    name: "Sarah Johnson",
-    phone: "+1 (555) 123-4567",
-    email: "sarah.johnson@email.com",
-    event: "Tech Innovation Summit 2025",
-    role: "speaker",
-    date: "2025-08-15",
-    org: "Google Inc.",
-    location: "San Francisco, CA",
-    profileImage:
-      "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150",
-  },
-  {
-    id: 2,
-    name: "Michael Chen",
-    phone: "+1 (555) 987-6543",
-    email: "m.chen@startupxyz.com",
-    event: "Startup Pitch Day",
-    role: "attendee",
-    date: "2025-08-20",
-    org: "StartupXYZ",
-    location: "Austin, TX",
-  },
-  {
-    id: 3,
-    name: "Dr. Emily Rodriguez",
-    phone: "+1 (555) 456-7890",
-    email: "emily.rodriguez@medtech.org",
-    event: "Healthcare Innovation Conference",
-    role: "organizer",
-    date: "2025-09-05",
-    org: "MedTech Solutions",
-    location: "Boston, MA",
-    profileImage:
-      "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=150",
-  },
-  {
-    id: 4,
-    name: "James Wilson",
-    phone: "+1 (555) 321-0987",
-    email: "james@techcorp.com",
-    event: "AI & Machine Learning Expo",
-    role: "sponsor",
-    date: "2025-08-30",
-    org: "TechCorp Industries",
-    location: "Seattle, WA",
-  },
-  {
-    id: 5,
-    name: "Lisa Thompson",
-    phone: "+1 (555) 654-3210",
-    email: "lisa.thompson@volunteer.org",
-    event: "Community Tech Workshop",
-    role: "volunteer",
-    date: "2025-08-25",
-    org: "Community Volunteers",
-    location: "Denver, CO",
-    profileImage:
-      "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150",
-  },
-  {
-    id: 6,
-    name: "Alex Morgan",
-    phone: "+1 (555) 789-0123",
-    email: "alex.morgan@newstech.com",
-    event: "Digital Media Summit",
-    role: "press",
-    date: "2025-09-10",
-    org: "NewsTech Media",
-    location: "New York, NY",
-  },
-  {
-    id: 7,
-    name: "Priya Patel",
-    phone: "+91 98765 43210",
-    email: "priya.patel@globalevent.in",
-    event: "Global Innovation Forum",
-    role: "attendee",
-    date: "2025-09-15",
-    org: "Innovation Hub India",
-    location: "Mumbai, India",
-    profileImage:
-      "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150",
-  },
-  {
-    id: 8,
-    name: "Robert Kim",
-    phone: "+1 (555) 147-2583",
-    email: "robert.kim@designstudio.com",
-    event: "UX/UI Design Conference",
-    role: "speaker",
-    date: "2025-08-28",
-    org: "Creative Design Studio",
-    location: "Portland, OR",
-  },
-];
 const DeleteConfirmationModal = ({
   isOpen,
   onConfirm,
@@ -170,12 +75,28 @@ const DeleteConfirmationModal = ({
 };
 
 function MiddleManRecords() {
-  const [data, setData] = useState(dummyCardData);
+  const [data, setData] = useState([]);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [userToDelete, setUserToDelete] = useState(null);
   const [isAdding, setIsAdding] = useState(false);
   const [AddingUser, setAddingUser] = useState(null);
   const [activeView, setActiveView] = useState("formData"); // 'formData' or 'visitingCards'
+
+  const { id } = useAuthStore();
+  const handleSelectContact = () => {
+    axios
+      .get(`http://localhost:8000/api/get-unverified-contacts/`)
+      .then((response) => {
+        console.log("Contacts fetched successfully:", response.data);
+        setData(response.data);
+      })
+      .catch((error) => {
+        console.error("Error fetching contacts:", error);
+      });
+  };
+  useEffect(() => {
+    handleSelectContact();
+  }, []);
 
   // Sample visiting card images (replace with your actual images)
   const visitingCards = [
@@ -238,6 +159,7 @@ function MiddleManRecords() {
   const onAdd = async (id) => {
     try {
       const user = data.find((user) => user.id === id);
+      console.log(user)
       if (user) {
         setAddingUser(user);
         setIsAdding(true);
@@ -293,21 +215,19 @@ function MiddleManRecords() {
           <div className="flex gap-4 mb-6">
             <button
               onClick={() => setActiveView("formData")}
-              className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
-                activeView === "formData"
-                  ? "bg-blue-600 text-white shadow-md"
-                  : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
-              }`}
+              className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${activeView === "formData"
+                ? "bg-blue-600 text-white shadow-md"
+                : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
+                }`}
             >
               Form Data
             </button>
             <button
               onClick={() => setActiveView("visitingCards")}
-              className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
-                activeView === "visitingCards"
-                  ? "bg-blue-600 text-white shadow-md"
-                  : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
-              }`}
+              className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${activeView === "visitingCards"
+                ? "bg-blue-600 text-white shadow-md"
+                : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
+                }`}
             >
               Visiting Cards
             </button>
@@ -328,17 +248,20 @@ function MiddleManRecords() {
             <>
               {activeView === "formData" ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {data.map((participant) => (
+                  {data.map((participant, index) => (
                     <BasicDetailCard
-                      key={participant.id}
+                      key={index}
                       name={participant.name}
-                      phone={participant.phone}
-                      email={participant.email}
-                      event={participant.event}
-                      role={participant.role}
-                      date={participant.date}
-                      org={participant.org}
-                      location={participant.location}
+                      phone={participant.phone_number}
+                      email={participant.email_address}
+                      event={participant.events[0].event_name}
+                      role={participant.events[0].event_role}
+                      date={format(
+                        parseISO(participant.created_at),
+                        "MMMM dd, yyyy"
+                      )}
+                      org={participant.events[0].event_held_orgranization}
+                      location={participant.events[0].event_location}
                       profileImage={participant.profileImage || Avatar}
                       onDelete={() => handleDeleteClick(participant.id)}
                       onType={() => onAdd(participant.id)}

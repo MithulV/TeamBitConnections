@@ -22,6 +22,7 @@ function UserHome() {
   const handleBackToDefault = () => {
     setActiveView("default");
   };
+  
 
   const handleSaveContact = async (formData) => {
     try {
