@@ -152,7 +152,7 @@ function UserEntries() {
                 eventName: event.event_name || "",
                 eventRole: event.event_role || "",
                 eventDate: event.event_date || "",
-                eventHeldOrganization: event.event_held_orgranization || "", // note spelling in your backend
+                eventHeldOrganization: event.event_held_organization || "", // note spelling in your backend
                 eventLocation: event.event_location || "",
               }))
               : [
@@ -179,7 +179,7 @@ function UserEntries() {
   const handleEditComplete = async (updatedData) => {
     try {
       if (updatedData && editingUser) {
-        const response = await axios.put(`http://localhost:8000/api/update-contact/${editingUser.id}`, updatedData);
+        const response = await axios.put(`http://localhost:8000/api/update-contacts-and-events/${editingUser.id}`, updatedData);
         console.log(response);
         showAlert(
           "success",
@@ -187,7 +187,15 @@ function UserEntries() {
           } has been successfully updated.`
         );
       }
-
+      // Update the contact with matching contact_id
+      setProfileData(prevData =>
+        prevData.map(p =>
+          p.contact_id === editingUser.id
+            ? { ...p, ...updatedData } // Merge updated data
+            : p // Keep other contacts unchanged
+        )
+      );
+      console.log(profileData);
       // Close the edit form
       setIsEditing(false);
       setEditingUser(null);
@@ -300,7 +308,7 @@ function UserEntries() {
                       parseISO(participant.created_at),
                       "MMMM dd, yyyy"
                     )}
-                    org={participant.events[0].event_held_orgranization}
+                    org={participant.events[0].event_held_organization}
                     location={participant.events[0].event_location}
                     profileImage={participant.profileImage || Avatar}
                     onDelete={() => handleDeleteClick(participant.id)}

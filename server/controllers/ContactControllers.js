@@ -107,7 +107,7 @@ export const CreateContact = async (req, res) => {
             if (events && events.length > 0) {
                 for (const event of events) {
                     const [newEvent] =
-                        await t`INSERT INTO event (contact_id, event_name, event_role, event_date, event_held_orgranization, event_location, verified) VALUES (${contactId}, ${
+                        await t`INSERT INTO event (contact_id, event_name, event_role, event_date, event_held_organization, event_location, verified) VALUES (${contactId}, ${
                             event.eventName
                         }, ${event.eventRole}, ${event.eventDate}, ${event.eventHeldOrganization}, ${
                             event.eventLocation
@@ -257,7 +257,7 @@ export const UpdateContactAndEvents = async (req, res) => {
                         event_name = ${event.event_name},
                         event_role = ${event.event_role},
                         event_date = ${event.event_date},
-                        event_held_orgranization = ${event.event_held_organization},
+                        event_held_organization = ${event.event_held_organization},
                         event_location = ${event.event_location}
                     WHERE
                         event_id = ${event.event_id}
@@ -376,7 +376,7 @@ export const AddEventToExistingContact = async (req, res) => {
 
     try {
         const [newEvent] = await db`
-            INSERT INTO event (contact_id, event_name, event_role, event_date, event_held_orgranization, event_location, verified)
+            INSERT INTO event (contact_id, event_name, event_role, event_date, event_held_organization, event_location, verified)
             VALUES (${contactId}, ${eventName}, ${eventRole}, ${eventDate}, ${eventHeldOrganization}, ${eventLocation}, ${
             verified || false
         })
