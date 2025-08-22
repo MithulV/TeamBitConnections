@@ -71,16 +71,34 @@ export const CreateContact = async (req, res) => {
             }
 
             // 3. Insert Education (if provided)
+            // 3. Insert Education (if provided)
             if (education) {
-                [createdEducation] =
-                    await t`INSERT INTO contact_education (contact_id, pg_course_name, ug_course_name) VALUES (${contactId}, ${education.pg_course_name}, ${education.ug_course_name}) RETURNING *`;
+                [createdEducation] = await t`INSERT INTO contact_education (
+            contact_id, 
+            pg_course_name, pg_college, pg_university, pg_from_date, pg_to_date,
+            ug_course_name, ug_college, ug_university, ug_from_date, ug_to_date
+        ) VALUES (
+            ${contactId}, 
+            ${education.pg_course_name || null}, ${education.pg_college || null}, ${education.pg_university || null}, ${
+                    education.pg_from_date || null
+                }, ${education.pg_to_date || null},
+            ${education.ug_course_name || null}, ${education.ug_college || null}, ${education.ug_university || null}, ${
+                    education.ug_from_date || null
+                }, ${education.ug_to_date || null}
+        ) RETURNING *`;
             }
 
             // 4. Insert Experiences Array (if provided)
+            // 4. Insert Experiences Array (if provided)
             if (experiences && experiences.length > 0) {
                 for (const exp of experiences) {
-                    const [newExp] =
-                        await t`INSERT INTO contact_experience (contact_id, job_title, company, from_date, to_date) VALUES (${contactId}, ${exp.job_title}, ${exp.company}, ${exp.from_date}, ${exp.to_date}) RETURNING *`;
+                    const [newExp] = await t`INSERT INTO contact_experience (
+                contact_id, job_title, company, department, from_date, to_date
+            ) VALUES (
+                ${contactId}, ${exp.job_title}, ${exp.company}, ${exp.department || null}, ${exp.from_date}, ${
+                        exp.to_date
+                    }
+            ) RETURNING *`;
                     createdExperiences.push(newExp);
                 }
             }
@@ -143,6 +161,148 @@ export const GetContacts = async (req, res) => {
     }
 };
 
+export const GetUnVerifiedContacts = async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const contacts = await db`
+            SELECT
+                c.*,
+                (SELECT row_to_json(ca) FROM contact_address ca WHERE ca.contact_id = c.contact_id LIMIT 1) as address,
+                (SELECT row_to_json(ce) FROM contact_education ce WHERE ce.contact_id = c.contact_id LIMIT 1) as education,
+                (SELECT json_agg(cx) FROM contact_experience cx WHERE cx.contact_id = c.contact_id) as experiences,
+                (SELECT json_agg(e) FROM event e WHERE e.contact_id = c.contact_id) as events
+            FROM
+                contact c
+            WHERE
+                verified IS NULL
+            ORDER BY
+                c.contact_id DESC
+        `;
+
+        return res.status(200).json(contacts);
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ message: "Server Error!", error: err.message });
+    }
+};
+
+export const UpdateContactAndEvents = async (req, res) => {
+    const { id } = req.params;
+    const {
+        // Contact Fields
+        name,
+        phone_number,
+        email_address,
+        // Events Array
+        events,
+    } = req.body;
+
+    // --- 1. Strict Validation ---
+    if (!id) {
+        return res.status(400).json({ message: "Contact ID is required in the URL." });
+    }
+    if (!name || !phone_number || !email_address) {
+        return res.status(400).json({ message: "Required fields are missing (name, phone_number, email_address)." });
+    }
+    if (!events || !Array.isArray(events) || events.length === 0) {
+        return res.status(400).json({ message: "The 'events' field must be a non-empty array." });
+    }
+
+    // Validate each object in the events array
+    for (const event of events) {
+        if (
+            event.event_id === undefined ||
+            event.event_name === undefined ||
+            event.event_role === undefined ||
+            event.event_date === undefined ||
+            event.event_held_organization === undefined ||
+            event.event_location === undefined
+        ) {
+            return res.status(400).json({
+                message: "Each event object must contain all required fields (event_id, event_name, etc.).",
+                invalid_event: event,
+            });
+        }
+    }
+
+    try {
+        // --- 2. Use a Transaction ---
+        // The `sql.begin` or `sql.transaction` block automatically handles BEGIN, COMMIT, and ROLLBACK.
+        const result = await db.begin(async (t) => {
+            // --- 3. Update the Contact Record ---
+            // The template literal `t` is the transactional version of `sql`
+            const contactResults = await t`
+                UPDATE contact
+                SET
+                    name = ${name},
+                    phone_number = ${phone_number},
+                    email_address = ${email_address}
+                WHERE contact_id = ${id}
+                RETURNING *
+            `;
+
+            // If the query returns no rows, the contact wasn't found.
+            if (contactResults.length === 0) {
+                // Throwing an error here will automatically trigger a ROLLBACK.
+                throw new Error("ContactNotFound");
+            }
+            const updatedContact = contactResults[0];
+
+            // --- 4. Update Each Event Record ---
+            const updatedEvents = [];
+            for (const event of events) {
+                const eventResults = await t`
+                    UPDATE event
+                    SET
+                        event_name = ${event.event_name},
+                        event_role = ${event.event_role},
+                        event_date = ${event.event_date},
+                        event_held_orgranization = ${event.event_held_organization},
+                        event_location = ${event.event_location}
+                    WHERE
+                        event_id = ${event.event_id}
+                        AND contact_id = ${id} -- Security check: Ensures the event belongs to the contact
+                    RETURNING *
+                `;
+
+                // If an event update returns no rows, the event_id was invalid or didn't belong to the contact.
+                if (eventResults.length === 0) {
+                    throw new Error("EventNotFound");
+                }
+                updatedEvents.push(eventResults[0]);
+            }
+
+            // Return the final data structure from the transaction block
+            return {
+                contact: updatedContact,
+                events: updatedEvents,
+            };
+        });
+
+        // --- 5. Send Success Response ---
+        return res.status(200).json({
+            message: "Contact and events updated successfully!",
+            data: result,
+        });
+    } catch (err) {
+        console.error("Update Transaction Failed:", err);
+
+        // --- 6. Handle Specific Errors ---
+        if (err.message === "ContactNotFound" || err.message === "EventNotFound") {
+            return res
+                .status(404)
+                .json({ message: "Contact or one of the specified events not found for the given contact ID." });
+        }
+        // PostgreSQL unique_violation error code
+        if (err.code === "23505") {
+            return res.status(409).json({ message: "A contact with this email address already exists." });
+        }
+
+        // Generic server error for all other cases
+        return res.status(500).json({ message: "Server Error!", error: err.message });
+    }
+};
+
 // UPDATE: A contact's core details
 export const UpdateContact = async (req, res) => {
     const { id } = req.params;
@@ -158,7 +318,7 @@ export const UpdateContact = async (req, res) => {
                 name = ${name},
                 phone_number = ${phoneNumber},
                 skills = ${skills},
-                linkedin_url = ${linkedin_url}
+                linkedin_url = ${linkedin_url || null}
             WHERE contact_id = ${id}
             RETURNING *
         `;

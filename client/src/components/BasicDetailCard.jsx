@@ -15,7 +15,7 @@ function Tooltip({ label, children }) {
         aria-describedby={id}
         className="min-w-0 w-full"
         onMouseEnter={() => { clearTimeout(timeoutRef.current); setOpen(true) }}
-        onMouseLeave={() => { timeoutRef.current = setTimeout(() => setOpen(false), 120) }}
+        onMouseLeave={() => { timeoutRef.current = setTimeout(() => setOpen(false), 20) }}
         onFocus={() => setOpen(true)}
         onBlur={() => setOpen(false)}
         onClick={() => setOpen(prev => !prev)}
@@ -89,7 +89,7 @@ export default function BasicDetailCard({ name, phone, email, event, role, locat
         <div className="flex items-center gap-2 min-w-0 flex-1">
           <MapPin size={14} className="shrink-0 text-brand" />
           <Tooltip label={location}>
-            <span className="truncate block min-w-0">{location}</span>
+            <span className="truncate block min-w-0" >{location}</span>
           </Tooltip>
 
         </div>
