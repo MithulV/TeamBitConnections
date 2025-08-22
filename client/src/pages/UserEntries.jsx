@@ -236,21 +236,21 @@ function UserEntries() {
           events:
             participant.events?.length > 0
               ? participant.events.map((event) => ({
-                  eventName: event.event_name || "",
-                  eventRole: event.event_role || "",
-                  eventDate: event.event_date || "",
-                  eventHeldOrganization: event.event_held_orgranization || "", // note spelling in your backend
-                  eventLocation: event.event_location || "",
-                }))
+                eventName: event.event_name || "",
+                eventRole: event.event_role || "",
+                eventDate: event.event_date || "",
+                eventHeldOrganization: event.event_held_orgranization || "", // note spelling in your backend
+                eventLocation: event.event_location || "",
+              }))
               : [
-                  {
-                    eventName: "",
-                    eventRole: "",
-                    eventDate: "",
-                    eventHeldOrganization: "",
-                    eventLocation: "",
-                  },
-                ],
+                {
+                  eventName: "",
+                  eventRole: "",
+                  eventDate: "",
+                  eventHeldOrganization: "",
+                  eventLocation: "",
+                },
+              ],
         };
 
         setEditingUser(userToEdit);
@@ -275,8 +275,7 @@ function UserEntries() {
         // Show success alert
         showAlert(
           "success",
-          `${
-            updatedData.name || editingUser.name
+          `${updatedData.name || editingUser.name
           } has been successfully updated.`
         );
       }
@@ -345,21 +344,19 @@ function UserEntries() {
           <div className="flex gap-4 mb-6">
             <button
               onClick={() => setActiveView("formDetails")}
-              className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
-                activeView === "formDetails"
-                  ? "bg-blue-600 text-white shadow-md"
-                  : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
-              }`}
+              className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${activeView === "formDetails"
+                ? "bg-blue-600 text-white shadow-md"
+                : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
+                }`}
             >
               Form Details
             </button>
             <button
               onClick={() => setActiveView("visitingCards")}
-              className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
-                activeView === "visitingCards"
-                  ? "bg-blue-600 text-white shadow-md"
-                  : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
-              }`}
+              className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${activeView === "visitingCards"
+                ? "bg-blue-600 text-white shadow-md"
+                : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
+                }`}
             >
               Visiting Cards
             </button>
@@ -383,27 +380,30 @@ function UserEntries() {
         <>
           {activeView === "formDetails" ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
-              {profileData.map((participant, index) => (
+              {profileData.map((participant, index) => {
+                console.log(participant)
                 // <h1>hello</h1>
-                <BasicDetailCard
-                  key={index}
-                  name={participant.name}
-                  phone={participant.phone_number}
-                  email={participant.email_address}
-                  event={participant.events[0].event_name}
-                  role={participant.events[0].event_role}
-                  date={format(
-                    parseISO(participant.created_at),
-                    "MMMM dd, yyyy"
-                  )}
-                  org={participant.org}
-                  location={participant.location}
-                  profileImage={participant.profileImage || Avatar}
-                  onDelete={() => handleDeleteClick(participant.id)}
-                  onType={() => onEdit(participant)}
-                  editOrAdd={"edit"}
-                />
-              ))}
+                return (
+                  <BasicDetailCard
+                    key={index}
+                    name={participant.name}
+                    phone={participant.phone_number}
+                    email={participant.email_address}
+                    event={participant.events[0].event_name}
+                    role={participant.events[0].event_role}
+                    date={format(
+                      parseISO(participant.created_at),
+                      "MMMM dd, yyyy"
+                    )}
+                    org={participant.events[0].event_held_orgranization}
+                    location={participant.events[0].event_location}
+                    profileImage={participant.profileImage || Avatar}
+                    onDelete={() => handleDeleteClick(participant.id)}
+                    onType={() => onEdit(participant)}
+                    editOrAdd={"edit"}
+                  />
+                )
+              })}
             </div>
           ) : (
             <div className="p-6">
