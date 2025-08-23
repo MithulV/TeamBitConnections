@@ -116,7 +116,9 @@ function UserEntries() {
     if (userToDelete) {
       try {
         console.log(userToDelete);
-        const response = await axios.delete(`http://localhost:8000/api/delete-contact/${userToDelete.id}`)
+        const response = await axios.delete(
+          `http://localhost:8000/api/delete-contact/${userToDelete.id}`
+        );
         setShowDeleteModal(false);
         showAlert(
           "success",
@@ -148,23 +150,23 @@ function UserEntries() {
           events:
             participant.events?.length > 0
               ? participant.events.map((event) => ({
-                eventId: event.event_id,
-                eventName: event.event_name || "",
-                eventRole: event.event_role || "",
-                eventDate: event.event_date || "",
-                eventHeldOrganization: event.event_held_organization || "", // note spelling in your backend
-                eventLocation: event.event_location || "",
-              }))
+                  eventId: event.event_id,
+                  eventName: event.event_name || "",
+                  eventRole: event.event_role || "",
+                  eventDate: event.event_date || "",
+                  eventHeldOrganization: event.event_held_organization || "", // note spelling in your backend
+                  eventLocation: event.event_location || "",
+                }))
               : [
-                {
-                  eventId: "",
-                  eventName: "",
-                  eventRole: "",
-                  eventDate: "",
-                  eventHeldOrganization: "",
-                  eventLocation: "",
-                },
-              ],
+                  {
+                    eventId: "",
+                    eventName: "",
+                    eventRole: "",
+                    eventDate: "",
+                    eventHeldOrganization: "",
+                    eventLocation: "",
+                  },
+                ],
         };
 
         setEditingUser(userToEdit);
@@ -179,20 +181,25 @@ function UserEntries() {
   const handleEditComplete = async (updatedData) => {
     try {
       if (updatedData && editingUser) {
-        const response = await axios.put(`http://localhost:8000/api/update-contacts-and-events/${editingUser.id}`, updatedData);
+        const response = await axios.put(
+          `http://localhost:8000/api/update-contacts-and-events/${editingUser.id}`,
+          updatedData
+        );
         console.log(response);
         showAlert(
           "success",
-          `${updatedData.name || editingUser.name
+          `${
+            updatedData.name || editingUser.name
           } has been successfully updated.`
         );
       }
       // Update the contact with matching contact_id
-      setProfileData(prevData =>
-        prevData.map(p =>
-          p.contact_id === editingUser.id
-            ? { ...p, ...updatedData } // Merge updated data
-            : p // Keep other contacts unchanged
+      setProfileData((prevData) =>
+        prevData.map(
+          (p) =>
+            p.contact_id === editingUser.id
+              ? { ...p, ...updatedData } // Merge updated data
+              : p // Keep other contacts unchanged
         )
       );
       console.log(profileData);
@@ -212,7 +219,9 @@ function UserEntries() {
   const { id } = useAuthStore();
   const handleSelectContact = async () => {
     try {
-      const response = await axios.get(`http://localhost:8000/api/contacts/${id}`);
+      const response = await axios.get(
+        `http://localhost:8000/api/contacts/${id}`
+      );
       console.log("Contacts fetched successfully:", response.data);
       setProfileData(response.data);
     } catch (error) {
@@ -225,7 +234,9 @@ function UserEntries() {
 
   const handleSelectImage = async () => {
     try {
-      const response = await axios.get(`http://localhost:8000/api/get-contact-images/${id}`);
+      const response = await axios.get(
+        `http://localhost:8000/api/get-contact-images/${id}`
+      );
       console.log("Contact images fetched successfully:", response.data);
       setImageData(response.data);
     } catch (error) {
@@ -257,19 +268,21 @@ function UserEntries() {
           <div className="flex gap-4 mb-6">
             <button
               onClick={() => setActiveView("formDetails")}
-              className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${activeView === "formDetails"
-                ? "bg-blue-600 text-white shadow-md"
-                : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
-                }`}
+              className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
+                activeView === "formDetails"
+                  ? "bg-blue-600 text-white shadow-md"
+                  : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
+              }`}
             >
               Form Details
             </button>
             <button
               onClick={() => setActiveView("visitingCards")}
-              className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${activeView === "visitingCards"
-                ? "bg-blue-600 text-white shadow-md"
-                : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
-                }`}
+              className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
+                activeView === "visitingCards"
+                  ? "bg-blue-600 text-white shadow-md"
+                  : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
+              }`}
             >
               Visiting Cards
             </button>
@@ -315,18 +328,18 @@ function UserEntries() {
                     onType={() => onEdit(participant)}
                     editOrAdd={"edit"}
                   />
-                )
+                );
               })}
             </div>
           ) : (
             <div className="p-6">
               <div className="max-w-7xl mx-auto">
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-3 gap-6">
                   {Array.isArray(imageData?.data) &&
                     imageData.data.map((card, index) => (
                       <div
                         key={card.id ?? index}
-                        className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200 aspect-[3/4]"
+                        className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200 h-48 w-full"
                       >
                         <img
                           src={`http://localhost:8000/${card.file_path.replace(
@@ -334,7 +347,7 @@ function UserEntries() {
                             "/"
                           )}`}
                           alt={`Visiting Card ${card.id}`}
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-contain bg-gray-50"
                         />
                       </div>
                     ))}
