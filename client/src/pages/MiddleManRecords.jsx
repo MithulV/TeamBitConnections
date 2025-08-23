@@ -126,8 +126,8 @@ function MiddleManRecords() {
     }));
   };
 
-  const handleDeleteClick = (id) => {
-    const user = data.find((user) => user.id === id);
+  const handleDeleteClick = (contact_id) => {
+    const user = data.find((user) => user.contact_id === contact_id);
     setUserToDelete({ id, name: user?.name || "this user" });
     setShowDeleteModal(true);
   };
@@ -156,10 +156,10 @@ function MiddleManRecords() {
     setUserToDelete(null);
   };
 
-  const onAdd = async (id) => {
+  const onAdd = async (contact_id) => {
     try {
-      const user = data.find((user) => user.id === id);
-      console.log(user)
+      const user = data.find((user) => user.contact_id === contact_id);
+      console.log(user, id)
       if (user) {
         setAddingUser(user);
         setIsAdding(true);
@@ -263,8 +263,8 @@ function MiddleManRecords() {
                       org={participant.events[0].event_held_organization}
                       location={participant.events[0].event_location}
                       profileImage={participant.profileImage || Avatar}
-                      onDelete={() => handleDeleteClick(participant.id)}
-                      onType={() => onAdd(participant.id)}
+                      onDelete={() => handleDeleteClick(participant.contact_id)}
+                      onType={() => onAdd(participant.contact_id)}
                       editOrAdd={"add"}
                     />
                   ))}

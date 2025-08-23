@@ -58,7 +58,7 @@ export const CreateContact = async (req, res) => {
                 ) RETURNING *
             `;
             const contactId = contact.contact_id;
-
+            console.log(contactId);
             let createdAddress = null,
                 createdEducation = null;
             let createdExperiences = [],
@@ -102,15 +102,14 @@ export const CreateContact = async (req, res) => {
                     createdExperiences.push(newExp);
                 }
             }
-
             // 5. Insert Events Array (if provided)
             if (events && events.length > 0) {
                 for (const event of events) {
                     const [newEvent] =
                         await t`INSERT INTO event (contact_id, event_name, event_role, event_date, event_held_organization, event_location, verified) VALUES (${contactId}, ${
-                            event.eventName
-                        }, ${event.eventRole}, ${event.eventDate}, ${event.eventHeldOrganization}, ${
-                            event.eventLocation
+                            event.event_name
+                        }, ${event.event_role}, ${event.event_date}, ${event.event_held_organization}, ${
+                            event.event_location
                         }, ${event.verified || false}) RETURNING *`;
                     createdEvents.push(newEvent);
                 }
@@ -305,29 +304,156 @@ export const UpdateContactAndEvents = async (req, res) => {
 
 // UPDATE: A contact's core details
 export const UpdateContact = async (req, res) => {
-    const { id } = req.params;
-    const { name, phoneNumber, skills, linkedin_url } = req.body;
+    const { contact_id } = req.params;
+    const {
+        // --- Contact Fields ---
+        name,
+        phone_number,
+        email_address,
+        verified,
+        dob,
+        gender,
+        nationality,
+        marital_status,
+        category,
+        secondary_email,
+        secondary_phone_number,
+        created_by,
+        emergency_contact_name,
+        emergency_contact_relationship,
+        emergency_contact_phone_number,
+        skills,
+        logger,
+        linkedin_url,
 
-    if (!name || !phoneNumber) {
-        return res.status(400).json({ message: "The required fields 'name' and 'phoneNumber' are missing." });
-    }
+        // --- SINGLE OBJECTS ---
+        address,
+        education,
+
+        // --- ARRAYS of OBJECTS ---
+        experiences,
+        events,
+    } = req.body;
 
     try {
-        const [updatedContact] = await db`
-            UPDATE contact SET
-                name = ${name},
-                phone_number = ${phoneNumber},
-                skills = ${skills},
-                linkedin_url = ${linkedin_url || null}
-            WHERE contact_id = ${id}
-            RETURNING *
-        `;
+        const result = await db.begin(async (t) => {
+            // 1. Update the main contact record
+            const [updatedContact] = await t`
+                UPDATE contact SET
+                    name = ${name || null},
+                    phone_number = ${phone_number || null},
+                    email_address = ${email_address || null},
+                    verified = ${verified || null},
+                    dob = ${dob || null},
+                    gender = ${gender || null},
+                    nationality = ${nationality || null},
+                    marital_status = ${marital_status || null},
+                    category = ${category || null},
+                    secondary_email = ${secondary_email || null},
+                    secondary_phone_number = ${secondary_phone_number || null},
+                    created_by = ${created_by || null},
+                    emergency_contact_name = ${emergency_contact_name || null},
+                    emergency_contact_relationship = ${emergency_contact_relationship || null},
+                    emergency_contact_phone_number = ${emergency_contact_phone_number || null},
+                    skills = ${skills || null},
+                    logger = ${logger || null},
+                    linkedin_url = ${linkedin_url || null}
+                WHERE contact_id = ${contact_id}
+                RETURNING *
+            `;
 
-        if (!updatedContact) {
-            return res.status(404).json({ message: "Contact not found." });
-        }
+            let updatedAddress = null,
+                updatedEducation = null;
+            let updatedExperiences = [],
+                updatedEvents = [];
 
-        return res.status(200).json({ message: "Contact updated successfully!", data: updatedContact });
+            // 2. Update Address (if provided)
+            if (address) {
+                [updatedAddress] = await t`
+                    INSERT INTO contact_address (contact_id, street, city, state, country, zipcode)
+                    VALUES (${contact_id}, ${address.street}, ${address.city}, ${address.state}, ${address.country}, ${address.zipcode})
+                    ON CONFLICT (contact_id) DO UPDATE SET
+                        street = EXCLUDED.street,
+                        city = EXCLUDED.city,
+                        state = EXCLUDED.state,
+                        country = EXCLUDED.country,
+                        zipcode = EXCLUDED.zipcode
+                    RETURNING *
+                `;
+            }
+
+            // 3. Update Education (if provided)
+            if (education) {
+                [updatedEducation] = await t`
+                    INSERT INTO contact_education (
+                        contact_id, pg_course_name, pg_college, pg_university, pg_from_date, pg_to_date,
+                        ug_course_name, ug_college, ug_university, ug_from_date, ug_to_date
+                    ) VALUES (
+                        ${contact_id},
+                        ${education.pg_course_name || null}, ${education.pg_college || null}, ${education.pg_university || null}, ${education.pg_from_date || null}, ${education.pg_to_date || null},
+                        ${education.ug_course_name || null}, ${education.ug_college || null}, ${education.ug_university || null}, ${education.ug_from_date || null}, ${education.ug_to_date || null}
+                    )
+                    ON CONFLICT (contact_id) DO UPDATE SET
+                        pg_course_name = EXCLUDED.pg_course_name,
+                        pg_college = EXCLUDED.pg_college,
+                        pg_university = EXCLUDED.pg_university,
+                        pg_from_date = EXCLUDED.pg_from_date,
+                        pg_to_date = EXCLUDED.pg_to_date,
+                        ug_course_name = EXCLUDED.ug_course_name,
+                        ug_college = EXCLUDED.ug_college,
+                        ug_university = EXCLUDED.ug_university,
+                        ug_from_date = EXCLUDED.ug_from_date,
+                        ug_to_date = EXCLUDED.ug_to_date
+                    RETURNING *
+                `;
+            }
+
+            // 4. Update Experiences Array (if provided)
+            if (experiences && experiences.length > 0) {
+                // First, delete existing experiences for this contact
+                await t`DELETE FROM contact_experience WHERE contact_id = ${contact_id}`;
+
+                // Then, insert the new experiences
+                for (const exp of experiences) {
+                    const [newExp] = await t`
+                        INSERT INTO contact_experience (
+                            contact_id, job_title, company, department, from_date, to_date
+                        ) VALUES (
+                            ${contact_id}, ${exp.job_title}, ${exp.company}, ${exp.department || null}, ${exp.from_date}, ${exp.to_date}
+                        ) RETURNING *
+                    `;
+                    updatedExperiences.push(newExp);
+                }
+            }
+
+            // 5. Update Events Array (if provided)
+            if (events && events.length > 0) {
+                // First, delete existing events for this contact
+                await t`DELETE FROM event WHERE contact_id = ${contact_id}`;
+
+                // Then, insert the new events
+                for (const event of events) {
+                    const [newEvent] = await t`
+                        INSERT INTO event (
+                            contact_id, event_name, event_role, event_date, event_held_organization, event_location, verified
+                        ) VALUES (
+                            ${contact_id}, ${event.event_name}, ${event.event_role}, ${event.event_date}, ${event.event_held_organization}, ${event.event_location}, ${event.verified || false}
+                        ) RETURNING *
+                    `;
+                    updatedEvents.push(newEvent);
+                }
+            }
+
+            return {
+                contact: updatedContact,
+                address: updatedAddress,
+                education: updatedEducation,
+                experiences: updatedExperiences,
+                events: updatedEvents,
+            };
+        });
+
+        return res.status(200).json({ message: "Contact updated successfully!", data: result });
     } catch (err) {
         console.error(err);
         return res.status(500).json({ message: "Server Error!", error: err.message });
