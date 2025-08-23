@@ -212,7 +212,7 @@ function MiddleManRecords() {
       <div className="p-6">
         <div className="max-w-7xl mx-auto">
           {/* View Toggle Buttons */}
-          <div className="flex gap-4 mb-6">
+          <div className={`flex gap-4 mb-6 ${isAdding?"hidden":"block"}`}>
             <button
               onClick={() => setActiveView("formData")}
               className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${activeView === "formData"
@@ -260,7 +260,7 @@ function MiddleManRecords() {
                         parseISO(participant.created_at),
                         "MMMM dd, yyyy"
                       )}
-                      org={participant.events[0].event_held_orgranization}
+                      org={participant.events[0].event_held_organization}
                       location={participant.events[0].event_location}
                       profileImage={participant.profileImage || Avatar}
                       onDelete={() => handleDeleteClick(participant.id)}
