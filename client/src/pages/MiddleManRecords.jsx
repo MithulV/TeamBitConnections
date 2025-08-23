@@ -81,7 +81,11 @@ function MiddleManRecords() {
   const [isAdding, setIsAdding] = useState(false);
   const [AddingUser, setAddingUser] = useState(null);
   const [activeView, setActiveView] = useState("formData"); // 'formData' or 'visitingCards'
-
+  const [alert, setAlert] = useState({
+    isOpen: false,
+    severity: "success",
+    message: "",
+  });
   const { id } = useAuthStore();
   const handleSelectContact = () => {
     axios
@@ -104,12 +108,6 @@ function MiddleManRecords() {
     { id: 2, image: "https://example.com/card2.jpg" },
     // Add more visiting card images
   ];
-
-  const [alert, setAlert] = useState({
-    isOpen: false,
-    severity: "success",
-    message: "",
-  });
 
   const showAlert = (severity, message) => {
     setAlert({
@@ -170,18 +168,21 @@ function MiddleManRecords() {
     }
   };
 
-  const handleAddComplete = (updatedData) => {
+  const handleAddComplete = async (updatedData) => {
     try {
       if (updatedData && AddingUser) {
         // Update the user in the data array
+        console.log(updatedData);
+        const response = await axios.put(`http://localhost:8000/api/update-contact/${updatedData.contact_id}`, updatedData);
+        console.log(response);
         setData((prevData) =>
           prevData.map((user) =>
-            user.id === AddingUser.id ? { ...user, ...updatedData } : user
+            user.contact_id === AddingUser.contact_id ? { ...user, ...updatedData } : user
           )
         );
 
         // Show success alert
-        showAlert(`success has been successfully Added.`);
+        showAlert("success", `${updatedData.name} has been successfully Added.`);
       }
 
       // Close the edit form
@@ -212,7 +213,7 @@ function MiddleManRecords() {
       <div className="p-6">
         <div className="max-w-7xl mx-auto">
           {/* View Toggle Buttons */}
-          <div className={`flex gap-4 mb-6 ${isAdding?"hidden":"block"}`}>
+          <div className={`flex gap-4 mb-6 ${isAdding ? "hidden" : "block"}`}>
             <button
               onClick={() => setActiveView("formData")}
               className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${activeView === "formData"
