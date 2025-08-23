@@ -58,7 +58,7 @@ export const CreateContact = async (req, res) => {
                 ) RETURNING *
             `;
             const contactId = contact.contact_id;
-
+            console.log(contactId);
             let createdAddress = null,
                 createdEducation = null;
             let createdExperiences = [],
@@ -102,15 +102,14 @@ export const CreateContact = async (req, res) => {
                     createdExperiences.push(newExp);
                 }
             }
-
             // 5. Insert Events Array (if provided)
             if (events && events.length > 0) {
                 for (const event of events) {
                     const [newEvent] =
                         await t`INSERT INTO event (contact_id, event_name, event_role, event_date, event_held_organization, event_location, verified) VALUES (${contactId}, ${
-                            event.eventName
-                        }, ${event.eventRole}, ${event.eventDate}, ${event.eventHeldOrganization}, ${
-                            event.eventLocation
+                            event.event_name
+                        }, ${event.event_role}, ${event.event_date}, ${event.event_held_organization}, ${
+                            event.event_location
                         }, ${event.verified || false}) RETURNING *`;
                     createdEvents.push(newEvent);
                 }
