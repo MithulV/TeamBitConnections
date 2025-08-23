@@ -7,13 +7,15 @@ import {
     SearchContacts,
     AddEventToExistingContact,
     GetUnVerifiedContacts,
-    UpdateContactAndEvents
+    UpdateContactAndEvents,
+    
 } from "../controllers/ContactControllers.js";
-import { upload, UploadImage, GetPicturesByUserId } from "../controllers/PhotoControllers.js";
+import { upload, UploadImage, GetPicturesByUserId, GetUnVerifiedImages } from "../controllers/PhotoControllers.js";
 
 const router = express.Router();
 router.get("/contacts/:userId", GetContacts);
 router.get("/get-unverified-contacts/", GetUnVerifiedContacts);
+router.get("/get-unverified-images/", GetUnVerifiedImages);
 router.get("/search-contact", SearchContacts);
 router.post("/create-contact", CreateContact);
 router.post("/upload-contact/", upload.single("image"), UploadImage);
