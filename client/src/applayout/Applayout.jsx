@@ -12,7 +12,7 @@ import { useAuthStore } from '../store/AuthStore';
 import UserEntries from '../pages/UserEntries'
 import ProfileView from '../pages/ProfileView';
 import DetailsInput from '../components/DetailsInput';
-
+import VisitingCardDetails from '../pages/VisitingCardDetails';
 // A helper component to render the correct home page based on role
 const RoleBasedHome = () => {
     const { role } = useAuthStore();
@@ -71,6 +71,7 @@ function Applayout() {
                         <Route path="/tasks" element={<MiddleManTasks />} />
                         <Route path="/profile/:id" element={<ProfileView />} />
                         <Route path="/edit/:id" element={<DetailsInput />} />
+                        <Route path="/visiting-card-details/:id" element={<VisitingCardDetails />} />
                     </Route>
                     
                     {/* Fallback route to redirect to home if logged in, or login if not */}
