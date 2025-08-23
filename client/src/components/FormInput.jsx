@@ -51,7 +51,7 @@ function FormInput({ onBack, onSave, initialData = null, isEditMode = false }) {
         ...prev,
         events: [{
           ...prev.events[0],
-          eventDate: today
+          event_date: today
         }]
       }));
     }
@@ -74,7 +74,7 @@ function FormInput({ onBack, onSave, initialData = null, isEditMode = false }) {
       inputMode: "numeric"
     },
     {
-      label: "Email Address",
+      label: "Email Address*",
       type: "email",
       name: "email_address",
       placeholder: "Enter email address",
@@ -105,14 +105,14 @@ function FormInput({ onBack, onSave, initialData = null, isEditMode = false }) {
       value: formData.events[0].event_date
     },
     {
-      label: "Event held Organization",
+      label: "Event held Organization*",
       type: "text",
       name: "event_held_organization",
       placeholder: "Enter organization name",
       value: formData.events[0].event_held_organization
     },
     {
-      label: "Event Location",
+      label: "Event Location*",
       type: "text",
       name: "event_location",
       placeholder: "Enter event location",
