@@ -44,11 +44,11 @@ export const CreateContact = async (req, res) => {
             // 1. Insert the main contact record
             const [contact] = await t`
                 INSERT INTO contact (
-                    name, phone_number, email_address, verified, dob, gender, nationality, marital_status, category,
+                    name, phone_number, email_address, dob, gender, nationality, marital_status, category,
                     secondary_email, secondary_phone_number, created_by, emergency_contact_name,
                     emergency_contact_relationship, emergency_contact_phone_number, skills, logger, linkedin_url
                 ) VALUES (
-                    ${name}, ${phone_number}, ${email_address}, ${verified || null}, ${dob || null}, ${gender || null},
+                    ${name}, ${phone_number}, ${email_address}, ${dob || null}, ${gender || null},
                     ${nationality || null}, ${marital_status || null}, ${category || null}, ${secondary_email || null},
                     ${secondary_phone_number || null}, ${created_by || null}, ${emergency_contact_name || null},
                     ${emergency_contact_relationship || null}, ${emergency_contact_phone_number || null}, ${
@@ -149,6 +149,31 @@ export const GetContacts = async (req, res) => {
                 contact c
             WHERE
                 created_by = ${userId}
+            ORDER BY
+                c.contact_id DESC
+        `;
+
+        return res.status(200).json(contacts);
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ message: "Server Error!", error: err.message });
+    }
+};
+
+export const GetContactsByCategory = async (req, res) => {
+    try {
+        const { category } = req.query;
+        const contacts = await db`
+            SELECT
+                c.*,
+                (SELECT row_to_json(ca) FROM contact_address ca WHERE ca.contact_id = c.contact_id LIMIT 1) as address,
+                (SELECT row_to_json(ce) FROM contact_education ce WHERE ce.contact_id = c.contact_id LIMIT 1) as education,
+                (SELECT json_agg(cx) FROM contact_experience cx WHERE cx.contact_id = c.contact_id) as experiences,
+                (SELECT json_agg(e) FROM event e WHERE e.contact_id = c.contact_id) as events
+            FROM
+                contact c
+            WHERE
+                category = ${category}
             ORDER BY
                 c.contact_id DESC
         `;

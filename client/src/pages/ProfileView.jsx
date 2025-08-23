@@ -1,214 +1,35 @@
 import React, { useState } from 'react';
 import { ArrowLeft, Briefcase, GraduationCap, StickyNote, MapPin, CheckCircle, Edit3, Users, Shield, Phone, Mail, Calendar, User, Clock, MessageCircle, ChevronUp, ChevronDown, X } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 function ProfileView() {
     const [showFullHistory, setShowFullHistory] = useState(false);
     const [showExpandedHierarchy, setShowExpandedHierarchy] = useState(false);
     const navigate = useNavigate();
+    const location = useLocation();
+
+    // Access the state object passed during navigation
+    const contact = location.state || {};
+    console.log(contact);
+
     const handleCloseProfile = () => {
         navigate('/contacts');
     };
 
-    const dummyData = {
-        name: 'Sarah Johnson',
-        title: 'Senior AI Engineer',
-        company: 'TechCorp Inc.',
-        location: 'San Francisco, CA',
-        skills: ['Machine Learning', 'Python', 'TensorFlow', 'React', 'AWS', 'Docker', 'Kubernetes', 'Node.js'],
-        contactStatus: {
-            lastContacted: '1/15/2024',
-            verified: true,
-            category: 'A',
-        },
-        experience: [
-            {
-                title: 'Senior AI Engineer',
-                company: 'TechCorp Inc.',
-                department: 'AI Research',
-                period: '3/1/2020 - Present',
-            },
-            {
-                title: 'AI Engineer',
-                company: 'DataTech Solutions',
-                department: 'Machine Learning',
-                period: '6/1/2018 - 2/28/2020',
-            },
-            {
-                title: 'Software Engineer',
-                company: 'StartupABC',
-                department: 'Engineering',
-                period: '8/1/2016 - 5/31/2018',
-            },
-        ],
-        education: [
-            {
-                level: 'Postgraduate',
-                degree: 'Master of Science in Computer Science',
-                institution: 'Stanford University',
-                period: '2014-2016',
-            },
-            {
-                level: 'Undergraduate',
-                degree: 'Bachelor of Science in Computer Engineering',
-                institution: 'UC Berkeley',
-                period: '2010-2014',
-            },
-        ],
-        contactInfo: {
-            primaryPhone: '+1 (555) 123-4567',
-            secondaryPhone: '+1 (555) 987-6543',
-            primaryEmail: 'sarah.johnson@techcorp.com',
-            secondaryEmail: 'sarah.j.personal@gmail.com',
-            birthday: '3/15/1990',
-            maritalStatus: 'Single',
-            nationality: 'American',
-            addedBy: 'John Smith',
-        },
-        address: {
-            street: '123 Tech Street, Apt 4B',
-            city: 'San Francisco',
-            state: 'California',
-            country: 'United States',
-            zipCode: '94105',
-        },
-        contactHierarchy: [
-            {
-                name: 'John Smith',
-                title: 'CTO at TechCorp',
-                avatar: 'JS',
-                relationship: 'Direct Contact'
-            },
-            {
-                name: 'Alice Brown',
-                title: 'VP Engineering',
-                avatar: 'AB',
-                referredBy: 'John Smith',
-                relationship: 'Referred Contact'
-            },
-            {
-                name: 'Mike Chen',
-                title: 'Lead Data Scientist',
-                avatar: 'MC',
-                referredBy: 'Sarah Johnson',
-                relationship: 'Mutual Connection'
-            },
-            {
-                name: 'Emma Wilson',
-                title: 'Product Manager',
-                avatar: 'EW',
-                relationship: 'Team Member'
-            },
-            {
-                name: 'David Lee',
-                title: 'Software Architect',
-                avatar: 'DL',
-                relationship: 'Colleague'
-            },
-            {
-                name: 'Lisa Zhang',
-                title: 'UX Designer',
-                avatar: 'LZ',
-                referredBy: 'Emma Wilson',
-                relationship: 'Cross-functional Partner'
-            },
-            {
-                name: 'Robert Taylor',
-                title: 'DevOps Engineer',
-                avatar: 'RT',
-                relationship: 'Infrastructure Partner'
-            },
-            {
-                name: 'Jennifer Martinez',
-                title: 'Data Analyst',
-                avatar: 'JM',
-                referredBy: 'Mike Chen',
-                relationship: 'Data Team'
-            }
-        ],
-        contactHistory: [
-            {
-                id: 1,
-                type: 'meeting',
-                initiator: 'You',
-                date: '1/15/2024',
-                time: '2:30 PM',
-                title: 'Discussed potential collaboration on AI project',
-                description: 'Had an in-depth discussion about machine learning frameworks and potential partnership opportunities.',
-                status: 'completed'
-            },
-            {
-                id: 2,
-                type: 'email',
-                initiator: 'Sarah Johnson',
-                date: '1/8/2024',
-                time: '10:45 AM',
-                title: 'Shared insights about latest ML frameworks',
-                description: 'Sarah sent detailed analysis of TensorFlow 2.15 updates and their impact on production systems.',
-                status: 'completed'
-            },
-            {
-                id: 3,
-                type: 'call',
-                initiator: 'You',
-                date: '12/20/2023',
-                time: '4:15 PM',
-                title: 'Initial introduction through John Smith',
-                description: 'First contact call facilitated by John Smith. Discussed background and mutual interests in AI research.',
-                status: 'completed'
-            },
-            {
-                id: 4,
-                type: 'message',
-                initiator: 'Sarah Johnson',
-                date: '11/28/2023',
-                time: '11:30 AM',
-                title: 'Connected on LinkedIn',
-                description: 'Sarah accepted LinkedIn connection request and shared her recent publication on computer vision.',
-                status: 'completed'
-            },
-            {
-                id: 5,
-                type: 'meeting',
-                initiator: 'You',
-                date: '11/15/2023',
-                time: '3:00 PM',
-                title: 'Tech Conference - AI Summit 2023',
-                description: 'Met at the AI Summit conference during the networking session. Discussed emerging trends in machine learning.',
-                status: 'completed'
-            },
-            {
-                id: 6,
-                type: 'call',
-                initiator: 'Sarah Johnson',
-                date: '10/30/2023',
-                time: '1:15 PM',
-                title: 'Follow-up on conference discussion',
-                description: 'Sarah called to continue our conversation about AI trends and shared her thoughts on GPT-4 implementation.',
-                status: 'completed'
-            },
-            {
-                id: 7,
-                type: 'email',
-                initiator: 'You',
-                date: '10/22/2023',
-                time: '9:30 AM',
-                title: 'Sent project proposal',
-                description: 'Forwarded detailed project proposal for the computer vision collaboration we discussed.',
-                status: 'completed'
-            },
-            {
-                id: 8,
-                type: 'message',
-                initiator: 'Sarah Johnson',
-                date: '10/15/2023',
-                time: '6:45 PM',
-                title: 'Shared research paper',
-                description: 'Sarah shared her latest research paper on neural network optimization techniques.',
-                status: 'completed'
-            }
-        ],
-        notes: 'Had a great conversation about ML trends in 2024. She mentioned working on a new computer vision project and is interested in collaborating on AI research. Follow up in 2 weeks about the potential partnership. Had a great conversation about ML trends in 2024. She mentioned working on a new computer vision project and is interested in collaborating on AI research. Follow up in 2 weeks about the potential partnership',
+    // Helper functions
+    const formatDate = (dateString) => {
+        if (!dateString) return 'N/A';
+        return new Date(dateString).toLocaleDateString();
+    };
+
+    const formatPhoneNumber = (phone) => {
+        if (!phone) return 'N/A';
+        return phone;
+    };
+
+    const getInitials = (name) => {
+        if (!name) return 'N/A';
+        return name.split(' ').map(n => n[0]).join('').toUpperCase();
     };
 
     const getContactTypeIcon = (type) => {
@@ -241,6 +62,77 @@ function ProfileView() {
         }
     };
 
+    // Process contact data
+    const contactData = {
+        name: contact.name || 'N/A',
+        title: contact.role || 'N/A',
+        company: contact.company || 'N/A',
+        location: contact.location || (contact.address ? `${contact.address.city}, ${contact.address.state}` : 'N/A'),
+        skills: contact.skills || [],
+        contactStatus: {
+            lastContacted: contact.updated_at ? formatDate(contact.updated_at) : 'N/A',
+            verified: contact.events?.some(event => event.verified) || false,
+            category: contact.category || 'N/A',
+        },
+        experience: contact.experiences ? contact.experiences.map(exp => ({
+            title: exp.job_title,
+            company: exp.company,
+            department: exp.department,
+            period: `${formatDate(exp.from_date)} - ${exp.to_date ? formatDate(exp.to_date) : 'Present'}`,
+        })) : [],
+        education: contact.education ? [
+            ...(contact.education.pg_course_name ? [{
+                level: 'Postgraduate',
+                degree: contact.education.pg_course_name,
+                institution: `${contact.education.pg_college}, ${contact.education.pg_university}`,
+                period: `${formatDate(contact.education.pg_from_date)} - ${formatDate(contact.education.pg_to_date)}`,
+            }] : []),
+            ...(contact.education.ug_course_name ? [{
+                level: 'Undergraduate',
+                degree: contact.education.ug_course_name,
+                institution: `${contact.education.ug_college}, ${contact.education.ug_university}`,
+                period: `${formatDate(contact.education.ug_from_date)} - ${formatDate(contact.education.ug_to_date)}`,
+            }] : [])
+        ] : [],
+        contactInfo: {
+            primaryPhone: formatPhoneNumber(contact.phone_number),
+            secondaryPhone: formatPhoneNumber(contact.secondary_phone_number),
+            primaryEmail: contact.email_address || 'N/A',
+            secondaryEmail: contact.secondary_email || 'N/A',
+            birthday: contact.dob ? formatDate(contact.dob) : 'N/A',
+            maritalStatus: contact.marital_status || 'N/A',
+            nationality: contact.nationality || 'N/A',
+            emergencyContact: contact.emergency_contact_name || 'N/A',
+            emergencyPhone: formatPhoneNumber(contact.emergency_contact_phone_number),
+            emergencyRelationship: contact.emergency_contact_relationship || 'N/A',
+        },
+        address: contact.address ? {
+            street: contact.address.street,
+            city: contact.address.city,
+            state: contact.address.state,
+            country: contact.address.country,
+            zipCode: contact.address.zipcode,
+        } : null,
+        events: contact.events || [],
+        linkedinUrl: contact.linkedin_url || null,
+        initials: contact.initials || getInitials(contact.name),
+        avatarColor: contact.avatarColor || '#DB2777',
+        // Dummy data for features not yet implemented
+        contactHistory: [
+            {
+                id: 1,
+                type: 'email',
+                initiator: 'System',
+                date: formatDate(contact.created_at),
+                time: new Date(contact.created_at).toLocaleTimeString(),
+                title: 'Contact Added',
+                description: `Contact was added to the system by user ${contact.created_by}`,
+                status: 'completed'
+            }
+        ],
+        notes: contact.logger || 'No notes available',
+    };
+
     // Full History Modal Component
     const FullHistoryModal = () => (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -250,7 +142,7 @@ function ProfileView() {
                         <div className="w-8 h-8 bg-indigo-500 rounded-lg flex items-center justify-center">
                             <Clock className="text-white w-4 h-4" />
                         </div>
-                        Complete Contact History ({dummyData.contactHistory.length} interactions)
+                        Complete Contact History ({contactData.contactHistory.length} interactions)
                     </h2>
                     <button
                         onClick={() => setShowFullHistory(false)}
@@ -261,19 +153,19 @@ function ProfileView() {
                 </div>
                 <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
                     <div className="space-y-4">
-                        {dummyData.contactHistory.map((contact, index) => (
-                            <div key={contact.id} className={`bg-gradient-to-r ${getContactTypeColor(contact.type)} border rounded-xl p-4 hover:shadow-md transition-all duration-200`}>
+                        {contactData.contactHistory.map((contactHistoryItem, index) => (
+                            <div key={contactHistoryItem.id} className={`bg-gradient-to-r ${getContactTypeColor(contactHistoryItem.type)} border rounded-xl p-4 hover:shadow-md transition-all duration-200`}>
                                 <div className="flex items-start gap-4">
                                     <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-xl shadow-sm">
-                                        {getContactTypeIcon(contact.type)}
+                                        {getContactTypeIcon(contactHistoryItem.type)}
                                     </div>
                                     <div className="flex-1">
                                         <div className="flex items-center justify-between mb-2">
-                                            <span className="text-sm font-medium text-gray-600">{contact.initiator}</span>
-                                            <span className="text-sm text-gray-500">{contact.date} • {contact.time}</span>
+                                            <span className="text-sm font-medium text-gray-600">{contactHistoryItem.initiator}</span>
+                                            <span className="text-sm text-gray-500">{contactHistoryItem.date} • {contactHistoryItem.time}</span>
                                         </div>
-                                        <h4 className="font-semibold text-gray-900 mb-2">{contact.title}</h4>
-                                        <p className="text-gray-700 text-sm">{contact.description}</p>
+                                        <h4 className="font-semibold text-gray-900 mb-2">{contactHistoryItem.title}</h4>
+                                        <p className="text-gray-700 text-sm">{contactHistoryItem.description}</p>
                                     </div>
                                 </div>
                             </div>
@@ -295,7 +187,7 @@ function ProfileView() {
                     <ArrowLeft className="text-xl" />
                     <span className="font-medium">Back to Contacts</span>
                 </button>
-                
+
                 {/* Cover photo area */}
                 <div className="h-32 bg-gradient-to-r from-blue-500/30 to-purple-600/30 rounded-xl mb-6"></div>
             </div>
@@ -306,50 +198,52 @@ function ProfileView() {
                     <div className="p-8">
                         <div className="flex flex-col md:flex-row gap-6 items-start">
                             <div className="relative">
-                                <img
-                                    src="https://xsgames.co/randomusers/assets/avatars/male/68.jpg"
-                                    alt="Profile of Sarah Johnson"
-                                    className="w-32 h-32 rounded-full border-4 border-white shadow-lg"
-                                />
+                                <div 
+                                    className="w-32 h-32 rounded-full border-4 border-white shadow-lg flex items-center justify-center text-3xl font-bold text-white"
+                                    style={{ backgroundColor: contactData.avatarColor }}
+                                >
+                                    {contactData.initials}
+                                </div>
                                 <div className="absolute -bottom-1 -right-1 bg-green-500 w-8 h-8 rounded-full border-4 border-white flex items-center justify-center">
                                     <div className="w-3 h-3 bg-white rounded-full"></div>
                                 </div>
                             </div>
-                            
+
                             <div className="flex-1">
                                 <div className="flex items-start justify-between">
                                     <div>
                                         <div className="flex items-center gap-3 mb-2">
-                                            <h1 className="text-3xl font-bold text-gray-900">{dummyData.name}</h1>
-                                            {dummyData.contactStatus.verified && (
+                                            <h1 className="text-3xl font-bold text-gray-900">{contactData.name}</h1>
+                                            {contactData.contactStatus.verified && (
                                                 <CheckCircle className="text-blue-500 w-6 h-6" />
                                             )}
                                         </div>
-                                        <p className="text-xl text-gray-700 mb-2">{dummyData.title}</p>
+                                        <p className="text-xl text-gray-700 mb-2">{contactData.title}</p>
                                         <div className="flex items-center gap-4 text-gray-600 mb-4">
                                             <span className="flex items-center gap-1">
-                                                🏢 {dummyData.company}
+                                                🏢 {contactData.company}
                                             </span>
                                             <span className="flex items-center gap-1">
                                                 <MapPin className="w-4 h-4" />
-                                                {dummyData.location}
+                                                {contactData.location}
                                             </span>
                                         </div>
-                                        
+
                                         {/* Social links */}
                                         <div className="flex gap-3 mb-6">
-                                            <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white cursor-pointer hover:bg-blue-700 transition-colors">
-                                                <span className="text-sm font-bold">in</span>
-                                            </div>
-                                            <div className="w-8 h-8 bg-blue-400 rounded-full flex items-center justify-center text-white cursor-pointer hover:bg-blue-500 transition-colors">
-                                                <span className="text-sm">T</span>
-                                            </div>
-                                            <div className="w-8 h-8 bg-gray-800 rounded-full flex items-center justify-center text-white cursor-pointer hover:bg-gray-900 transition-colors">
-                                                <span className="text-sm">G</span>
-                                            </div>
+                                            {contactData.linkedinUrl && (
+                                                <a
+                                                    href={contactData.linkedinUrl}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white cursor-pointer hover:bg-blue-700 transition-colors"
+                                                >
+                                                    <span className="text-sm font-bold">in</span>
+                                                </a>
+                                            )}
                                         </div>
                                     </div>
-                                    
+
                                     <div className="flex gap-2">
                                         <button className="p-2 border border-gray-300 rounded-lg hover:bg-gray-200 transition-colors">
                                             <Edit3 className="w-4 h-4 text-gray-600" />
@@ -359,9 +253,9 @@ function ProfileView() {
 
                                 {/* Skills */}
                                 <div className="flex flex-wrap gap-2">
-                                    {dummyData.skills.map((skill) => (
+                                    {contactData.skills.map((skill, index) => (
                                         <span
-                                            key={skill}
+                                            key={index}
                                             className="px-4 py-2 bg-gradient-to-r from-blue-100 to-purple-100 text-blue-800 rounded-full text-sm font-medium hover:from-blue-200 hover:to-purple-200 transition-colors cursor-pointer"
                                         >
                                             {skill}
@@ -393,22 +287,22 @@ function ProfileView() {
                                         <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
                                             📅
                                         </div>
-                                        <p className="text-sm text-gray-600 mb-1">Last Contacted</p>
-                                        <p className="font-semibold text-gray-900">{dummyData.contactStatus.lastContacted}</p>
+                                        <p className="text-sm text-gray-600 mb-1">Last Updated</p>
+                                        <p className="font-semibold text-gray-900">{contactData.contactStatus.lastContacted}</p>
                                     </div>
                                     <div className="text-center">
                                         <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
                                             ✓
                                         </div>
                                         <p className="text-sm text-gray-600 mb-1">Verified</p>
-                                        <p className="font-semibold text-green-600">{dummyData.contactStatus.verified ? 'Yes' : 'No'}</p>
+                                        <p className="font-semibold text-green-600">{contactData.contactStatus.verified ? 'Yes' : 'No'}</p>
                                     </div>
                                     <div className="text-center">
                                         <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-3">
                                             🏷️
                                         </div>
                                         <p className="text-sm text-gray-600 mb-1">Category</p>
-                                        <p className="font-semibold text-purple-600">{dummyData.contactStatus.category}</p>
+                                        <p className="font-semibold text-purple-600">{contactData.contactStatus.category}</p>
                                     </div>
                                 </div>
                             </div>
@@ -426,88 +320,129 @@ function ProfileView() {
                             </div>
                             <div className="p-6">
                                 <div className="space-y-4">
-                                    {dummyData.contactHistory.slice(0, 3).map((contact, index) => (
-                                        <div key={contact.id} className={`bg-gradient-to-r ${getContactTypeColor(contact.type)} border rounded-xl p-4 hover:shadow-md transition-all duration-200`}>
+                                    {contactData.contactHistory.slice(0, 3).map((contactHistoryItem, index) => (
+                                        <div key={contactHistoryItem.id} className={`bg-gradient-to-r ${getContactTypeColor(contactHistoryItem.type)} border rounded-xl p-4 hover:shadow-md transition-all duration-200`}>
                                             <div className="flex items-start gap-4">
                                                 <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-xl shadow-sm">
-                                                    {getContactTypeIcon(contact.type)}
+                                                    {getContactTypeIcon(contactHistoryItem.type)}
                                                 </div>
                                                 <div className="flex-1">
                                                     <div className="flex items-center justify-between mb-2">
-                                                        <span className="text-sm font-medium text-gray-600">{contact.initiator}</span>
-                                                        <span className="text-sm text-gray-500">{contact.date} • {contact.time}</span>
+                                                        <span className="text-sm font-medium text-gray-600">{contactHistoryItem.initiator}</span>
+                                                        <span className="text-sm text-gray-500">{contactHistoryItem.date} • {contactHistoryItem.time}</span>
                                                     </div>
-                                                    <h4 className="font-semibold text-gray-900 mb-2">{contact.title}</h4>
-                                                    <p className="text-gray-700 text-sm">{contact.description}</p>
+                                                    <h4 className="font-semibold text-gray-900 mb-2">{contactHistoryItem.title}</h4>
+                                                    <p className="text-gray-700 text-sm">{contactHistoryItem.description}</p>
                                                 </div>
                                             </div>
                                         </div>
                                     ))}
                                 </div>
-                                <button 
+                                <button
                                     onClick={() => setShowFullHistory(true)}
                                     className="w-full mt-6 py-3 text-center bg-gray-50 hover:bg-gray-100 transition-colors rounded-lg font-medium text-gray-700 flex items-center justify-center gap-2"
                                 >
-                                    View Full History ({dummyData.contactHistory.length} interactions)
+                                    View Full History ({contactData.contactHistory.length} interactions)
                                 </button>
                             </div>
                         </div>
 
                         {/* Experience */}
-                        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-                            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b">
-                                <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                                    <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
-                                        <Briefcase className="text-white w-4 h-4" />
-                                    </div>
-                                    Experience
-                                </h2>
-                            </div>
-                            <div className="p-6">
-                                {dummyData.experience.map((exp, index) => (
-                                    <div key={index} className="flex gap-4 mb-6 last:mb-0">
-                                        <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                            🏢
+                        {contactData.experience.length > 0 && (
+                            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+                                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b">
+                                    <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                                        <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
+                                            <Briefcase className="text-white w-4 h-4" />
                                         </div>
-                                        <div className="flex-1">
-                                            <h3 className="text-lg font-semibold text-gray-900 mb-1">{exp.title}</h3>
-                                            <p className="text-blue-600 font-medium mb-1">
-                                                {exp.company} • {exp.department}
-                                            </p>
-                                            <p className="text-gray-600 text-sm">{exp.period}</p>
+                                        Experience
+                                    </h2>
+                                </div>
+                                <div className="p-6">
+                                    {contactData.experience.map((exp, index) => (
+                                        <div key={index} className="flex gap-4 mb-6 last:mb-0">
+                                            <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                                🏢
+                                            </div>
+                                            <div className="flex-1">
+                                                <h3 className="text-lg font-semibold text-gray-900 mb-1">{exp.title}</h3>
+                                                <p className="text-blue-600 font-medium mb-1">
+                                                    {exp.company} • {exp.department}
+                                                </p>
+                                                <p className="text-gray-600 text-sm">{exp.period}</p>
+                                            </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    ))}
+                                </div>
                             </div>
-                        </div>
+                        )}
 
                         {/* Education */}
-                        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-                            <div className="bg-gradient-to-r from-purple-50 to-pink-50 px-6 py-4 border-b">
-                                <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                                    <div className="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center">
-                                        <GraduationCap className="text-white w-4 h-4" />
-                                    </div>
-                                    Education
-                                </h2>
-                            </div>
-                            <div className="p-6">
-                                {dummyData.education.map((edu, index) => (
-                                    <div key={index} className="flex gap-4 mb-6 last:mb-0">
-                                        <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                            🎓
+                        {contactData.education.length > 0 && (
+                            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+                                <div className="bg-gradient-to-r from-purple-50 to-pink-50 px-6 py-4 border-b">
+                                    <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                                        <div className="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center">
+                                            <GraduationCap className="text-white w-4 h-4" />
                                         </div>
-                                        <div className="flex-1">
-                                            <h3 className="text-lg font-semibold text-gray-900 mb-1">{edu.level}</h3>
-                                            <p className="text-purple-600 font-medium mb-1">{edu.degree}</p>
-                                            <p className="text-gray-600 text-sm">
-                                                {edu.institution} • {edu.period}
-                                            </p>
+                                        Education
+                                    </h2>
+                                </div>
+                                <div className="p-6">
+                                    {contactData.education.map((edu, index) => (
+                                        <div key={index} className="flex gap-4 mb-6 last:mb-0">
+                                            <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                                🎓
+                                            </div>
+                                            <div className="flex-1">
+                                                <h3 className="text-lg font-semibold text-gray-900 mb-1">{edu.level}</h3>
+                                                <p className="text-purple-600 font-medium mb-1">{edu.degree}</p>
+                                                <p className="text-gray-600 text-sm">
+                                                    {edu.institution} • {edu.period}
+                                                </p>
+                                            </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    ))}
+                                </div>
                             </div>
-                        </div>
+                        )}
+
+                        {/* Events */}
+                        {contactData.events.length > 0 && (
+                            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+                                <div className="bg-gradient-to-r from-yellow-50 to-orange-50 px-6 py-4 border-b">
+                                    <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                                        <div className="w-8 h-8 bg-yellow-500 rounded-lg flex items-center justify-center">
+                                            <Calendar className="text-white w-4 h-4" />
+                                        </div>
+                                        Events
+                                    </h2>
+                                </div>
+                                <div className="p-6">
+                                    {contactData.events.map((event, index) => (
+                                        <div key={event.event_id} className="flex gap-4 mb-6 last:mb-0">
+                                            <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                                🎭
+                                            </div>
+                                            <div className="flex-1">
+                                                <h3 className="text-lg font-semibold text-gray-900 mb-1">{event.event_name}</h3>
+                                                <p className="text-yellow-600 font-medium mb-1">
+                                                    {event.event_role} • {event.event_held_organization}
+                                                </p>
+                                                <p className="text-gray-600 text-sm">
+                                                    {formatDate(event.event_date)} • {event.event_location}
+                                                </p>
+                                                {event.verified && (
+                                                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 mt-2">
+                                                        Verified
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
 
                         {/* Notes & Logger */}
                         <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
@@ -521,7 +456,7 @@ function ProfileView() {
                             </div>
                             <div className="p-6">
                                 <div className="bg-gray-50 rounded-xl p-4 border-l-4 border-amber-400">
-                                    <p className="text-gray-700 leading-relaxed">{dummyData.notes}</p>
+                                    <p className="text-gray-700 leading-relaxed">{contactData.notes}</p>
                                 </div>
                             </div>
                         </div>
@@ -540,7 +475,7 @@ function ProfileView() {
                                 </h2>
                             </div>
                             <div className="p-6">
-                                {Object.entries(dummyData.contactInfo).map(([key, value]) => (
+                                {Object.entries(contactData.contactInfo).map(([key, value]) => (
                                     <div key={key} className="mb-4 last:mb-0">
                                         <p className="text-xs uppercase tracking-wide text-gray-500 mb-1">
                                             {key.replace(/([A-Z])/g, ' $1').trim()}
@@ -552,83 +487,26 @@ function ProfileView() {
                         </div>
 
                         {/* Address */}
-                        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-                            <div className="bg-gradient-to-r from-emerald-50 to-teal-50 px-6 py-4 border-b">
-                                <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                                    <div className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center">
-                                        <MapPin className="text-white w-4 h-4" />
+                        {contactData.address && (
+                            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+                                <div className="bg-gradient-to-r from-emerald-50 to-teal-50 px-6 py-4 border-b">
+                                    <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                                        <div className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center">
+                                            <MapPin className="text-white w-4 h-4" />
+                                        </div>
+                                        Address
+                                    </h2>
+                                </div>
+                                <div className="p-6">
+                                    <div className="space-y-2 text-gray-700">
+                                        <p className="font-medium">{contactData.address.street}</p>
+                                        <p>{contactData.address.city}, {contactData.address.state}</p>
+                                        <p>{contactData.address.country}</p>
+                                        <p className="font-medium">{contactData.address.zipCode}</p>
                                     </div>
-                                    Address
-                                </h2>
-                            </div>
-                            <div className="p-6">
-                                <div className="space-y-2 text-gray-700">
-                                    <p className="font-medium">{dummyData.address.street}</p>
-                                    <p>{dummyData.address.city}, {dummyData.address.state}</p>
-                                    <p>{dummyData.address.country}</p>
-                                    <p className="font-medium">{dummyData.address.zipCode}</p>
                                 </div>
                             </div>
-                        </div>
-
-                        {/* Contact Hierarchy */}
-                        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-                            <div className="bg-gradient-to-r from-rose-50 to-pink-50 px-6 py-4 border-b">
-                                <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                                    <div className="w-8 h-8 bg-rose-500 rounded-lg flex items-center justify-center">
-                                        <Users className="text-white w-4 h-4" />
-                                    </div>
-                                    Contact Hierarchy
-                                </h2>
-                            </div>
-                            <div className="p-6">
-                                {(showExpandedHierarchy ? dummyData.contactHierarchy : dummyData.contactHierarchy.slice(0, 4)).map((contact, index) => (
-                                    <div key={index} className="mb-4 last:mb-0">
-                                        <div className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer">
-                                            <div className="w-10 h-10 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold text-sm">
-                                                {contact.avatar}
-                                            </div>
-                                            <div className="flex-1">
-                                                <div className="flex items-center gap-2 mb-1">
-                                                    <p className="font-semibold text-gray-900">{contact.name}</p>
-                                                    {contact.relationship === 'Direct Contact' && (
-                                                        <span className="w-2 h-2 bg-green-400 rounded-full"></span>
-                                                    )}
-                                                </div>
-                                                <p className="text-sm text-gray-600 mb-1">{contact.title}</p>
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded-full">
-                                                        {contact.relationship}
-                                                    </span>
-                                                </div>
-                                                {contact.referredBy && (
-                                                    <p className="text-xs text-blue-600 mt-1">
-                                                        via {contact.referredBy}
-                                                    </p>
-                                                )}
-                                            </div>
-                                        </div>
-                                        {index < (showExpandedHierarchy ? dummyData.contactHierarchy.length - 1 : Math.min(4, dummyData.contactHierarchy.length) - 1) && (
-                                            <div className="ml-8 h-6 border-l-2 border-gray-200"></div>
-                                        )}
-                                    </div>
-                                ))}
-                                <button 
-                                    onClick={() => setShowExpandedHierarchy(!showExpandedHierarchy)}
-                                    className="w-full mt-4 py-2 text-center text-gray-600 hover:text-gray-800 transition-colors border-t pt-4 flex items-center justify-center gap-2"
-                                >
-                                    {showExpandedHierarchy ? (
-                                        <>
-                                            Show Less <ChevronUp className="w-4 h-4" />
-                                        </>
-                                    ) : (
-                                        <>
-                                            Show More ({dummyData.contactHierarchy.length - 4} more) <ChevronDown className="w-4 h-4" />
-                                        </>
-                                    )}
-                                </button>
-                            </div>
-                        </div>
+                        )}
                     </div>
                 </div>
             </div>
