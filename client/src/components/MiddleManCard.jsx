@@ -1,22 +1,8 @@
 import React, { useState } from "react";
-import {
-  Edit,
-  ExternalLink,
-  Trash2,
-  MapPin,
-  Building,
-  Phone,
-  Mail,
-  Notebook,
-} from "lucide-react";
+import {Edit,ExternalLink,Trash2,MapPin,Building,Phone,Mail,Notebook,} from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-const DeleteConfirmationModal = ({
-  isOpen,
-  onConfirm,
-  onCancel,
-  itemName = "this contact",
-}) => {
+const DeleteConfirmationModal = ({isOpen,onConfirm,onCancel,itemName = "this contact",}) => {
   if (!isOpen) return null;
 
   return (
