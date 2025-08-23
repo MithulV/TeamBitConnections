@@ -16,7 +16,6 @@ function Navbar() {
   const [collapsed, setCollapsed] = useState(false);
   const navigate = useNavigate();
   const { role, clearAuth } = useAuthStore(); // Get role and clearAuth from the store
-
   // Define menu items for each role
   const menuItemsByRole = {
     user: [
