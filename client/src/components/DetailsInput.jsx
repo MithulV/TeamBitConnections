@@ -234,17 +234,77 @@ function DetailsInput({ onBack, onSave, initialData = null, isAddMode = false })
 
   const handleReset = () => {
     // Resets to the initial empty state structure
-    setFormData({
-      name: '', dateOfBirth: '', gender: '', nationality: '', maritalStatus: '', category: '', age: '',
-      phonePrimary: '', phoneSecondary: '', emailPrimary: '', emailSecondary: '',
-      emergencyContactName: '', emergencyContactPhone: '', emergencyContactRelationship: '',
-      street: '', city: '', state: '', country: '', zipcode: '',
-      pgCourseName: '', pgCollege: '', pgUniversity: '', pgFromDate: '', pgToDate: '', ugCourseName: '', ugCollege: '', ugUniversity: '', ugFromDate: '', ugToDate: '',
-      skills: '',
-      experience: [{ jobTitle: '', company: '', department: '', expFromDate: '', expToDate: '', expSkills: '' }],
-      eventName: '', eventRole: '', eventDate: '', eventHeldOrganization: '', eventLocation: '', linkedinProfile: '',
-      logger: '',
-    });
+    const formatDate = (dateString) => {
+      if (!dateString) return '';
+      return dateString.split('T')[0];
+    };
+    // Safely access the first event, if it exists
+    const firstEvent = initialData.events && initialData.events[0] ? initialData.events[0] : {};
+    setFormData(prevData => ({
+      ...prevData,
+
+      // --- Personal Details ---
+      name: initialData.name || '',
+      dateOfBirth: formatDate(initialData.dob), // Format the date correctly
+      gender: initialData.gender || '',
+      nationality: initialData.nationality || '',
+      maritalStatus: initialData.marital_status || '',
+      category: initialData.category || 'Event Participant',
+      age: '', // 'age' is not in the JSON, so it's initialized as empty
+
+      // --- Contact Info ---
+      phonePrimary: initialData.phone_number || '',
+      phoneSecondary: initialData.secondary_phone_number || '',
+      emailPrimary: initialData.email_address || '',
+      emailSecondary: initialData.secondary_email || '',
+
+      // --- Emergency Contact ---
+      emergencyContactName: initialData.emergency_contact_name || '',
+      emergencyContactPhone: initialData.emergency_contact_phone_number || '',
+      emergencyContactRelationship: initialData.emergency_contact_relationship || '',
+
+      // --- Address Details (from nested 'address' object) ---
+      street: initialData.address?.street || '',
+      city: initialData.address?.city || '',
+      state: initialData.address?.state || '',
+      country: initialData.address?.country || '',
+      zipcode: initialData.address?.zipcode || '',
+
+      // --- Education Fields (from nested 'education' object) ---
+      pgCourseName: initialData.education?.pg_course_name || '',
+      pgCollege: initialData.education?.pg_college || '',
+      pgUniversity: initialData.education?.pg_university || '',
+      pgFromDate: initialData.education?.pg_from_date || '',
+      pgToDate: initialData.education?.pg_to_date || '',
+      ugCourseName: initialData.education?.ug_course_name || '',
+      ugCollege: initialData.education?.ug_college || '',
+      ugUniversity: initialData.education?.ug_university || '',
+      ugFromDate: initialData.education?.ug_from_date || '',
+      ugToDate: initialData.education?.ug_to_date || '',
+
+      // --- Professional and Additional Info ---
+      skills: initialData.skills || '',
+      linkedinProfile: initialData.linkedin_url || '',
+
+      // --- Event Details (from the first item in the 'events' array) ---
+      eventName: firstEvent.event_name || '',
+      eventRole: firstEvent.event_role || '',
+      eventDate: firstEvent.event_date || '',
+      eventHeldOrganization: firstEvent.event_held_organization || '',
+      eventLocation: firstEvent.event_location || '',
+
+      // --- Experience History (from 'experiences' array) ---
+      experience: Array.isArray(initialData.experiences) && initialData.experiences.length > 0
+        ? initialData.experiences.map(exp => ({
+          jobTitle: exp.job_title || '',
+          company: exp.company || '',
+          department: exp.department || '',
+          expFromDate: exp.from_date || '',
+          expToDate: exp.to_date || '',
+          expSkills: '', // 'expSkills' is not in the source JSON
+        }))
+        : [{ jobTitle: '', company: '', department: '', expFromDate: '', expToDate: '', expSkills: '' }],
+    }));
   };
 
   const renderField = (field, index) => (
@@ -267,10 +327,18 @@ function DetailsInput({ onBack, onSave, initialData = null, isAddMode = false })
       <form onSubmit={handleSubmit} className="w-full">
         <div className="bg-white p-6 rounded-lg shadow-sm space-y-8">
 
-          <div>
-            <h2 className="text-2xl font-semibold text-gray-800 mb-2">Add Additional Details</h2>
-            <p className="text-gray-600">Fill in the comprehensive details. Required fields are marked with an asterisk (*).</p>
+          <div className='flex flex-1 justify-between items-center pr-20'>
+            <div>
+              <h2 className="text-2xl font-semibold text-gray-800 mb-2">Add Additional Details</h2>
+              <p className="text-gray-600">Fill in the comprehensive details. Required fields are marked with an asterisk (*).</p>
+            </div>
+            <div>
+              <button className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 py-2.5 rounded-lg transition-colors duration-200 shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                Assign to User
+              </button>
+            </div>
           </div>
+
 
           <div>
             <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b border-gray-200 pb-2">Personal Details</h3>
