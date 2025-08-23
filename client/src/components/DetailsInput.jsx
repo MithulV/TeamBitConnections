@@ -123,7 +123,7 @@ function DetailsInput({ onBack, onSave, initialData = null, isAddMode = false })
         eventName: firstEvent.event_name || '',
         eventRole: firstEvent.event_role || '',
         eventDate: firstEvent.event_date || '',
-        eventHeldOrganization: firstEvent.event_held_orgranization || '',
+        eventHeldOrganization: firstEvent.event_held_organization || '',
         eventLocation: firstEvent.event_location || '',
 
         // --- Experience History (from 'experiences' array) ---
