@@ -252,7 +252,7 @@ function UserEntries() {
       <Header />
 
       {/* View Toggle Buttons */}
-      <div className="p-6 pb-0">
+      <div className={`p-6 pb-0 ${isEditing?'hidden':'block'}`}>
         <div className="max-w-7xl mx-auto">
           <div className="flex gap-4 mb-6">
             <button
