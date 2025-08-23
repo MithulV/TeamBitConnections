@@ -162,18 +162,25 @@ export const GetContacts = async (req, res) => {
 
 export const GetUnVerifiedContacts = async (req, res) => {
     try {
+        // The userId parameter is available if you need to scope the query further,
+        // for example, by a `created_by` field.
         const { userId } = req.params;
+
         const contacts = await db`
             SELECT
                 c.*,
-                (SELECT row_to_json(ca) FROM contact_address ca WHERE ca.contact_id = c.contact_id LIMIT 1) as address,
-                (SELECT row_to_json(ce) FROM contact_education ce WHERE ce.contact_id = c.contact_id LIMIT 1) as education,
+                (SELECT row_to_json(ca) FROM contact_address ca WHERE ca.contact_id = c.contact_id) as address,
+                (SELECT row_to_json(ce) FROM contact_education ce WHERE ce.contact_id = c.contact_id) as education,
                 (SELECT json_agg(cx) FROM contact_experience cx WHERE cx.contact_id = c.contact_id) as experiences,
                 (SELECT json_agg(e) FROM event e WHERE e.contact_id = c.contact_id) as events
             FROM
                 contact c
             WHERE
-                verified IS NULL
+                EXISTS (
+                    SELECT 1
+                    FROM event e
+                    WHERE e.contact_id = c.contact_id AND e.verified = false
+                )
             ORDER BY
                 c.contact_id DESC
         `;
@@ -310,7 +317,6 @@ export const UpdateContact = async (req, res) => {
         name,
         phone_number,
         email_address,
-        verified,
         dob,
         gender,
         nationality,
@@ -343,7 +349,6 @@ export const UpdateContact = async (req, res) => {
                     name = ${name || null},
                     phone_number = ${phone_number || null},
                     email_address = ${email_address || null},
-                    verified = ${verified || null},
                     dob = ${dob || null},
                     gender = ${gender || null},
                     nationality = ${nationality || null},
@@ -417,9 +422,9 @@ export const UpdateContact = async (req, res) => {
                 for (const exp of experiences) {
                     const [newExp] = await t`
                         INSERT INTO contact_experience (
-                            contact_id, job_title, company, department, from_date, to_date
+                            contact_id, job_title, company, department, from_date, to_date, company_skills
                         ) VALUES (
-                            ${contact_id}, ${exp.job_title}, ${exp.company}, ${exp.department || null}, ${exp.from_date}, ${exp.to_date}
+                            ${contact_id}, ${exp.job_title}, ${exp.company}, ${exp.department || null}, ${exp.from_date}, ${exp.to_date}, ${exp.company_skills || null}
                         ) RETURNING *
                     `;
                     updatedExperiences.push(newExp);
@@ -437,7 +442,7 @@ export const UpdateContact = async (req, res) => {
                         INSERT INTO event (
                             contact_id, event_name, event_role, event_date, event_held_organization, event_location, verified
                         ) VALUES (
-                            ${contact_id}, ${event.event_name}, ${event.event_role}, ${event.event_date}, ${event.event_held_organization}, ${event.event_location}, ${event.verified || false}
+                            ${contact_id}, ${event.event_name}, ${event.event_role}, ${event.event_date}, ${event.event_held_organization}, ${event.event_location}, ${event.verified || true}
                         ) RETURNING *
                     `;
                     updatedEvents.push(newEvent);
