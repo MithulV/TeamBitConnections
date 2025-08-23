@@ -341,9 +341,16 @@ export const UpdateContact = async (req, res) => {
         address,
         education,
 
+        // --- EVENTS ---
+        event_id,
+        event_name,
+        event_role,
+        event_date,
+        event_held_organization,
+        event_location,
+
         // --- ARRAYS of OBJECTS ---
         experiences,
-        events,
     } = req.body;
     try {
         const result = await db.begin(async (t) => {
@@ -399,8 +406,12 @@ export const UpdateContact = async (req, res) => {
                         ug_course_name, ug_college, ug_university, ug_from_date, ug_to_date
                     ) VALUES (
                         ${contact_id},
-                        ${education.pg_course_name || null}, ${education.pg_college || null}, ${education.pg_university || null}, ${education.pg_from_date || null}, ${education.pg_to_date || null},
-                        ${education.ug_course_name || null}, ${education.ug_college || null}, ${education.ug_university || null}, ${education.ug_from_date || null}, ${education.ug_to_date || null}
+                        ${education.pg_course_name || null}, ${education.pg_college || null}, ${
+                    education.pg_university || null
+                }, ${education.pg_from_date || null}, ${education.pg_to_date || null},
+                        ${education.ug_course_name || null}, ${education.ug_college || null}, ${
+                    education.ug_university || null
+                }, ${education.ug_from_date || null}, ${education.ug_to_date || null}
                     )
                     ON CONFLICT (contact_id) DO UPDATE SET
                         pg_course_name = EXCLUDED.pg_course_name,
@@ -428,7 +439,9 @@ export const UpdateContact = async (req, res) => {
                         INSERT INTO contact_experience (
                             contact_id, job_title, company, department, from_date, to_date, company_skills
                         ) VALUES (
-                            ${contact_id}, ${exp.job_title}, ${exp.company}, ${exp.department || null}, ${exp.from_date}, ${exp.to_date}, ${exp.company_skills || null}
+                            ${contact_id}, ${exp.job_title}, ${exp.company}, ${exp.department || null}, ${
+                        exp.from_date
+                    }, ${exp.to_date}, ${exp.company_skills || null}
                         ) RETURNING *
                     `;
                     updatedExperiences.push(newExp);
@@ -436,20 +449,22 @@ export const UpdateContact = async (req, res) => {
             }
 
             // 5. Update Events Array (if provided)
-            if (events && events.length > 0) {
-                // First, delete existing events for this contact
-                await t`DELETE FROM event WHERE contact_id = ${contact_id}`;
-                
-                // Then, insert the new events
-                for (const event of events) {
-                    const [newEvent] = await t`
-                        INSERT INTO event (
-                            contact_id, event_name, event_role, event_date, event_held_organization, event_location, verified
-                        ) VALUES (
-                            ${contact_id}, ${event.event_name}, ${event.event_role}, ${event.event_date}, ${event.event_held_organization}, ${event.event_location}, ${true}
-                        ) RETURNING *
-                    `;
-                    updatedEvents.push(newEvent);
+            if (event_id) {
+                const [updatedEvent] = await t`
+                    UPDATE event SET
+                        event_name = ${event_name},
+                        event_role = ${event_role},
+                        event_date = ${event_date},
+                        event_held_organization = ${event_held_organization},
+                        event_location = ${event_location},
+                        verified = ${true} -- Assuming verification happens on update
+                    WHERE
+                        event_id = ${event_id}
+                        AND contact_id = ${contact_id} -- Security check
+                    RETURNING *
+                `;
+                if (updatedEvent) {
+                    updatedEvents.push(updatedEvent);
                 }
             }
 
