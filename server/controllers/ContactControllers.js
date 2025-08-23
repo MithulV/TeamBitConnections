@@ -460,7 +460,6 @@ export const UpdateContact = async (req, res) => {
     }
 };
 
-
 // DELETE: A contact and ALL of their associated data (except photos)
 export const DeleteContact = async (req, res) => {
     const { id } = req.params;
