@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { RotateCcw, Plus, Trash2 } from 'lucide-react';
+import { RotateCcw, Plus, Trash2, FileStack } from 'lucide-react';
 
 function DetailsInput({ onBack, onSave, initialData = null, isAddMode = false }) {
   const [formData, setFormData] = useState({
@@ -54,6 +54,7 @@ function DetailsInput({ onBack, onSave, initialData = null, isAddMode = false })
     ],
 
     // Additional Information (focused on events)
+    event_id: '',
     event_name: '',
     event_role: '',
     event_date: '',
@@ -74,7 +75,7 @@ function DetailsInput({ onBack, onSave, initialData = null, isAddMode = false })
       };
 
       // Safely access the first event, if it exists
-      const firstEvent = initialData.events && initialData.events ? initialData.events : {};
+      const firstEvent = initialData.events && initialData.events ? initialData.events[0] : {};
 
       setFormData(prevData => ({
         // --- contact_id ---
@@ -124,6 +125,7 @@ function DetailsInput({ onBack, onSave, initialData = null, isAddMode = false })
         linkedin_url: initialData.linkedin_url || '',
 
         // --- Event Details (from the first item in the 'events' array) ---
+        event_id: firstEvent.event_id || '',
         event_name: firstEvent.event_name || '',
         event_role: firstEvent.event_role || '',
         event_date: firstEvent.event_date || '',
@@ -237,7 +239,7 @@ function DetailsInput({ onBack, onSave, initialData = null, isAddMode = false })
   const handleSubmit = (e) => {
     e.preventDefault();
     console.log(formData);
-    if(onSave && onBack){
+    if (onSave && onBack) {
       onSave(formData);
     }
   };
@@ -249,7 +251,7 @@ function DetailsInput({ onBack, onSave, initialData = null, isAddMode = false })
       return dateString.split('T')[0];
     };
     // Safely access the first event, if it exists
-    const firstEvent = initialData.events && initialData.events ? initialData.events : {};
+    const firstEvent = initialData.events && initialData.events ? initialData.events[0] : {};
     setFormData(prevData => ({
       ...prevData,
 
@@ -297,6 +299,7 @@ function DetailsInput({ onBack, onSave, initialData = null, isAddMode = false })
       linkedin_url: initialData.linkedin_url || '',
 
       // --- Event Details (from the first item in the 'events' array) ---
+      event_id: firstEvent.event_id,
       event_name: firstEvent.event_name || '',
       event_role: firstEvent.event_role || '',
       event_date: firstEvent.event_date || '',

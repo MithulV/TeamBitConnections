@@ -162,30 +162,35 @@ export const GetContacts = async (req, res) => {
 
 export const GetUnVerifiedContacts = async (req, res) => {
     try {
-        // The userId parameter is available if you need to scope the query further,
-        // for example, by a `created_by` field.
         const { userId } = req.params;
 
-        const contacts = await db`
+        const contactsWithEvents = await db`
             SELECT
                 c.*,
+                
+                -- These subqueries remain the same, fetching related data for the contact.
                 (SELECT row_to_json(ca) FROM contact_address ca WHERE ca.contact_id = c.contact_id) as address,
                 (SELECT row_to_json(ce) FROM contact_education ce WHERE ce.contact_id = c.contact_id) as education,
                 (SELECT json_agg(cx) FROM contact_experience cx WHERE cx.contact_id = c.contact_id) as experiences,
-                (SELECT json_agg(e) FROM event e WHERE e.contact_id = c.contact_id) as events
+                
+                -- KEY CHANGE: The single event object for this row is now wrapped in an array.
+                -- We also rename the field back to "events" (plural) for consistency.
+                json_build_array(row_to_json(e)) as events
             FROM
-                contact c
+                -- Start from the 'event' table to create a row for each event.
+                event e
+            
+            -- Join the 'contact' information onto each event.
+            INNER JOIN contact c ON e.contact_id = c.contact_id
+            
             WHERE
-                EXISTS (
-                    SELECT 1
-                    FROM event e
-                    WHERE e.contact_id = c.contact_id AND e.verified = false
-                )
+                -- Filter to only include rows where the event is unverified.
+                e.verified = false
             ORDER BY
-                c.contact_id DESC
+                c.contact_id DESC, e.event_id DESC
         `;
 
-        return res.status(200).json(contacts);
+        return res.status(200).json(contactsWithEvents);
     } catch (err) {
         console.error(err);
         return res.status(500).json({ message: "Server Error!", error: err.message });
@@ -340,7 +345,6 @@ export const UpdateContact = async (req, res) => {
         experiences,
         events,
     } = req.body;
-
     try {
         const result = await db.begin(async (t) => {
             // 1. Update the main contact record
@@ -435,14 +439,14 @@ export const UpdateContact = async (req, res) => {
             if (events && events.length > 0) {
                 // First, delete existing events for this contact
                 await t`DELETE FROM event WHERE contact_id = ${contact_id}`;
-
+                
                 // Then, insert the new events
                 for (const event of events) {
                     const [newEvent] = await t`
                         INSERT INTO event (
                             contact_id, event_name, event_role, event_date, event_held_organization, event_location, verified
                         ) VALUES (
-                            ${contact_id}, ${event.event_name}, ${event.event_role}, ${event.event_date}, ${event.event_held_organization}, ${event.event_location}, ${event.verified || true}
+                            ${contact_id}, ${event.event_name}, ${event.event_role}, ${event.event_date}, ${event.event_held_organization}, ${event.event_location}, ${true}
                         ) RETURNING *
                     `;
                     updatedEvents.push(newEvent);
