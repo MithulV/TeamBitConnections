@@ -176,10 +176,9 @@ function MiddleManRecords() {
         const response = await axios.put(`http://localhost:8000/api/update-contact/${updatedData.contact_id}`, updatedData);
         console.log(response);
         setData((prevData) =>
-          prevData.map((user) =>
-            user.contact_id === AddingUser.contact_id ? { ...user, ...updatedData } : user
-          )
+          prevData.filter((user) => user.events[0].event_id !== updatedData.event_id)
         );
+
 
         // Show success alert
         showAlert("success", `${updatedData.name} has been successfully Added.`);
