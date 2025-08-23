@@ -5,8 +5,8 @@ export const CreateContact = async (req, res) => {
     const {
         // --- Contact Fields ---
         name,
-        phoneNumber,
-        emailAddress,
+        phone_number,
+        email_address,
         verified,
         dob,
         gender,
@@ -35,8 +35,8 @@ export const CreateContact = async (req, res) => {
     console.log(req.body);
 
     // --- Core Validation ---
-    if (!name || !phoneNumber || !emailAddress) {
-        return res.status(400).json({ message: "Required fields are missing (name, phoneNumber, emailAddress)." });
+    if (!name || !phone_number || !email_address) {
+        return res.status(400).json({ message: "Required fields are missing (name, phone_number, email_address)." });
     }
 
     try {
@@ -48,7 +48,7 @@ export const CreateContact = async (req, res) => {
                     secondary_email, secondary_phone_number, created_by, emergency_contact_name,
                     emergency_contact_relationship, emergency_contact_phone_number, skills, logger, linkedin_url
                 ) VALUES (
-                    ${name}, ${phoneNumber}, ${emailAddress}, ${verified || null}, ${dob || null}, ${gender || null},
+                    ${name}, ${phone_number}, ${email_address}, ${verified || null}, ${dob || null}, ${gender || null},
                     ${nationality || null}, ${marital_status || null}, ${category || null}, ${secondary_email || null},
                     ${secondary_phone_number || null}, ${created_by || null}, ${emergency_contact_name || null},
                     ${emergency_contact_relationship || null}, ${emergency_contact_phone_number || null}, ${
