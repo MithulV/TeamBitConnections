@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { RotateCcw, Plus, Trash2, FileStack } from 'lucide-react';
+import { RotateCcw, Plus, Trash2, FileStack, Save } from 'lucide-react';
 
-function DetailsInput({ onBack, onSave, initialData = null, isAddMode = false }) {
+function DetailsInput({ onBack, onSave, initialData = null, isAddMode = false, isEditMode = false,assignToUser }) {
   const [formData, setFormData] = useState({
     //contact_id
     contact_id: '',
@@ -45,7 +45,7 @@ function DetailsInput({ onBack, onSave, initialData = null, isAddMode = false })
     ug_from_date: '',
     ug_to_date: '',
 
-    // NEW: General Skills
+    // General Skills
     skills: '',
 
     // Experience - An array
@@ -62,12 +62,12 @@ function DetailsInput({ onBack, onSave, initialData = null, isAddMode = false })
     event_location: '',
     linkedin_url: '',
 
-    // NEW: Logger for notes
+    // Logger for notes
     logger: '',
   });
 
   useEffect(() => {
-    if (isAddMode && initialData) {
+    if ((isAddMode || isEditMode) && initialData) {
       // Helper to format date strings from ISO to YYYY-MM-DD
       const formatDate = (dateString) => {
         if (!dateString) return '';
@@ -75,20 +75,20 @@ function DetailsInput({ onBack, onSave, initialData = null, isAddMode = false })
       };
 
       // Safely access the first event, if it exists
-      const firstEvent = initialData.events && initialData.events ? initialData.events[0] : {};
+      const firstEvent = initialData.events && initialData.events.length > 0 ? initialData.events[0] : {};
 
       setFormData(prevData => ({
         // --- contact_id ---
-        contact_id: initialData.contact_id,
+        contact_id: initialData.contact_id || '',
 
         // --- Personal Details ---
         name: initialData.name || '',
-        dob: formatDate(initialData.dob), // Format the date correctly
+        dob: formatDate(initialData.dob),
         gender: initialData.gender || '',
         nationality: initialData.nationality || '',
         marital_status: initialData.marital_status || '',
-        category: initialData.category || 'Event Participant',
-        age: '', // 'age' is not in the JSON, so it's initialized as empty
+        category: initialData.category || '',
+        age: initialData.age || '',
 
         // --- Contact Info ---
         phone_number: initialData.phone_number || '',
@@ -112,13 +112,13 @@ function DetailsInput({ onBack, onSave, initialData = null, isAddMode = false })
         pg_course_name: initialData.education?.pg_course_name || '',
         pg_college: initialData.education?.pg_college || '',
         pg_university: initialData.education?.pg_university || '',
-        pg_from_date: initialData.education?.pg_from_date || '',
-        pg_to_date: initialData.education?.pg_to_date || '',
+        pg_from_date: formatDate(initialData.education?.pg_from_date),
+        pg_to_date: formatDate(initialData.education?.pg_to_date),
         ug_course_name: initialData.education?.ug_course_name || '',
         ug_college: initialData.education?.ug_college || '',
         ug_university: initialData.education?.ug_university || '',
-        ug_from_date: initialData.education?.ug_from_date || '',
-        ug_to_date: initialData.education?.ug_to_date || '',
+        ug_from_date: formatDate(initialData.education?.ug_from_date),
+        ug_to_date: formatDate(initialData.education?.ug_to_date),
 
         // --- Professional and Additional Info ---
         skills: initialData.skills || '',
@@ -128,7 +128,7 @@ function DetailsInput({ onBack, onSave, initialData = null, isAddMode = false })
         event_id: firstEvent.event_id || '',
         event_name: firstEvent.event_name || '',
         event_role: firstEvent.event_role || '',
-        event_date: firstEvent.event_date || '',
+        event_date: formatDate(firstEvent.event_date),
         event_held_organization: firstEvent.event_held_organization || '',
         event_location: firstEvent.event_location || '',
 
@@ -138,16 +138,19 @@ function DetailsInput({ onBack, onSave, initialData = null, isAddMode = false })
             job_title: exp.job_title || '',
             company: exp.company || '',
             department: exp.department || '',
-            from_date: exp.from_date || '',
-            to_date: exp.to_date || '',
-            company_skills: '', // 'company_skills' is not in the source JSON
+            from_date: formatDate(exp.from_date),
+            to_date: formatDate(exp.to_date),
+            company_skills: exp.company_skills || '',
           }))
           : [{ job_title: '', company: '', department: '', from_date: '', to_date: '', company_skills: '' }],
+
+        // --- Logger ---
+        logger: '',
       }));
     }
-  }, [isAddMode, initialData]);
+  }, [isAddMode, isEditMode, initialData]);
 
-  // --- Field Definitions (Updated to snake_case) ---
+  // --- Field Definitions ---
 
   const personalDetails = [
     { label: "Name*", type: "text", name: "name", placeholder: "Enter full name", value: formData.name },
@@ -238,86 +241,119 @@ function DetailsInput({ onBack, onSave, initialData = null, isAddMode = false })
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log(formData);
-    if (onSave && onBack) {
+    console.log('Form Data:', formData);
+    if (onSave) {
       onSave(formData);
     }
   };
 
   const handleReset = () => {
-    // Resets to the initial empty state structure
+    if (!initialData) {
+      // Reset to empty form for new entries
+      setFormData({
+        contact_id: '',
+        name: '',
+        dob: '',
+        gender: '',
+        nationality: '',
+        marital_status: '',
+        category: '',
+        age: '',
+        phone_number: '',
+        secondary_phone_number: '',
+        email_address: '',
+        secondary_email: '',
+        emergency_contact_name: '',
+        emergency_contact_phone_number: '',
+        emergency_contact_relationship: '',
+        street: '',
+        city: '',
+        state: '',
+        country: '',
+        zipcode: '',
+        pg_course_name: '',
+        pg_college: '',
+        pg_university: '',
+        pg_from_date: '',
+        pg_to_date: '',
+        ug_course_name: '',
+        ug_college: '',
+        ug_university: '',
+        ug_from_date: '',
+        ug_to_date: '',
+        skills: '',
+        experience: [{ job_title: '', company: '', department: '', from_date: '', to_date: '', company_skills: '' }],
+        event_id: '',
+        event_name: '',
+        event_role: '',
+        event_date: '',
+        event_held_organization: '',
+        event_location: '',
+        linkedin_url: '',
+        logger: '',
+      });
+      return;
+    }
+
+    // Reset to initial data for existing entries
     const formatDate = (dateString) => {
       if (!dateString) return '';
       return dateString.split('T')[0];
     };
-    // Safely access the first event, if it exists
-    const firstEvent = initialData.events && initialData.events ? initialData.events[0] : {};
-    setFormData(prevData => ({
-      ...prevData,
 
-      // --- Personal Details ---
+    const firstEvent = initialData.events && initialData.events.length > 0 ? initialData.events[0] : {};
+
+    setFormData({
+      contact_id: initialData.contact_id || '',
       name: initialData.name || '',
-      dob: formatDate(initialData.dob), // Format the date correctly
+      dob: formatDate(initialData.dob),
       gender: initialData.gender || '',
       nationality: initialData.nationality || '',
       marital_status: initialData.marital_status || '',
-      category: initialData.category || 'Event Participant',
-      age: '', // 'age' is not in the JSON, so it's initialized as empty
-
-      // --- Contact Info ---
+      category: initialData.category || '',
+      age: initialData.age || '',
       phone_number: initialData.phone_number || '',
       secondary_phone_number: initialData.secondary_phone_number || '',
       email_address: initialData.email_address || '',
       secondary_email: initialData.secondary_email || '',
-
-      // --- Emergency Contact ---
       emergency_contact_name: initialData.emergency_contact_name || '',
       emergency_contact_phone_number: initialData.emergency_contact_phone_number || '',
       emergency_contact_relationship: initialData.emergency_contact_relationship || '',
-
-      // --- Address Details (from nested 'address' object) ---
       street: initialData.address?.street || '',
       city: initialData.address?.city || '',
       state: initialData.address?.state || '',
       country: initialData.address?.country || '',
       zipcode: initialData.address?.zipcode || '',
-
-      // --- Education Fields (from nested 'education' object) ---
       pg_course_name: initialData.education?.pg_course_name || '',
       pg_college: initialData.education?.pg_college || '',
       pg_university: initialData.education?.pg_university || '',
-      pg_from_date: initialData.education?.pg_from_date || '',
-      pg_to_date: initialData.education?.pg_to_date || '',
+      pg_from_date: formatDate(initialData.education?.pg_from_date),
+      pg_to_date: formatDate(initialData.education?.pg_to_date),
       ug_course_name: initialData.education?.ug_course_name || '',
       ug_college: initialData.education?.ug_college || '',
       ug_university: initialData.education?.ug_university || '',
-      ug_from_date: initialData.education?.ug_from_date || '',
-      ug_to_date: initialData.education?.ug_to_date || '',
-
-      // --- Professional and Additional Info ---
+      ug_from_date: formatDate(initialData.education?.ug_from_date),
+      ug_to_date: formatDate(initialData.education?.ug_to_date),
       skills: initialData.skills || '',
       linkedin_url: initialData.linkedin_url || '',
-
-      // --- Event Details (from the first item in the 'events' array) ---
-      event_id: firstEvent.event_id,
+      event_id: firstEvent.event_id || '',
       event_name: firstEvent.event_name || '',
       event_role: firstEvent.event_role || '',
-      event_date: firstEvent.event_date || '',
+      event_date: formatDate(firstEvent.event_date),
       event_held_organization: firstEvent.event_held_organization || '',
       event_location: firstEvent.event_location || '',
-
-      // --- Experience History (from 'experiences' array) ---
       experience: Array.isArray(initialData.experiences) && initialData.experiences.length > 0
         ? initialData.experiences.map(exp => ({
           job_title: exp.job_title || '',
           company: exp.company || '',
           department: exp.department || '',
-          from_date: exp.from_date || '',
-          to_date: exp.to_date || '',
-          company_skills: '', // 'company_skills' is not in the source JSON
+          from_date: formatDate(exp.from_date),
+          to_date: formatDate(exp.to_date),
+          company_skills: exp.company_skills || '',
         }))
         : [{ job_title: '', company: '', department: '', from_date: '', to_date: '', company_skills: '' }],
-    }));
+      logger: '',
+    });
   };
 
   const renderField = (field, index) => (
@@ -335,6 +371,37 @@ function DetailsInput({ onBack, onSave, initialData = null, isAddMode = false })
     </div>
   );
 
+  // Determine the mode and display appropriate content
+  const getTitle = () => {
+    if (isAddMode) return 'Verify & Add Contact Details';
+    if (isEditMode) return 'Edit Contact Details';
+    return 'Contact Details';
+  };
+
+  const getDescription = () => {
+    if (isAddMode) return 'Review and complete the contact information before adding to verified contacts. Required fields are marked with an asterisk (*).';
+    if (isEditMode) return 'Update the contact information. Required fields are marked with an asterisk (*).';
+    return 'Fill in the comprehensive details. Required fields are marked with an asterisk (*).';
+  };
+
+  const getButtonText = () => {
+    if (isAddMode) return 'Verify & Add';
+    if (isEditMode) return 'Save Changes';
+    return 'Save Details';
+  };
+
+  const getButtonIcon = () => {
+    if (isAddMode) return <Plus size={18} />;
+    if (isEditMode) return <Save size={18} />;
+    return <Plus size={18} />;
+  };
+
+  const getButtonClass = () => {
+    if (isAddMode) return 'bg-green-600 hover:bg-green-700';
+    if (isEditMode) return 'bg-blue-600 hover:bg-blue-700';
+    return 'bg-[#0077b8] hover:bg-[#005f8f]';
+  };
+
   return (
     <div className="flex flex-row mx-auto pt-0 pb-2 bg-[#F0F0F0] min-h-full">
       <form onSubmit={handleSubmit} className="w-full">
@@ -342,13 +409,29 @@ function DetailsInput({ onBack, onSave, initialData = null, isAddMode = false })
 
           <div className='flex flex-1 justify-between items-center pr-20'>
             <div>
-              <h2 className="text-2xl font-semibold text-gray-800 mb-2">Add Additional Details</h2>
-              <p className="text-gray-600">Fill in the comprehensive details. Required fields are marked with an asterisk (*).</p>
+              <h2 className="text-2xl font-semibold text-gray-800 mb-2">
+                {getTitle()}
+              </h2>
+              <p className="text-gray-600">
+                {getDescription()}
+              </p>
             </div>
             <div>
-              <button type='button' className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 py-2.5 rounded-lg transition-colors duration-200 shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-                Assign to User
-              </button>
+              {isAddMode && (
+                <button
+                  type='button'
+                  className="flex items-center gap-3 px-4 py-2 bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100 hover:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-opacity-50 transition-all duration-200 cursor-pointer group"
+                  onClick={() => {
+                    //console.log(assignToUser);
+                    assignToUser();
+                  }}
+                >
+                  <div className="w-2 h-2 bg-orange-400 rounded-full group-hover:bg-orange-500 transition-colors duration-200"></div>
+                  <span className="text-sm text-orange-700 font-medium group-hover:text-orange-800 transition-colors duration-200">
+                    Assign to user
+                  </span>
+                </button>
+              )}
             </div>
           </div>
 
@@ -406,24 +489,41 @@ function DetailsInput({ onBack, onSave, initialData = null, isAddMode = false })
           </div>
 
           <div>
-            <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b border-gray-200 pb-2">Additional Information</h3>
+            <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b border-gray-200 pb-2">Event Information</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">{additionalInfo.map(renderField)}</div>
           </div>
 
           {/* === LOGGER SECTION === */}
           <div>
-            <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b border-gray-200 pb-2">Logger / Notes</h3>
+            <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b border-gray-200 pb-2">Notes / Logger</h3>
             <div className="space-y-2">
-              <label htmlFor="logger" className="block text-sm font-medium text-gray-700">Add a note</label>
-              <textarea id="logger" name="logger" value={formData.logger} placeholder="Log an interaction, comment, or any other relevant information." onChange={handleInputChange} rows={4} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0077b8] resize-vertical" />
+              <label htmlFor="logger" className="block text-sm font-medium text-gray-700">
+                {isAddMode ? 'Verification Notes' : 'Add a note'}
+              </label>
+              <textarea
+                id="logger"
+                name="logger"
+                value={formData.logger}
+                placeholder={isAddMode ? "Add any verification notes or comments about this contact." : "Log an interaction, comment, or any other relevant information."}
+                onChange={handleInputChange}
+                rows={4}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0077b8] resize-vertical"
+              />
             </div>
           </div>
 
           {/* --- ACTION BUTTONS --- */}
           <div className="flex flex-col pt-4 sm:flex-row gap-4 justify-end">
-            <button type="button" onClick={handleReset} className="px-6 py-2 flex items-center justify-center gap-x-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors font-medium"><RotateCcw size={18} />Reset Form</button>
-            <button type="button" onClick={onBack} className="px-6 py-2 flex items-center justify-center gap-x-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors font-medium">Cancel</button>
-            <button type="submit" className="px-6 py-2 flex items-center justify-center gap-x-1.5 bg-[#0077b8] hover:bg-[#005f8f] text-white rounded-lg transition-colors font-medium"><Plus size={18} />Add Details</button>
+            <button type="button" onClick={handleReset} className="px-6 py-2 flex items-center justify-center gap-x-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors font-medium">
+              <RotateCcw size={18} />Reset Form
+            </button>
+            <button type="button" onClick={onBack} className="px-6 py-2 flex items-center justify-center gap-x-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors font-medium">
+              Cancel
+            </button>
+            <button type="submit" className={`px-6 py-2 flex items-center justify-center gap-x-1.5 text-white rounded-lg transition-colors font-medium ${getButtonClass()}`}>
+              {getButtonIcon()}
+              {getButtonText()}
+            </button>
           </div>
 
         </div>
