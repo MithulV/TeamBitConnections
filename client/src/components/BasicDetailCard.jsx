@@ -108,7 +108,7 @@ export default function BasicDetailCard({ name, phone, email, event, role, locat
 
       {/* Date and Action Buttons */}
       <div className="flex items-center justify-between mt-2 pt-0.5 border-t border-gray-100">
-        <div className="text-xs text-gray-500">Added  : {date}</div>
+        <div className="text-xs text-gray-500">Added on : {date}</div>
 
         <div className="flex items-center gap-2">
           <Tooltip label={editOrAdd}>
