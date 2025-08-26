@@ -72,7 +72,7 @@ function DetailsInput({ onBack, onSave, initialData = null, isAddMode = false })
       const formatDate = (dateString) => {
         if (!dateString) return '';
         return dateString.split('T')[0];
-      };
+      };                                                                            
 
       // Safely access the first event, if it exists
       const firstEvent = initialData.events && initialData.events ? initialData.events[0] : {};
