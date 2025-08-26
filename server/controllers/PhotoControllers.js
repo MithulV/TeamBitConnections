@@ -60,6 +60,22 @@ export const GetUnVerifiedImages = async (req, res) => {
     }
 };
 
+export const DeleteImage = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const result = await db`DELETE FROM photos WHERE id = ${id}`;
+
+        if (result.count === 0) {
+            return res.status(404).json({ success: false, message: "Image not found." });
+        }
+        return res.status(200).json({ success: true, message: "Image deleted successfully." });
+    } catch (err) {
+        console.error("Error deleting image:", err);
+        return res.status(500).json({ success: false, error: "An internal server error occurred." });
+    }
+};
+
 export const VerifyImages = async (req, res) => {
     try {
         const pictures = await db`UPDATE SET verified=TRUE FROM photos WHERE id = `;
