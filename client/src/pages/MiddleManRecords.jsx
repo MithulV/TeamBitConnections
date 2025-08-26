@@ -121,6 +121,30 @@ function MiddleManRecords() {
     handleSelectUnverifiedVisitingCards();
   }, []);
 
+  // useEffect(() => {
+  //   const handleDeleteVisitingCard = async () => {
+  //     if (userToDelete) {
+  //       try {
+  //         await axios.delete(
+  //           `http://localhost:8000/api/delete-image/${userToDelete.id}`
+  //         );
+  //         setVisitingCard((prev) =>
+  //           prev.filter((card) => card.id !== userToDelete.id)
+  //         );
+  //         showAlert("success", `${userToDelete.name} has been successfully deleted.`);
+  //         setUserToDelete(null);
+  //       } catch (error) {
+  //         showAlert("error", "Failed to delete visiting card. Please try again.");
+  //         console.error("Error deleting visiting card", userToDelete.id, error);
+  //       }
+  //     }
+  //   };
+  // }, [userToDelete]);
+
+
+
+
+
   const showAlert = (severity, message) => {
     setAlert({
       isOpen: true,
@@ -374,7 +398,9 @@ function MiddleManRecords() {
                                   </button>
                                   <button
                                     className="p-2 bg-white rounded-full shadow-lg hover:bg-gray-50 transition-colors duration-200"
-                                    onClick={(e) => e.stopPropagation()}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                    }}
                                   >
                                     <svg
                                       className="w-5 h-5 text-red-600"
