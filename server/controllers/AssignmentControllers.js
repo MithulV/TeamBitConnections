@@ -40,17 +40,19 @@ export const createAssignment = async (req, res) => {
         return res.status(201).json({ message: "Event assigned successfully!", data: newAssignment });
     } catch (err) {
         console.error("Error creating assignment:", err.message);
-        
+
         // Handle unique constraint violation (race condition)
-        if (err.code === '23505') {
-             return res.status(409).json({ message: "Conflict: This event was just assigned to someone else." });
+        if (err.code === "23505") {
+            return res.status(409).json({ message: "Conflict: This event was just assigned to someone else." });
         }
-        
+
         // Handle foreign key violation (user or event doesn't exist)
-        if (err.code === '23503') {
-             return res.status(404).json({ message: "The specified user (assigner or assignee) or event does not exist." });
+        if (err.code === "23503") {
+            return res
+                .status(404)
+                .json({ message: "The specified user (assigner or assignee) or event does not exist." });
         }
-        
+
         return res.status(500).json({ message: "Internal Server Error", error: err.message });
     }
 };
@@ -64,31 +66,49 @@ export const getAssignmentsForUser = async (req, res) => {
     const { userId } = req.params;
 
     try {
-        const assignments = await db`
-            SELECT 
+        const assignmentsWithContactDetails = await db`
+            SELECT
                 ua.id AS assignment_id,
-                ua.event_id,
-                -- Assumes you have an 'event' table with 'event_name'
-                -- You can add more joins to get more details if needed
-                event.*
-            FROM user_assignments ua
-            LEFT JOIN event ON ua.event = event.contact_id
-            WHERE ua.assigned_to = ${userId}
-            ORDER BY ua.created_at DESC
+                
+                -- Include the full contact record for this assignment's event
+                c.*,
+                
+                -- Also include the specific event that was assigned
+                row_to_json(e) as event,
+                
+                -- Use subqueries to fetch and nest related contact data as JSON,
+                -- just like in GetUnVerifiedContacts.
+                (SELECT row_to_json(ca) FROM contact_address ca WHERE ca.contact_id = c.contact_id) as address,
+                (SELECT row_to_json(ce) FROM contact_education ce WHERE ce.contact_id = c.contact_id) as education,
+                (SELECT json_agg(cx) FROM contact_experience cx WHERE cx.contact_id = c.contact_id) as experiences
+                
+            FROM
+                -- Start with the user's assignments
+                user_assignments ua
+            
+            -- Join to the 'event' table to get event details
+            -- NOTE: Corrected the join condition from your original code.
+            -- It now correctly joins on the event's primary key.
+            INNER JOIN event e ON ua.event_id = e.event_id
+            
+            -- Join from the event to the 'contact' table to get the main contact info
+            INNER JOIN contact c ON e.contact_id = c.contact_id
+            
+            WHERE
+                -- Filter for the specific user
+                ua.assigned_to = ${userId}
+                
+            ORDER BY
+                ua.created_at DESC
         `;
 
-        return res.status(200).json({ data: assignments });
+        return res.status(200).json({ data: assignmentsWithContactDetails });
     } catch (err) {
         console.error("Error fetching assignments for user:", err.message);
         return res.status(500).json({ message: "Internal Server Error", error: err.message });
     }
 };
 
-/**
- * @description Get the single user assigned to a specific event.
- * @route GET /api/assignments/event/:eventId
- * @access Public
- */
 export const getAssignmentForEvent = async (req, res) => {
     const { eventId } = req.params;
 
