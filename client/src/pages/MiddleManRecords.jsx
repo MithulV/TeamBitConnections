@@ -14,8 +14,22 @@ const DeleteConfirmationModal = ({
   onConfirm,
   onCancel,
   itemName = "this user",
+  deleteType = "contact", // Add deleteType prop to distinguish between different deletion types
 }) => {
   if (!isOpen) return null;
+
+  const getDeleteMessage = () => {
+    switch (deleteType) {
+      case "contact":
+        return `Are you sure you want to delete ${itemName}? This will remove the contact from unverified list.`;
+      case "assignment":
+        return `Are you sure you want to delete the assignment for ${itemName}? This will remove the user from your assigned list.`;
+      case "visitingCard":
+        return `Are you sure you want to delete this visiting card? This action cannot be undone.`;
+      default:
+        return `Are you sure you want to delete ${itemName}? This action cannot be undone.`;
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -49,9 +63,7 @@ const DeleteConfirmationModal = ({
         {/* Content */}
         <div className="px-6 pb-6">
           <p className="text-gray-600 text-sm leading-relaxed pl-13">
-            Are you sure you want to delete{" "}
-            <span className="font-medium">{itemName}</span>? This action cannot
-            be undone.
+            {getDeleteMessage()}
           </p>
         </div>
 
@@ -81,6 +93,7 @@ function MiddleManRecords() {
   const [isAdding, setIsAdding] = useState(false);
   const [addingUser, setAddingUser] = useState(null);
   const [activeView, setActiveView] = useState("formData");
+  const [loading, setLoading] = useState(false); // Loading state for refresh button
   const [alert, setAlert] = useState({
     isOpen: false,
     severity: "success",
@@ -89,6 +102,7 @@ function MiddleManRecords() {
 
   const [data, setData] = useState([]);
   const [visitingCard, setVisitingCard] = useState([]);
+  const [assignedByUserData, setAssignedByUserData] = useState([]);
 
   const { id } = useAuthStore();
 
@@ -101,12 +115,9 @@ function MiddleManRecords() {
       })
       .catch((error) => {
         console.error("Error fetching contacts:", error);
+        showAlert("error", "Failed to fetch unverified contacts.");
       });
   };
-
-  useEffect(() => {
-    handleSelectContact();
-  }, []);
 
   const handleSelectUnverifiedVisitingCards = async () => {
     try {
@@ -117,36 +128,38 @@ function MiddleManRecords() {
       setVisitingCard(response.data.data || []);
     } catch (error) {
       console.error("Error fetching visiting cards:", error);
+      showAlert("error", "Failed to fetch visiting cards.");
+    }
+  };
+
+  // Updated function with loading state
+  const handleSelectAssignedByUser = async () => {
+    try {
+      setLoading(true); // Start loading
+      const response = await axios.get(
+        `http://localhost:8000/api/get-assigned-to/${id}`
+      );
+      console.log("Assigned by user data fetched successfully:", response.data);
+      setAssignedByUserData(response.data);
+    } catch (error) {
+      console.error("Error fetching assigned by user data:", error);
+      showAlert("error", "Failed to fetch users assigned by you.");
+    } finally {
+      setLoading(false); // Stop loading
     }
   };
 
   useEffect(() => {
+    handleSelectContact();
     handleSelectUnverifiedVisitingCards();
   }, []);
 
-  // useEffect(() => {
-  //   const handleDeleteVisitingCard = async () => {
-  //     if (userToDelete) {
-  //       try {
-  //         await axios.delete(
-  //           `http://localhost:8000/api/delete-image/${userToDelete.id}`
-  //         );
-  //         setVisitingCard((prev) =>
-  //           prev.filter((card) => card.id !== userToDelete.id)
-  //         );
-  //         showAlert("success", `${userToDelete.name} has been successfully deleted.`);
-  //         setUserToDelete(null);
-  //       } catch (error) {
-  //         showAlert("error", "Failed to delete visiting card. Please try again.");
-  //         console.error("Error deleting visiting card", userToDelete.id, error);
-  //       }
-  //     }
-  //   };
-  // }, [userToDelete]);
-
-
-
-
+  // Fetch assigned by user data when activeView changes to "AssignedToUser"
+  useEffect(() => {
+    if (activeView === "AssignedToUser" && id) {
+      handleSelectAssignedByUser();
+    }
+  }, [activeView, id]);
 
   const showAlert = (severity, message) => {
     setAlert({
@@ -163,28 +176,90 @@ function MiddleManRecords() {
     }));
   };
 
+  // Updated handleDeleteClick for contacts
   const handleDeleteClick = (contact_id) => {
     const user = data.find((user) => user.contact_id === contact_id);
-    setUserToDelete({ id: contact_id, name: user?.name || "this user" });
+    if (user) {
+      setUserToDelete({ 
+        id: contact_id, 
+        name: user?.name || "this user",
+        type: "contact" 
+      });
+      setShowDeleteModal(true);
+    }
+  };
+
+  // Updated handleAssignmentDelete for assignments
+  const handleAssignmentDelete = (assignment_id) => {
+    const user = assignedByUserData.find((user) => user.assignment_id === assignment_id);
+    if (user) {
+      setUserToDelete({
+        assignment_id: assignment_id,
+        name: user?.name || "this user",
+        type: "assignment"
+      });
+      setShowDeleteModal(true);
+    }
+  };
+
+  // Add new function for visiting card deletion
+  const handleVisitingCardDelete = (card_id, card_name = "visiting card") => {
+    setUserToDelete({
+      id: card_id,
+      name: card_name,
+      type: "visitingCard"
+    });
     setShowDeleteModal(true);
   };
 
+  // Updated confirmDelete function to handle different deletion types
   const confirmDelete = async () => {
     if (userToDelete) {
       try {
-        // Remove from UI first (optimistic update)
-        setData((prevData) =>
-          prevData.filter((item) => item.contact_id !== userToDelete.id)
-        );
+        switch (userToDelete.type) {
+          case "contact":
+            // Call contact deletion API (if you have one)
+            // await axios.delete(`http://localhost:8000/api/delete-contact/${userToDelete.id}`);
+            
+            // Remove from UI (optimistic update)
+            setData((prevData) =>
+              prevData.filter((item) => item.contact_id !== userToDelete.id)
+            );
+            showAlert("success", `${userToDelete.name} has been successfully deleted.`);
+            break;
+
+          case "assignment":
+            // Call assignment deletion API
+            await axios.delete(`http://localhost:8000/api/delete-assignment/${userToDelete.assignment_id}`);
+            
+            // Remove from UI
+            setAssignedByUserData((prevData) =>
+              prevData.filter(p => p.assignment_id !== userToDelete.assignment_id)
+            );
+            showAlert("success", `Assignment for ${userToDelete.name} has been successfully deleted.`);
+            break;
+
+          case "visitingCard":
+            // Call visiting card deletion API (add this API endpoint)
+            await axios.delete(`http://localhost:8000/api/delete-visiting-card/${userToDelete.id}`);
+            
+            // Remove from UI
+            setVisitingCard((prevData) =>
+              prevData.filter(card => card.id !== userToDelete.id)
+            );
+            showAlert("success", "Visiting card has been successfully deleted.");
+            break;
+
+          default:
+            showAlert("error", "Unknown deletion type.");
+            return;
+        }
+
         setShowDeleteModal(false);
-        showAlert(
-          "success",
-          `${userToDelete.name} has been successfully deleted.`
-        );
         setUserToDelete(null);
       } catch (error) {
-        showAlert("error", "Failed to delete user. Please try again.");
-        console.log("Error deleting user", userToDelete.id, error);
+        showAlert("error", "Failed to delete. Please try again.");
+        console.log("Error deleting:", error);
       }
     }
   };
@@ -244,20 +319,28 @@ function MiddleManRecords() {
     setIsAdding(false);
     setAddingUser(null);
   };
+
   const assignToUser = async () => {
     try {
       const response = await axios.post(`http://localhost:8000/api/assign/`, {
-        assigned_by: id, assigned_to: addingUser.created_by, event_id: addingUser.events[0].event_id,
-      })
+        assigned_by: id,
+        assigned_to: addingUser.created_by,
+        event_id: addingUser.events[0].event_id,
+      });
       console.log(response.data);
-      console.log(id, addingUser.created_by, addingUser.events[0].event_id,);
+      console.log(id, addingUser.created_by, addingUser.events[0].event_id);
       showAlert("success", "Successfully assigned to user");
       handleAddCancel();
     } catch (err) {
       console.log(err);
       showAlert("error", "Failed to assign to user");
     }
-  }
+  };
+
+  const handleDeleteAssignedUser = async (assignment_id) => {
+    handleAssignmentDelete(assignment_id);
+  };
+
   const navigate = useNavigate();
 
   return (
@@ -277,21 +360,33 @@ function MiddleManRecords() {
           <div className={`flex gap-4 mb-6 ${isAdding ? "hidden" : "block"}`}>
             <button
               onClick={() => setActiveView("formData")}
-              className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${activeView === "formData"
+              className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
+                activeView === "formData"
                   ? "bg-blue-600 text-white shadow-md"
                   : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
-                }`}
+              }`}
             >
               Form Data
             </button>
             <button
               onClick={() => setActiveView("visitingCards")}
-              className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${activeView === "visitingCards"
+              className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
+                activeView === "visitingCards"
                   ? "bg-blue-600 text-white shadow-md"
                   : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
-                }`}
+              }`}
             >
               Visiting Cards
+            </button>
+            <button
+              onClick={() => setActiveView("AssignedToUser")}
+              className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
+                activeView === "AssignedToUser"
+                  ? "bg-blue-600 text-white shadow-md"
+                  : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
+              }`}
+            >
+              Assigned By Me
             </button>
           </div>
 
@@ -329,6 +424,7 @@ function MiddleManRecords() {
                       onDelete={() => handleDeleteClick(participant.contact_id)}
                       onType={() => onAdd(participant.contact_id)}
                       editOrAdd={"add"}
+                      assignedOn={undefined}
                     />
                   ))}
 
@@ -344,7 +440,7 @@ function MiddleManRecords() {
                     </div>
                   )}
                 </div>
-              ) : (
+              ) : activeView === "visitingCards" ? (
                 <div className="p-6">
                   <div className="max-w-7xl mx-auto">
                     <div className="bg-white rounded-lg p-4 mb-6 shadow-sm border border-gray-200">
@@ -406,6 +502,7 @@ function MiddleManRecords() {
                                     className="p-2 bg-white rounded-full shadow-lg hover:bg-gray-50 transition-colors duration-200"
                                     onClick={(e) => {
                                       e.stopPropagation();
+                                      handleVisitingCardDelete(card.id, `Visiting Card ${card.id}`);
                                     }}
                                   >
                                     <svg
@@ -495,12 +592,141 @@ function MiddleManRecords() {
                     )}
                   </div>
                 </div>
-              )}
+              ) : activeView === "AssignedToUser" ? (
+                /* New section for users assigned by current user */
+                <div>
+                  {/* Header Info with Loading Animation */}
+                  <div className="bg-white rounded-lg p-4 mb-6 shadow-sm border border-gray-200">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <div className="w-3 h-3 bg-green-400 rounded-full mr-2"></div>
+                        <span className="text-sm text-gray-600">
+                          {assignedByUserData.length} User{assignedByUserData.length !== 1 ? 's' : ''} Assigned by You still not completed their update
+                        </span>
+                      </div>
+                      {/* Refresh Button with Loading Animation */}
+                      <button
+                        onClick={handleSelectAssignedByUser}
+                        disabled={loading}
+                        className="flex items-center gap-2 px-3 py-1 text-xs bg-gray-100 text-gray-600 rounded hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {loading && (
+                          <svg
+                            className="animate-spin h-3 w-3 text-gray-600"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                            ></circle>
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8v8z"
+                            ></path>
+                          </svg>
+                        )}
+                        {loading ? "Loading..." : "Refresh"}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Cards Grid */}
+                  {assignedByUserData.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {assignedByUserData.map((participant, index) => (
+                        <BasicDetailCard
+                          key={participant.contact_id || index}
+                          name={participant.name}
+                          phone={participant.phone_number}
+                          email={participant.email_address}
+                          event={participant.events?.[0]?.event_name || "N/A"}
+                          role={participant.events?.[0]?.event_role || "N/A"}
+                          date={format(
+                            parseISO(participant.created_at),
+                            "MMMM dd, yyyy"
+                          )}
+                          org={participant.events?.[0]?.event_held_organization || "N/A"}
+                          location={participant.events?.[0]?.event_location || "N/A"}
+                          profileImage={participant.profileImage || Avatar}
+                          onDelete={() => handleDeleteAssignedUser(participant.assignment_id)}
+                          editOrAdd={undefined}
+                          assignedOn={participant.assigned_on ? format(
+                            parseISO(participant.assigned_on),
+                            "MMMM dd, yyyy"
+                          ) : "N/A"}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    /* Empty State */
+                    <div className="text-center py-16">
+                      <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mb-4">
+                        <svg
+                          className="w-8 h-8 text-gray-400"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                          />
+                        </svg>
+                      </div>
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">
+                        No users assigned by you
+                      </h3>
+                      <p className="text-gray-500 mb-6 max-w-md mx-auto">
+                        You haven't assigned any users yet. Start assigning users to see them here.
+                      </p>
+                      <button
+                        onClick={handleSelectAssignedByUser}
+                        disabled={loading}
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {loading && (
+                          <svg
+                            className="animate-spin h-4 w-4 text-white"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                            ></circle>
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8v8z"
+                            ></path>
+                          </svg>
+                        )}
+                        {loading ? "Loading..." : "Refresh"}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : null}
               <DeleteConfirmationModal
                 isOpen={showDeleteModal}
                 onConfirm={confirmDelete}
                 onCancel={cancelDelete}
                 itemName={userToDelete?.name}
+                deleteType={userToDelete?.type} // Pass the delete type
               />
             </>
           )}
