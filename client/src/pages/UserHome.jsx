@@ -113,22 +113,29 @@ function UserHome() {
         position="bottom"
         duration={4000}
       />
-      {/* <div className="p-8 pt-4 pb-3 shadow bg-white flex-shrink-0"> */}
-      <div className="flex  items-center justify-between">
-        {/* User Profile Header */}
-        <Header />
-        {/* Conditional Action Buttons */}
-        {activeView === "default" ? undefined : (
-          <button
-            onClick={handleBackToDefault}
-            className="px-4 py-2 mr-5 flex items-center gap-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors duration-200 font-medium"
-          >
-            <ArrowLeft size={20} />
-            Back
-          </button>
-        )}
+      {/* Full Width Header Section */}
+      <div className="w-full bg-white shadow-sm">
+        <div className="flex items-center justify-between">
+          {/* Left Section - Back Button */}
+          <div className="flex-shrink-0">
+            {activeView === "default" ? (
+              <div></div>
+            ) : (
+              <button
+                onClick={handleBackToDefault}
+                className="px-4 py-2 ml-5 flex items-center gap-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors duration-200 font-medium"
+              >
+                <ArrowLeft size={20} />
+                Back
+              </button>)}
+          </div>
+
+          {/* Right Section - Header always on the right */}
+          <div className="flex-shrink-0">
+            <Header />
+          </div>
+        </div>
       </div>
-      {/* </div> */}
 
       <hr className="border-0 border-t border-gray-300 opacity-60" />
 

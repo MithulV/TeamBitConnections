@@ -37,8 +37,8 @@ const MiddleManHome = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("All Status");
   const [categoryFilter, setCategoryFilter] = useState("All Categories");
-  const [isAdding, setIsAdding] = useState(false);
-  const [addingUser, setAddingUser] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
   const { role } = useAuthStore(); // Get role from your auth store
 
   // useEffect to fetch data when the component mounts or the role changes
@@ -86,7 +86,6 @@ const MiddleManHome = () => {
     getCategoryContacts();
   }, [role]); // Dependency array: re-run the effect if the user's role changes
 
-
   const taskStatus = {
     completed: 7,
     total: 16,
@@ -115,23 +114,23 @@ const MiddleManHome = () => {
     return matchesSearch && matchesStatus && matchesCategory;
   });
 
-  const handleAddClick = (user) => {
-    setAddingUser(user || null);
-    setIsAdding(true);
+  const handleEditClick = (user) => {
+    setEditingUser(user || null);
+    setIsEditing(true);
   };
 
-  const handleAddComplete = (updatedData) => {
+  const handleEditComplete = (updatedData) => {
     // Here you would typically make an API call to save the data.
     // For now, we'll just close the form.
     console.log("Saving data:", updatedData);
-    setIsAdding(false);
-    setAddingUser(null);
+    setIsEditing(false);
+    setEditingUser(null);
     // Optionally, re-fetch data or update state optimistically.
   };
 
-  const handleAddCancel = () => {
-    setIsAdding(false);
-    setAddingUser(null);
+  const handleEditCancel = () => {
+    setIsEditing(false);
+    setEditingUser(null);
   };
 
   return (
@@ -139,13 +138,13 @@ const MiddleManHome = () => {
       <Header />
       <div className="p-6">
         <div className="max-w-7xl mx-auto">
-          {isAdding ? (
+          {isEditing ? (
             <div className="p-5">
               <DetailsInput
-                onBack={handleAddCancel}
-                onSave={handleAddComplete}
-                initialData={addingUser}
-                isAddMode={true} // You might want to distinguish between add and edit modes
+                onBack={handleEditCancel}
+                onSave={handleEditComplete}
+                initialData={editingUser}
+                isEditMode={true} // This is now edit mode, not add mode
               />
             </div>
           ) : (
@@ -212,7 +211,7 @@ const MiddleManHome = () => {
                   <ContactCard
                     key={contact.contact_id} // Use a unique and stable key
                     contact={contact}
-                    onEdit={() => handleAddClick(contact)}
+                    onEdit={() => handleEditClick(contact)}
                   />
                 ))}
               </div>
