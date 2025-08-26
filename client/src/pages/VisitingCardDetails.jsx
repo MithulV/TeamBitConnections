@@ -392,6 +392,10 @@ const VisitingCardDetails = () => {
         "http://localhost:8000/api/create-contact",
         transformedData
       );
+      const response2 = await axios.post(
+        `http://localhost:8000/api/verify-image/${id}`,
+        transformedData
+      );
 
       console.log("Contact created successfully:", response.data);
 
@@ -399,7 +403,7 @@ const VisitingCardDetails = () => {
       alert("Contact saved successfully!");
 
       // Optionally navigate back to records page
-      // navigate("/verify-records");
+      navigate("/verify-records");
     } catch (error) {
       console.error("Error creating contact:", error);
 
