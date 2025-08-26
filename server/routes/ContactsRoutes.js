@@ -11,9 +11,20 @@ import {
     GetContactsByCategory,
 } from "../controllers/ContactControllers.js";
 
-import { createAssignment, getAssignmentForEvent, getAssignmentsForUser, revokeAssignment } from "../controllers/AssignmentControllers.js"
+import {
+    createAssignment,
+    getAssignmentForEvent,
+    getAssignmentsForUser,
+    revokeAssignment,
+} from "../controllers/AssignmentControllers.js";
 
-import { upload, UploadImage, GetPicturesByUserId, GetUnVerifiedImages } from "../controllers/PhotoControllers.js";
+import {
+    upload,
+    UploadImage,
+    GetPicturesByUserId,
+    GetUnVerifiedImages,
+    DeleteImage,
+} from "../controllers/PhotoControllers.js";
 
 const router = express.Router();
 router.get("/contacts/:userId", GetContacts);
@@ -28,7 +39,7 @@ router.put("/update-contact/:contact_id", UpdateContact);
 router.delete("/delete-contact/:id", DeleteContact);
 router.post("/add-event-existing-contact/:contactId", AddEventToExistingContact);
 router.put("/update-contacts-and-events/:id", UpdateContactAndEvents);
-
+router.delete("/delete-image/:id", DeleteImage);
 router.post("/assign/", createAssignment);
 router.get("/get-assignment/:userId", getAssignmentsForUser);
 router.get("/get-assignment-by-event/:eventId", getAssignmentForEvent);
