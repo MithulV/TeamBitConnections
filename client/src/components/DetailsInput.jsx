@@ -417,7 +417,7 @@ function DetailsInput({ onBack, onSave, initialData = null, isAddMode = false, i
               </p>
             </div>
             <div>
-              {isAddMode && (
+              {isAddMode && assignToUser && (
                 <button
                   type='button'
                   className="flex items-center gap-3 px-4 py-2 bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100 hover:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-opacity-50 transition-all duration-200 cursor-pointer group"
