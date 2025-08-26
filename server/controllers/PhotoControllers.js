@@ -59,3 +59,18 @@ export const GetUnVerifiedImages = async (req, res) => {
         return res.status(500).json({ success: false, error: "An internal server error occurred." });
     }
 };
+
+export const VerifyImages = async (req, res) => {
+    try {
+        const pictures = await db`UPDATE SET verified=TRUE FROM photos WHERE id = `;
+
+        if (!pictures || pictures.length === 0) {
+            return res.status(404).json({ success: false, message: "No pictures found for this user." });
+        }
+
+        return res.status(200).json({ success: true, data: pictures });
+    } catch (err) {
+        console.error("Error fetching pictures:", err); // Use console.error for logging errors
+        return res.status(500).json({ success: false, error: "An internal server error occurred." });
+    }
+};
