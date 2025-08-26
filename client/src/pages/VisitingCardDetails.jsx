@@ -37,81 +37,12 @@ const VisitingCardDetails = () => {
   const [isExtracted, setIsExtracted] = useState(false);
   const [currentCard, setCurrentCard] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [apiDebugData, setApiDebugData] = useState(null);
   const [currentStep, setCurrentStep] = useState(0);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [visitingCardDetails, setVisitingCardDetails] = useState({
+    //contact_id
+    contact_id: "",
 
-  // Fetch the specific visiting card data
-  useEffect(() => {
-    const fetchCardDetails = async () => {
-      try {
-        setLoading(true);
-        console.log("Fetching card with ID:", id);
-
-        // Fetch all cards and find the one with matching ID
-        const response = await axios.get(
-          `http://localhost:8000/api/get-unverified-images/`
-        );
-        console.log("API response:", response.data);
-        console.log("All cards:", response.data.data);
-
-        // Store debug data
-        setApiDebugData({
-          responseData: response.data,
-          allCards: response.data.data,
-          searchId: id,
-          cardIds: response.data.data?.map((c) => ({
-            id: c.id,
-            type: typeof c.id,
-          })),
-        });
-
-        const card = response.data.data?.find((card) => {
-          console.log(
-            `Comparing: ${card.id} (${typeof card.id}) === ${id} (${typeof id})`
-          );
-          return card.id.toString() === id.toString();
-        });
-        console.log("Found card:", card);
-        console.log(
-          "Card IDs in response:",
-          response.data.data?.map((c) => c.id)
-        );
-
-        setCurrentCard(card);
-        setLoading(false);
-      } catch (error) {
-        console.error("Error fetching cards:", error);
-        setLoading(false);
-      }
-    };
-
-    if (id) {
-      fetchCardDetails();
-    }
-  }, [id]);
-
-  // Handle keyboard events for modal
-  useEffect(() => {
-    const handleKeyDown = (event) => {
-      if (event.key === "Escape" && isModalOpen) {
-        setIsModalOpen(false);
-      }
-    };
-
-    if (isModalOpen) {
-      document.addEventListener("keydown", handleKeyDown);
-      // Prevent body scroll when modal is open
-      document.body.style.overflow = "hidden";
-    }
-
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = "unset";
-    };
-  }, [isModalOpen]);
-
-  const [formData, setFormData] = useState({
     // Personal Details
     name: "",
     dob: "",
@@ -151,7 +82,7 @@ const VisitingCardDetails = () => {
     ug_from_date: "",
     ug_to_date: "",
 
-    // General Skills
+    // NEW: General Skills
     skills: "",
 
     // Experience - An array
@@ -174,10 +105,59 @@ const VisitingCardDetails = () => {
     event_held_organization: "",
     event_location: "",
     linkedin_url: "",
+    verified: true,
 
-    // Logger for notes
+    // NEW: Logger for notes
     logger: "",
   });
+
+  // Fetch the specific visiting card data
+  useEffect(() => {
+    const fetchCardDetails = async () => {
+      try {
+        setLoading(true);
+
+        // Fetch all cards and find the one with matching ID
+        const response = await axios.get(
+          `http://localhost:8000/api/get-unverified-images/`
+        );
+
+        const card = response.data.data?.find((card) => {
+          return card.id.toString() === id.toString();
+        });
+
+        setCurrentCard(card);
+        setLoading(false);
+      } catch (error) {
+        console.error("Error fetching cards:", error);
+        setLoading(false);
+      }
+    };
+
+    if (id) {
+      fetchCardDetails();
+    }
+  }, [id]);
+
+  // Handle keyboard events for modal
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape" && isModalOpen) {
+        setIsModalOpen(false);
+      }
+    };
+
+    if (isModalOpen) {
+      document.addEventListener("keydown", handleKeyDown);
+      // Prevent body scroll when modal is open
+      document.body.style.overflow = "hidden";
+    }
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = "unset";
+    };
+  }, [isModalOpen]);
 
   const [extractedData, setExtractedData] = useState({
     name: "THOMAS SMITH",
@@ -286,7 +266,7 @@ const VisitingCardDetails = () => {
   const handleExtract = () => {
     setIsExtracting(true);
     setTimeout(() => {
-      setFormData((prev) => ({
+      setVisitingCardDetails((prev) => ({
         ...prev,
         ...extractedData,
       }));
@@ -296,14 +276,14 @@ const VisitingCardDetails = () => {
   };
 
   const handleInputChange = (field, value) => {
-    setFormData((prev) => ({
+    setVisitingCardDetails((prev) => ({
       ...prev,
       [field]: value,
     }));
   };
 
   const handleExperienceChange = (index, field, value) => {
-    setFormData((prev) => ({
+    setVisitingCardDetails((prev) => ({
       ...prev,
       experience: prev.experience.map((exp, i) =>
         i === index ? { ...exp, [field]: value } : exp
@@ -312,7 +292,7 @@ const VisitingCardDetails = () => {
   };
 
   const addExperience = () => {
-    setFormData((prev) => ({
+    setVisitingCardDetails((prev) => ({
       ...prev,
       experience: [
         ...prev.experience,
@@ -329,16 +309,107 @@ const VisitingCardDetails = () => {
   };
 
   const removeExperience = (index) => {
-    if (formData.experience.length > 1) {
-      setFormData((prev) => ({
+    if (visitingCardDetails.experience.length > 1) {
+      setVisitingCardDetails((prev) => ({
         ...prev,
         experience: prev.experience.filter((_, i) => i !== index),
       }));
     }
   };
 
-  const handleSave = () => {
-    console.log("Saving contact:", formData);
+  const handleSave = async () => {
+    try {
+      console.log("Original visiting card details:", visitingCardDetails);
+
+      // Transform the flat structure into the nested structure expected by the API
+      const transformedData = {
+        // Main contact details
+        name: visitingCardDetails.name,
+        phone_number: visitingCardDetails.phone_number,
+        email_address: visitingCardDetails.email_address,
+        dob: visitingCardDetails.dob,
+        gender: visitingCardDetails.gender,
+        nationality: visitingCardDetails.nationality,
+        marital_status: visitingCardDetails.marital_status,
+        category: visitingCardDetails.category,
+        secondary_email: visitingCardDetails.secondary_email,
+        secondary_phone_number: visitingCardDetails.secondary_phone_number,
+        created_by: 1, // You may want to get this from auth context
+        emergency_contact_name: visitingCardDetails.emergency_contact_name,
+        emergency_contact_relationship:
+          visitingCardDetails.emergency_contact_relationship,
+        emergency_contact_phone_number:
+          visitingCardDetails.emergency_contact_phone_number,
+        skills: visitingCardDetails.skills,
+        logger: visitingCardDetails.logger,
+        linkedin_url: visitingCardDetails.linkedin_url,
+
+        // Nested address object
+        address: {
+          street: visitingCardDetails.street,
+          city: visitingCardDetails.city,
+          state: visitingCardDetails.state,
+          country: visitingCardDetails.country,
+          zipcode: visitingCardDetails.zipcode,
+        },
+
+        // Nested education object
+        education: {
+          pg_course_name: visitingCardDetails.pg_course_name,
+          pg_college: visitingCardDetails.pg_college,
+          pg_university: visitingCardDetails.pg_university,
+          pg_from_date: visitingCardDetails.pg_from_date,
+          pg_to_date: visitingCardDetails.pg_to_date,
+          ug_course_name: visitingCardDetails.ug_course_name,
+          ug_college: visitingCardDetails.ug_college,
+          ug_university: visitingCardDetails.ug_university,
+          ug_from_date: visitingCardDetails.ug_from_date,
+          ug_to_date: visitingCardDetails.ug_to_date,
+        },
+
+        // Experiences array (keeping the existing structure)
+        experiences: visitingCardDetails.experience,
+
+        // Events array - transform from flat fields to object array
+        events: visitingCardDetails.event_name
+          ? [
+              {
+                event_name: visitingCardDetails.event_name,
+                event_role: visitingCardDetails.event_role,
+                event_date: visitingCardDetails.event_date,
+                event_held_organization:
+                  visitingCardDetails.event_held_organization,
+                event_location: visitingCardDetails.event_location,
+                verified: true,
+              },
+            ]
+          : [],
+      };
+
+      console.log("Transformed data for API:", transformedData);
+
+      const response = await axios.post(
+        "http://localhost:8000/api/create-contact",
+        transformedData
+      );
+
+      console.log("Contact created successfully:", response.data);
+
+      // You can add success notification here
+      alert("Contact saved successfully!");
+
+      // Optionally navigate back to records page
+      // navigate("/verify-records");
+    } catch (error) {
+      console.error("Error creating contact:", error);
+
+      // Show error message to user
+      if (error.response?.data?.message) {
+        alert(`Error: ${error.response.data.message}`);
+      } else {
+        alert("Failed to save contact. Please try again.");
+      }
+    }
   };
 
   const nextStep = () => {
@@ -377,7 +448,7 @@ const VisitingCardDetails = () => {
                   <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
                     type="text"
-                    value={formData.name}
+                    value={visitingCardDetails.name}
                     onChange={(e) => handleInputChange("name", e.target.value)}
                     className={`w-full pl-10 pr-10 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
                       isExtracted && extractedData.name
@@ -400,7 +471,7 @@ const VisitingCardDetails = () => {
                   <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
                     type="date"
-                    value={formData.dob}
+                    value={visitingCardDetails.dob}
                     onChange={(e) => handleInputChange("dob", e.target.value)}
                     className="w-full pl-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
@@ -413,7 +484,7 @@ const VisitingCardDetails = () => {
                 </label>
                 <input
                   type="number"
-                  value={formData.age}
+                  value={visitingCardDetails.age}
                   onChange={(e) => handleInputChange("age", e.target.value)}
                   className="w-full py-3 px-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="Enter age"
@@ -425,13 +496,13 @@ const VisitingCardDetails = () => {
                   Gender
                 </label>
                 <select
-                  value={formData.gender}
+                  value={visitingCardDetails.gender}
                   onChange={(e) => handleInputChange("gender", e.target.value)}
                   className="w-full py-3 px-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="">Select Gender</option>
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
                   <option value="other">Other</option>
                 </select>
               </div>
@@ -444,7 +515,7 @@ const VisitingCardDetails = () => {
                   <Globe className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
                     type="text"
-                    value={formData.nationality}
+                    value={visitingCardDetails.nationality}
                     onChange={(e) =>
                       handleInputChange("nationality", e.target.value)
                     }
@@ -459,7 +530,7 @@ const VisitingCardDetails = () => {
                   Marital Status
                 </label>
                 <select
-                  value={formData.marital_status}
+                  value={visitingCardDetails.marital_status}
                   onChange={(e) =>
                     handleInputChange("marital_status", e.target.value)
                   }
@@ -479,7 +550,7 @@ const VisitingCardDetails = () => {
                 </label>
                 <input
                   type="text"
-                  value={formData.category}
+                  value={visitingCardDetails.category}
                   onChange={(e) =>
                     handleInputChange("category", e.target.value)
                   }
@@ -503,7 +574,7 @@ const VisitingCardDetails = () => {
                   <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
                     type="tel"
-                    value={formData.phone_number}
+                    value={visitingCardDetails.phone_number}
                     onChange={(e) =>
                       handleInputChange("phone_number", e.target.value)
                     }
@@ -528,7 +599,7 @@ const VisitingCardDetails = () => {
                   <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
                     type="tel"
-                    value={formData.secondary_phone_number}
+                    value={visitingCardDetails.secondary_phone_number}
                     onChange={(e) =>
                       handleInputChange(
                         "secondary_phone_number",
@@ -549,7 +620,7 @@ const VisitingCardDetails = () => {
                   <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
                     type="email"
-                    value={formData.email_address}
+                    value={visitingCardDetails.email_address}
                     onChange={(e) =>
                       handleInputChange("email_address", e.target.value)
                     }
@@ -574,7 +645,7 @@ const VisitingCardDetails = () => {
                   <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
                     type="email"
-                    value={formData.secondary_email}
+                    value={visitingCardDetails.secondary_email}
                     onChange={(e) =>
                       handleInputChange("secondary_email", e.target.value)
                     }
@@ -599,7 +670,7 @@ const VisitingCardDetails = () => {
                   <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
                     type="text"
-                    value={formData.emergency_contact_name}
+                    value={visitingCardDetails.emergency_contact_name}
                     onChange={(e) =>
                       handleInputChange(
                         "emergency_contact_name",
@@ -620,7 +691,7 @@ const VisitingCardDetails = () => {
                   <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
                     type="tel"
-                    value={formData.emergency_contact_phone_number}
+                    value={visitingCardDetails.emergency_contact_phone_number}
                     onChange={(e) =>
                       handleInputChange(
                         "emergency_contact_phone_number",
@@ -641,7 +712,7 @@ const VisitingCardDetails = () => {
                   <Heart className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
                     type="text"
-                    value={formData.emergency_contact_relationship}
+                    value={visitingCardDetails.emergency_contact_relationship}
                     onChange={(e) =>
                       handleInputChange(
                         "emergency_contact_relationship",
@@ -668,7 +739,7 @@ const VisitingCardDetails = () => {
                 <div className="relative">
                   <MapPin className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
                   <textarea
-                    value={formData.street}
+                    value={visitingCardDetails.street}
                     onChange={(e) =>
                       handleInputChange("street", e.target.value)
                     }
@@ -685,7 +756,7 @@ const VisitingCardDetails = () => {
                 </label>
                 <input
                   type="text"
-                  value={formData.city}
+                  value={visitingCardDetails.city}
                   onChange={(e) => handleInputChange("city", e.target.value)}
                   className={`w-full py-3 px-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
                     isExtracted && extractedData.city
@@ -702,7 +773,7 @@ const VisitingCardDetails = () => {
                 </label>
                 <input
                   type="text"
-                  value={formData.state}
+                  value={visitingCardDetails.state}
                   onChange={(e) => handleInputChange("state", e.target.value)}
                   className={`w-full py-3 px-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
                     isExtracted && extractedData.state
@@ -719,7 +790,7 @@ const VisitingCardDetails = () => {
                 </label>
                 <input
                   type="text"
-                  value={formData.country}
+                  value={visitingCardDetails.country}
                   onChange={(e) => handleInputChange("country", e.target.value)}
                   className={`w-full py-3 px-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
                     isExtracted && extractedData.country
@@ -736,7 +807,7 @@ const VisitingCardDetails = () => {
                 </label>
                 <input
                   type="text"
-                  value={formData.zipcode}
+                  value={visitingCardDetails.zipcode}
                   onChange={(e) => handleInputChange("zipcode", e.target.value)}
                   className="w-full py-3 px-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="Enter ZIP/postal code"
@@ -761,7 +832,7 @@ const VisitingCardDetails = () => {
                   </label>
                   <input
                     type="text"
-                    value={formData.pg_course_name}
+                    value={visitingCardDetails.pg_course_name}
                     onChange={(e) =>
                       handleInputChange("pg_course_name", e.target.value)
                     }
@@ -776,7 +847,7 @@ const VisitingCardDetails = () => {
                   </label>
                   <input
                     type="text"
-                    value={formData.pg_college}
+                    value={visitingCardDetails.pg_college}
                     onChange={(e) =>
                       handleInputChange("pg_college", e.target.value)
                     }
@@ -791,7 +862,7 @@ const VisitingCardDetails = () => {
                   </label>
                   <input
                     type="text"
-                    value={formData.pg_university}
+                    value={visitingCardDetails.pg_university}
                     onChange={(e) =>
                       handleInputChange("pg_university", e.target.value)
                     }
@@ -806,7 +877,7 @@ const VisitingCardDetails = () => {
                   </label>
                   <input
                     type="date"
-                    value={formData.pg_from_date}
+                    value={visitingCardDetails.pg_from_date}
                     onChange={(e) =>
                       handleInputChange("pg_from_date", e.target.value)
                     }
@@ -820,7 +891,7 @@ const VisitingCardDetails = () => {
                   </label>
                   <input
                     type="date"
-                    value={formData.pg_to_date}
+                    value={visitingCardDetails.pg_to_date}
                     onChange={(e) =>
                       handleInputChange("pg_to_date", e.target.value)
                     }
@@ -842,7 +913,7 @@ const VisitingCardDetails = () => {
                   </label>
                   <input
                     type="text"
-                    value={formData.ug_course_name}
+                    value={visitingCardDetails.ug_course_name}
                     onChange={(e) =>
                       handleInputChange("ug_course_name", e.target.value)
                     }
@@ -857,7 +928,7 @@ const VisitingCardDetails = () => {
                   </label>
                   <input
                     type="text"
-                    value={formData.ug_college}
+                    value={visitingCardDetails.ug_college}
                     onChange={(e) =>
                       handleInputChange("ug_college", e.target.value)
                     }
@@ -872,7 +943,7 @@ const VisitingCardDetails = () => {
                   </label>
                   <input
                     type="text"
-                    value={formData.ug_university}
+                    value={visitingCardDetails.ug_university}
                     onChange={(e) =>
                       handleInputChange("ug_university", e.target.value)
                     }
@@ -887,7 +958,7 @@ const VisitingCardDetails = () => {
                   </label>
                   <input
                     type="date"
-                    value={formData.ug_from_date}
+                    value={visitingCardDetails.ug_from_date}
                     onChange={(e) =>
                       handleInputChange("ug_from_date", e.target.value)
                     }
@@ -901,7 +972,7 @@ const VisitingCardDetails = () => {
                   </label>
                   <input
                     type="date"
-                    value={formData.ug_to_date}
+                    value={visitingCardDetails.ug_to_date}
                     onChange={(e) =>
                       handleInputChange("ug_to_date", e.target.value)
                     }
@@ -922,7 +993,7 @@ const VisitingCardDetails = () => {
                 General Skills
               </h4>
               <textarea
-                value={formData.skills}
+                value={visitingCardDetails.skills}
                 onChange={(e) => handleInputChange("skills", e.target.value)}
                 className="w-full py-3 px-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
                 rows={4}
@@ -946,7 +1017,7 @@ const VisitingCardDetails = () => {
                 </button>
               </div>
 
-              {formData.experience.map((exp, index) => (
+              {visitingCardDetails.experience.map((exp, index) => (
                 <div
                   key={index}
                   className="p-6 border border-gray-200 rounded-lg space-y-4"
@@ -955,7 +1026,7 @@ const VisitingCardDetails = () => {
                     <h5 className="text-sm font-medium text-gray-700">
                       Experience #{index + 1}
                     </h5>
-                    {formData.experience.length > 1 && (
+                    {visitingCardDetails.experience.length > 1 && (
                       <button
                         type="button"
                         onClick={() => removeExperience(index)}
@@ -1095,7 +1166,7 @@ const VisitingCardDetails = () => {
                 </label>
                 <input
                   type="text"
-                  value={formData.event_id}
+                  value={visitingCardDetails.event_id}
                   onChange={(e) =>
                     handleInputChange("event_id", e.target.value)
                   }
@@ -1110,7 +1181,7 @@ const VisitingCardDetails = () => {
                 </label>
                 <input
                   type="text"
-                  value={formData.event_name}
+                  value={visitingCardDetails.event_name}
                   onChange={(e) =>
                     handleInputChange("event_name", e.target.value)
                   }
@@ -1127,7 +1198,7 @@ const VisitingCardDetails = () => {
                   <Briefcase className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
                     type="text"
-                    value={formData.event_role}
+                    value={visitingCardDetails.event_role}
                     onChange={(e) =>
                       handleInputChange("event_role", e.target.value)
                     }
@@ -1145,7 +1216,7 @@ const VisitingCardDetails = () => {
                   <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
                     type="date"
-                    value={formData.event_date}
+                    value={visitingCardDetails.event_date}
                     onChange={(e) =>
                       handleInputChange("event_date", e.target.value)
                     }
@@ -1162,7 +1233,7 @@ const VisitingCardDetails = () => {
                   <Building className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
                     type="text"
-                    value={formData.event_held_organization}
+                    value={visitingCardDetails.event_held_organization}
                     onChange={(e) =>
                       handleInputChange(
                         "event_held_organization",
@@ -1183,7 +1254,7 @@ const VisitingCardDetails = () => {
                   <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
                     type="text"
-                    value={formData.event_location}
+                    value={visitingCardDetails.event_location}
                     onChange={(e) =>
                       handleInputChange("event_location", e.target.value)
                     }
@@ -1201,7 +1272,7 @@ const VisitingCardDetails = () => {
                   <Globe className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
                     type="url"
-                    value={formData.linkedin_url}
+                    value={visitingCardDetails.linkedin_url}
                     onChange={(e) =>
                       handleInputChange("linkedin_url", e.target.value)
                     }
@@ -1224,7 +1295,7 @@ const VisitingCardDetails = () => {
               <div className="relative">
                 <FileText className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
                 <textarea
-                  value={formData.logger}
+                  value={visitingCardDetails.logger}
                   onChange={(e) => handleInputChange("logger", e.target.value)}
                   className="w-full pl-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
                   rows={6}
@@ -1243,24 +1314,26 @@ const VisitingCardDetails = () => {
                   <span className="text-gray-600">Personal Details:</span>
                   <span
                     className={
-                      formData.name
+                      visitingCardDetails.name
                         ? "text-green-600 font-medium"
                         : "text-gray-400"
                     }
                   >
-                    {formData.name ? "✓ Complete" : "Incomplete"}
+                    {visitingCardDetails.name ? "✓ Complete" : "Incomplete"}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Contact Info:</span>
                   <span
                     className={
-                      formData.phone_number && formData.email_address
+                      visitingCardDetails.phone_number &&
+                      visitingCardDetails.email_address
                         ? "text-green-600 font-medium"
                         : "text-gray-400"
                     }
                   >
-                    {formData.phone_number && formData.email_address
+                    {visitingCardDetails.phone_number &&
+                    visitingCardDetails.email_address
                       ? "✓ Complete"
                       : "Incomplete"}
                   </span>
@@ -1269,12 +1342,12 @@ const VisitingCardDetails = () => {
                   <span className="text-gray-600">Emergency Contact:</span>
                   <span
                     className={
-                      formData.emergency_contact_name
+                      visitingCardDetails.emergency_contact_name
                         ? "text-green-600 font-medium"
                         : "text-gray-400"
                     }
                   >
-                    {formData.emergency_contact_name
+                    {visitingCardDetails.emergency_contact_name
                       ? "✓ Complete"
                       : "Incomplete"}
                   </span>
@@ -1283,12 +1356,12 @@ const VisitingCardDetails = () => {
                   <span className="text-gray-600">Address:</span>
                   <span
                     className={
-                      formData.city && formData.state
+                      visitingCardDetails.city && visitingCardDetails.state
                         ? "text-green-600 font-medium"
                         : "text-gray-400"
                     }
                   >
-                    {formData.city && formData.state
+                    {visitingCardDetails.city && visitingCardDetails.state
                       ? "✓ Complete"
                       : "Incomplete"}
                   </span>
@@ -1297,12 +1370,14 @@ const VisitingCardDetails = () => {
                   <span className="text-gray-600">Education:</span>
                   <span
                     className={
-                      formData.ug_course_name || formData.pg_course_name
+                      visitingCardDetails.ug_course_name ||
+                      visitingCardDetails.pg_course_name
                         ? "text-green-600 font-medium"
                         : "text-gray-400"
                     }
                   >
-                    {formData.ug_course_name || formData.pg_course_name
+                    {visitingCardDetails.ug_course_name ||
+                    visitingCardDetails.pg_course_name
                       ? "✓ Complete"
                       : "Incomplete"}
                   </span>
@@ -1311,12 +1386,12 @@ const VisitingCardDetails = () => {
                   <span className="text-gray-600">Experience:</span>
                   <span
                     className={
-                      formData.experience[0].job_title
+                      visitingCardDetails.experience[0].job_title
                         ? "text-green-600 font-medium"
                         : "text-gray-400"
                     }
                   >
-                    {formData.experience[0].job_title
+                    {visitingCardDetails.experience[0].job_title
                       ? "✓ Complete"
                       : "Incomplete"}
                   </span>
@@ -1355,35 +1430,6 @@ const VisitingCardDetails = () => {
           <p className="text-gray-600 mb-4">
             The requested visiting card with ID "{id}" could not be found.
           </p>
-          <div className="text-sm text-gray-500 mb-4">
-            <p className="font-semibold mb-2">Debug info:</p>
-            <p>
-              - Requested ID: {id} (type: {typeof id})
-            </p>
-            <p>- Loading: {loading ? "true" : "false"}</p>
-            <p>- Current Card: {currentCard ? "exists" : "null/undefined"}</p>
-
-            {apiDebugData && (
-              <div className="mt-4 p-3 bg-gray-100 rounded text-xs">
-                <p className="font-semibold">API Response Debug:</p>
-                <p>
-                  - Response structure:{" "}
-                  {JSON.stringify(Object.keys(apiDebugData.responseData || {}))}
-                </p>
-                <p>
-                  - Cards array length:{" "}
-                  {apiDebugData.allCards?.length || "undefined"}
-                </p>
-                <p>
-                  - Available card IDs:{" "}
-                  {JSON.stringify(apiDebugData.cardIds?.slice(0, 5) || [])}
-                </p>
-                {apiDebugData.cardIds?.length > 5 && (
-                  <p>... and {apiDebugData.cardIds.length - 5} more</p>
-                )}
-              </div>
-            )}
-          </div>
           <button
             onClick={() => navigate("/verify-records")}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
@@ -1650,7 +1696,9 @@ const VisitingCardDetails = () => {
                     {currentStep === steps.length - 1 ? (
                       <button
                         type="button"
-                        onClick={handleSave}
+                        onClick={() => {
+                          handleSave();
+                        }}
                         className="flex items-center space-x-2 px-6 py-2.5 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
                       >
                         <Save className="w-4 h-4" />
