@@ -1,4 +1,4 @@
-import React, { use, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import BasicDetailCard from "../components/BasicDetailCard";
 import Alert from "../components/Alert";
 import Avatar from "../assets/Avatar.png";
@@ -79,18 +79,19 @@ function MiddleManRecords() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [userToDelete, setUserToDelete] = useState(null);
   const [isAdding, setIsAdding] = useState(false);
-  const [AddingUser, setAddingUser] = useState(null);
-  const [activeView, setActiveView] = useState("formData"); // 'formData' or 'visitingCards'
+  const [addingUser, setAddingUser] = useState(null);
+  const [activeView, setActiveView] = useState("formData");
   const [alert, setAlert] = useState({
     isOpen: false,
     severity: "success",
     message: "",
   });
 
-  const [data, setData] = useState([]); //STORES THE UNVERIFIED CONTACTS
-  const [visitingCard, setVisitingCard] = useState([]); //STORES THE UNVERIFIED VISITING CARDS
+  const [data, setData] = useState([]);
+  const [visitingCard, setVisitingCard] = useState([]);
 
   const { id } = useAuthStore();
+
   const handleSelectContact = () => {
     axios
       .get(`http://localhost:8000/api/get-unverified-contacts/`)
@@ -102,6 +103,7 @@ function MiddleManRecords() {
         console.error("Error fetching contacts:", error);
       });
   };
+
   useEffect(() => {
     handleSelectContact();
   }, []);
@@ -117,6 +119,7 @@ function MiddleManRecords() {
       console.error("Error fetching visiting cards:", error);
     }
   };
+
   useEffect(() => {
     handleSelectUnverifiedVisitingCards();
   }, []);
@@ -138,15 +141,16 @@ function MiddleManRecords() {
 
   const handleDeleteClick = (contact_id) => {
     const user = data.find((user) => user.contact_id === contact_id);
-    setUserToDelete({ id, name: user?.name || "this user" });
+    setUserToDelete({ id: contact_id, name: user?.name || "this user" });
     setShowDeleteModal(true);
   };
 
   const confirmDelete = async () => {
     if (userToDelete) {
       try {
+        // Remove from UI first (optimistic update)
         setData((prevData) =>
-          prevData.filter((item) => item.id !== userToDelete.id)
+          prevData.filter((item) => item.contact_id !== userToDelete.id)
         );
         setShowDeleteModal(false);
         showAlert(
@@ -169,41 +173,41 @@ function MiddleManRecords() {
   const onAdd = async (contact_id) => {
     try {
       const user = data.find((user) => user.contact_id === contact_id);
-      console.log(user, id);
+      console.log("Adding user:", user);
       if (user) {
         setAddingUser(user);
         setIsAdding(true);
       }
     } catch (error) {
-      showAlert("error", "Failed to load user data for Adding.");
-      console.log("Error editing user", error);
+      showAlert("error", "Failed to load user data for adding.");
+      console.log("Error loading user for add", error);
     }
   };
 
   const handleAddComplete = async (updatedData) => {
     try {
-      if (updatedData && AddingUser) {
-        // Update the user in the data array
-        console.log(updatedData);
+      if (updatedData && addingUser) {
+        console.log("Saving data:", updatedData);
         const response = await axios.put(
           `http://localhost:8000/api/update-contact/${updatedData.contact_id}`,
           updatedData
         );
-        console.log(response);
+        console.log("Update response:", response);
+
+        // Remove from unverified list
         setData((prevData) =>
           prevData.filter(
-            (user) => user.events[0].event_id !== updatedData.event_id
+            (user) => user.contact_id !== updatedData.contact_id
           )
         );
 
-        // Show success alert
         showAlert(
           "success",
-          `${updatedData.name} has been successfully Added.`
+          `${updatedData.name} has been successfully added to verified contacts.`
         );
       }
 
-      // Close the edit form
+      // Close the form
       setIsAdding(false);
       setAddingUser(null);
     } catch (error) {
@@ -216,8 +220,22 @@ function MiddleManRecords() {
     setIsAdding(false);
     setAddingUser(null);
   };
-
+  const assignToUser = async () => {
+    try {
+      const response = await axios.post(`http://localhost:8000/api/assign/`, {
+        assigned_by: id, assigned_to: addingUser.created_by, event_id: addingUser.events[0].event_id,
+      })
+      console.log(response.data);
+      console.log(id, addingUser.created_by, addingUser.events[0].event_id,);
+      showAlert("success", "Successfully assigned to user");
+      handleAddCancel();
+    } catch (err) {
+      console.log(err);
+      showAlert("error", "Failed to assign to user");
+    }
+  }
   const navigate = useNavigate();
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Alert
@@ -235,65 +253,74 @@ function MiddleManRecords() {
           <div className={`flex gap-4 mb-6 ${isAdding ? "hidden" : "block"}`}>
             <button
               onClick={() => setActiveView("formData")}
-              className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
-                activeView === "formData"
+              className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${activeView === "formData"
                   ? "bg-blue-600 text-white shadow-md"
                   : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
-              }`}
+                }`}
             >
               Form Data
             </button>
             <button
               onClick={() => setActiveView("visitingCards")}
-              className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
-                activeView === "visitingCards"
+              className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${activeView === "visitingCards"
                   ? "bg-blue-600 text-white shadow-md"
                   : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
-              }`}
+                }`}
             >
               Visiting Cards
             </button>
           </div>
 
-          {isAdding && AddingUser ? (
-            // Show FormInput when editing
+          {isAdding && addingUser ? (
+            /* Show DetailsInput when adding */
             <div className="bg-white rounded-lg shadow-sm">
               <DetailsInput
                 onBack={handleAddCancel}
                 onSave={handleAddComplete}
-                initialData={AddingUser}
+                initialData={addingUser}
                 isAddMode={true}
+                assignToUser={assignToUser}
               />
             </div>
           ) : (
-            // Show user cards when not adding
+            /* Show user cards when not adding */
             <>
               {activeView === "formData" ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {data.map((participant, index) => (
                     <BasicDetailCard
-                      key={index}
+                      key={participant.contact_id || index}
                       name={participant.name}
                       phone={participant.phone_number}
                       email={participant.email_address}
-                      event={participant.events[0].event_name}
-                      role={participant.events[0].event_role}
+                      event={participant.events?.[0]?.event_name || "N/A"}
+                      role={participant.events?.[0]?.event_role || "N/A"}
                       date={format(
                         parseISO(participant.created_at),
                         "MMMM dd, yyyy"
                       )}
-                      org={participant.events[0].event_held_organization}
-                      location={participant.events[0].event_location}
+                      org={participant.events?.[0]?.event_held_organization || "N/A"}
+                      location={participant.events?.[0]?.event_location || "N/A"}
                       profileImage={participant.profileImage || Avatar}
                       onDelete={() => handleDeleteClick(participant.contact_id)}
                       onType={() => onAdd(participant.contact_id)}
                       editOrAdd={"add"}
                     />
                   ))}
+
+                  {/* Empty State */}
+                  {data.length === 0 && (
+                    <div className="col-span-full text-center py-12">
+                      <div className="text-gray-400 text-lg mb-2">
+                        No unverified contacts found
+                      </div>
+                      <div className="text-gray-500">
+                        All contacts have been verified.
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : (
-                // Replace the visitingCards section in your component with this enhanced UI
-
                 <div className="p-6">
                   <div className="max-w-7xl mx-auto">
                     <div className="bg-white rounded-lg p-4 mb-6 shadow-sm border border-gray-200">
@@ -328,27 +355,6 @@ function MiddleManRecords() {
                               {/* Hover Overlay with Actions */}
                               <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100">
                                 <div className="flex space-x-3">
-                                  {/* <button className="p-2 bg-white rounded-full shadow-lg hover:bg-gray-50 transition-colors duration-200" >
-                                    <svg
-                                      className="w-5 h-5 text-blue-600"
-                                      fill="none"
-                                      stroke="currentColor"
-                                      viewBox="0 0 24 24"
-                                    >
-                                      <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth={2}
-                                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                                      />
-                                      <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth={2}
-                                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                                      />
-                                    </svg>
-                                  </button> */}
                                   <button
                                     className="p-2 bg-white rounded-full shadow-lg hover:bg-gray-50 transition-colors duration-200"
                                     onClick={(e) => {
@@ -419,7 +425,7 @@ function MiddleManRecords() {
                         ))}
                       </div>
                     ) : (
-                      // Empty State
+                      /* Empty State */
                       <div className="text-center py-16">
                         <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mb-4">
                           <svg

@@ -5,7 +5,7 @@ import Alert from "../components/Alert";
 import BasicDetailCard from "../components/BasicDetailCard";
 import Header from "../components/Header";
 import axios from "axios";
-
+import { ArrowLeft } from "lucide-react";
 import { parseISO, format } from "date-fns";
 import { useAuthStore } from "../store/AuthStore";
 
@@ -80,7 +80,7 @@ function UserEntries() {
   const [userToDelete, setUserToDelete] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
-  const [activeView, setActiveView] = useState("formDetails"); // 'formDetails' or 'visitingCards'
+  const [activeView, setActiveView] = useState("formDetails");
   const [profileData, setProfileData] = useState([]);
   const [imageData, setImageData] = useState([]);
 
@@ -107,7 +107,6 @@ function UserEntries() {
 
   const handleDeleteClick = (id) => {
     const user = profileData.find((user) => user.id === id);
-    //console.log("user:",user);
     setUserToDelete({ id: user?.contact_id, name: user?.name || "this user" });
     setShowDeleteModal(true);
   };
@@ -125,6 +124,8 @@ function UserEntries() {
           `${userToDelete.name} has been successfully deleted.`
         );
         setUserToDelete(null);
+        // Refresh data after deletion
+        handleSelectContact();
       } catch (error) {
         showAlert("error", "Failed to delete user. Please try again.");
         console.log("Error deleting user", userToDelete.id, error);
@@ -140,12 +141,11 @@ function UserEntries() {
   const onEdit = async (participant) => {
     try {
       if (participant) {
-        // Convert participant data to match the expected form structure
         console.log(participant);
         const userToEdit = {
           id: participant.contact_id,
           name: participant.name,
-          phoneNumber: participant.phone_number, // Fixed: was participant.phoneNumber
+          phoneNumber: participant.phone_number,
           emailAddress: participant.email_address,
           events:
             participant.events?.length > 0
@@ -154,7 +154,7 @@ function UserEntries() {
                   eventName: event.event_name || "",
                   eventRole: event.event_role || "",
                   eventDate: event.event_date || "",
-                  eventHeldOrganization: event.event_held_organization || "", // note spelling in your backend
+                  eventHeldOrganization: event.event_held_organization || "",
                   eventLocation: event.event_location || "",
                 }))
               : [
@@ -188,21 +188,19 @@ function UserEntries() {
         console.log(response);
         showAlert(
           "success",
-          `${
-            updatedData.name || editingUser.name
-          } has been successfully updated.`
+          `${updatedData.name || editingUser.name} has been successfully updated.`
+        );
+
+        // Update the contact with matching contact_id
+        setProfileData((prevData) =>
+          prevData.map((p) =>
+            p.contact_id === editingUser.id
+              ? { ...p, ...updatedData }
+              : p
+          )
         );
       }
-      // Update the contact with matching contact_id
-      setProfileData((prevData) =>
-        prevData.map(
-          (p) =>
-            p.contact_id === editingUser.id
-              ? { ...p, ...updatedData } // Merge updated data
-              : p // Keep other contacts unchanged
-        )
-      );
-      console.log(profileData);
+
       // Close the edit form
       setIsEditing(false);
       setEditingUser(null);
@@ -216,7 +214,9 @@ function UserEntries() {
     setIsEditing(false);
     setEditingUser(null);
   };
+
   const { id } = useAuthStore();
+
   const handleSelectContact = async () => {
     try {
       const response = await axios.get(
@@ -228,9 +228,6 @@ function UserEntries() {
       console.error("Error fetching contacts:", error);
     }
   };
-  useEffect(() => {
-    handleSelectContact();
-  }, []);
 
   const handleSelectImage = async () => {
     try {
@@ -245,11 +242,15 @@ function UserEntries() {
   };
 
   useEffect(() => {
+    handleSelectContact();
+  }, []);
+
+  useEffect(() => {
     handleSelectImage();
   }, []);
 
   return (
-    <div className="w-full h-full">
+    <div className="w-full h-full flex flex-col">
       <Alert
         isOpen={alert.isOpen}
         severity={alert.severity}
@@ -258,111 +259,138 @@ function UserEntries() {
         position="bottom"
         duration={4000}
       />
-      {/* Header with User Info - Always visible */}
 
-      <Header />
+      {/* Full Width Header Section */}
+      <div className="w-full bg-white shadow-sm">
+        <div className="flex items-center justify-between">
+          {/* Left Section - Back Button */}
+          <div className="flex-shrink-0">
+            {isEditing ? (
+              <button
+                onClick={handleEditCancel}
+                className="px-4 py-2 ml-5 flex items-center gap-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors duration-200 font-medium"
+              >
+                <ArrowLeft size={20} />
+                Back
+              </button>
+            ) : (
+              <div></div>
+            )}
+          </div>
 
-      {/* View Toggle Buttons */}
-      <div className={`p-6 pb-0 ${isEditing?'hidden':'block'}`}>
-        <div className="max-w-7xl mx-auto">
-          <div className="flex gap-4 mb-6">
-            <button
-              onClick={() => setActiveView("formDetails")}
-              className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
-                activeView === "formDetails"
-                  ? "bg-blue-600 text-white shadow-md"
-                  : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
-              }`}
-            >
-              Form Details
-            </button>
-            <button
-              onClick={() => setActiveView("visitingCards")}
-              className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
-                activeView === "visitingCards"
-                  ? "bg-blue-600 text-white shadow-md"
-                  : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
-              }`}
-            >
-              Visiting Cards
-            </button>
+          {/* Right Section - Header always on the right */}
+          <div className="flex-shrink-0">
+            <Header />
           </div>
         </div>
       </div>
 
-      {/* Conditional Content */}
-      {isEditing && editingUser ? (
-        // Show FormInput when editing
-        <div className="p-5">
-          <FormInput
-            onBack={handleEditCancel}
-            onSave={handleEditComplete}
-            initialData={editingUser}
-            isEditMode={true}
-          />
-        </div>
-      ) : (
-        // Show user cards when not editing
-        <>
-          {activeView === "formDetails" ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
-              {profileData.map((participant, index) => {
-                //console.log(participant)
-                // <h1>hello</h1>
-                return (
-                  <BasicDetailCard
-                    key={index}
-                    name={participant.name}
-                    phone={participant.phone_number}
-                    email={participant.email_address}
-                    event={participant.events[0].event_name}
-                    role={participant.events[0].event_role}
-                    date={format(
-                      parseISO(participant.created_at),
-                      "MMMM dd, yyyy"
-                    )}
-                    org={participant.events[0].event_held_organization}
-                    location={participant.events[0].event_location}
-                    profileImage={participant.profileImage || Avatar}
-                    onDelete={() => handleDeleteClick(participant.id)}
-                    onType={() => onEdit(participant)}
-                    editOrAdd={"edit"}
-                  />
-                );
-              })}
+      {/* Main Content Area */}
+      <div className="flex-1 overflow-auto">
+        {/* View Toggle Buttons */}
+        <div className={`p-6 pb-0 ${isEditing ? 'hidden' : 'block'}`}>
+          <div className="max-w-7xl mx-auto">
+            <div className="flex gap-4 mb-6">
+              <button
+                onClick={() => setActiveView("formDetails")}
+                className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
+                  activeView === "formDetails"
+                    ? "bg-blue-600 text-white shadow-md"
+                    : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
+                }`}
+              >
+                Form Details
+              </button>
+              <button
+                onClick={() => setActiveView("visitingCards")}
+                className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
+                  activeView === "visitingCards"
+                    ? "bg-blue-600 text-white shadow-md"
+                    : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
+                }`}
+              >
+                Visiting Cards
+              </button>
             </div>
-          ) : (
-            <div className="p-6 ">
-              <div className="max-w-7xl mx-auto">
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-3 gap-6">
-                  {Array.isArray(imageData?.data) &&
-                    imageData.data.map((card, index) => (
-                      <div
-                        key={card.id ?? index}
-                        className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200 h-48 w-full"
-                      >
-                        <img
-                          src={`http://localhost:8000/${card.file_path.replace(
-                            /\\/g,
-                            "/"
-                          )}`}
-                          alt={`Visiting Card ${card.id}`}
-                          className="w-full h-full object-fit bg-gray-50"
-                        />
-                      </div>
-                    ))}
+          </div>
+        </div>
+
+        {/* Conditional Content */}
+        {isEditing && editingUser ? (
+          /* Show FormInput when editing */
+          <div className="p-5">
+            <FormInput
+              onBack={handleEditCancel}
+              onSave={handleEditComplete}
+              initialData={editingUser}
+              isEditMode={true}
+            />
+          </div>
+        ) : (
+          /* Show user cards when not editing */
+          <>
+            {activeView === "formDetails" ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
+                {profileData.map((participant, index) => {
+                  return (
+                    <BasicDetailCard
+                      key={participant.contact_id || index}
+                      name={participant.name}
+                      phone={participant.phone_number}
+                      email={participant.email_address}
+                      event={participant.events?.[0]?.event_name || "N/A"}
+                      role={participant.events?.[0]?.event_role || "N/A"}
+                      date={format(
+                        parseISO(participant.created_at),
+                        "MMMM dd, yyyy"
+                      )}
+                      org={participant.events?.[0]?.event_held_organization || "N/A"}
+                      location={participant.events?.[0]?.event_location || "N/A"}
+                      profileImage={participant.profileImage || Avatar}
+                      onDelete={() => handleDeleteClick(participant.id)}
+                      onType={() => onEdit(participant)}
+                      editOrAdd={"edit"}
+                    />
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="p-6">
+                <div className="max-w-7xl mx-auto">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-3 gap-6">
+                    {Array.isArray(imageData?.data) &&
+                      imageData.data.map((card, index) => (
+                        <div
+                          key={card.id ?? index}
+                          className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200 h-48 w-full"
+                        >
+                          <img
+                            src={`http://localhost:8000/${card.file_path.replace(
+                              /\\/g,
+                              "/"
+                            )}`}
+                            alt={`Visiting Card ${card.id}`}
+                            className="w-full h-full object-cover bg-gray-50"
+                            onError={(e) => {
+                              e.target.src = Avatar;
+                            }}
+                          />
+                        </div>
+                      ))}
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
-          <DeleteConfirmationModal
-            isOpen={showDeleteModal}
-            onConfirm={confirmDelete}
-            onCancel={cancelDelete}
-            itemName={userToDelete?.name}
-          />
-        </>
-      )}
+            )}
+          </>
+        )}
+
+        <DeleteConfirmationModal
+          isOpen={showDeleteModal}
+          onConfirm={confirmDelete}
+          onCancel={cancelDelete}
+          itemName={userToDelete?.name}
+        />
+      </div>
     </div>
   );
 }

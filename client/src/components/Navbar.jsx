@@ -7,6 +7,7 @@ import {
   CheckSquare,
   Shield,
   NotebookText,
+  Handshake,
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../store/AuthStore";
@@ -21,6 +22,7 @@ function Navbar() {
     user: [
       { name: "Home", icon: <House size={20} />, path: "/" },
       { name: "entries", icon: <NotebookText size={20} />, path: "/entries" },
+      { name: "assignments", icon: <Handshake size={20} />, path: "/assigned" },
     ],
     cata: [
       { name: "Home", icon: <House size={20} />, path: "/" },
@@ -102,35 +104,30 @@ function Navbar() {
               <div key={index}>
                 <button
                   className={`w-full flex items-center gap-3 p-3 rounded-sm text-left transition-all duration-300 ease-in-out transform group overflow-hidden hover:shadow-sm
-                                        ${
-                                          active
-                                            ? "bg-[#4071f4] scale-102"
-                                            : "text-gray-700 hover:bg-gray-100 hover:text-gray-900 hover:scale-[1.02]"
-                                        }`}
+                                        ${active
+                      ? "bg-[#4071f4] scale-102"
+                      : "text-gray-700 hover:bg-gray-100 hover:text-gray-900 hover:scale-[1.02]"
+                    }`}
                   title={collapsed ? menuItem.name : undefined}
                   onClick={() => navigate(menuItem.path)}
                 >
                   <span
-                    className={`flex-shrink-0 transition-all duration-300 transform ${
-                      collapsed ? "pl-0.5 scale-110" : "pl-2"
-                    } ${
-                      active
+                    className={`flex-shrink-0 transition-all duration-300 transform ${collapsed ? "pl-0.5 scale-110" : "pl-2"
+                      } ${active
                         ? "text-white"
                         : "text-gray-500 group-hover:text-gray-700"
-                    }`}
+                      }`}
                   >
                     {menuItem.icon}
                   </span>
                   <span
-                    className={`font-medium whitespace-nowrap transition-all duration-500 ease-in-out transform ${
-                      collapsed
+                    className={`font-medium whitespace-nowrap transition-all duration-500 ease-in-out transform ${collapsed
                         ? "opacity-0 -translate-x-4 scale-95 w-0 ml-0"
                         : "opacity-100 translate-x-0 scale-100 w-auto ml-1"
-                    } ${
-                      active
+                      } ${active
                         ? "text-white"
                         : "text-gray-500 group-hover:text-gray-700"
-                    }`}
+                      }`}
                   >
                     {menuItem.name}
                   </span>
@@ -153,31 +150,27 @@ function Navbar() {
               <div key={index}>
                 <button
                   className={`w-full flex items-center gap-3 p-3 rounded-lg text-left transition-all duration-300 ease-in-out transform group overflow-hidden
-                                        ${
-                                          active
-                                            ? "bg-red-50 text-red-700 border border-red-200 scale-102"
-                                            : "hover:bg-gray-50 hover:text-gray-900 hover:scale-[1.02] hover:shadow-sm"
-                                        }`}
+                                        ${active
+                      ? "bg-red-50 text-red-700 border border-red-200 scale-102"
+                      : "hover:bg-gray-50 hover:text-gray-900 hover:scale-[1.02] hover:shadow-sm"
+                    }`}
                   title={collapsed ? menuItem.name : undefined}
                   onClick={menuItem.action}
                 >
                   <span
-                    className={`flex-shrink-0 transition-all duration-300 transform ${
-                      collapsed ? "pl-0.5 scale-110" : "pl-2"
-                    } text-[#787878] ${
-                      active
+                    className={`flex-shrink-0 transition-all duration-300 transform ${collapsed ? "pl-0.5 scale-110" : "pl-2"
+                      } text-[#787878] ${active
                         ? "text-red-700"
                         : "text-gray-500 group-hover:rotate-6"
-                    }`}
+                      }`}
                   >
                     {menuItem.icon}
                   </span>
                   <span
-                    className={`font-medium text-[#787878] whitespace-nowrap transition-all duration-500 ease-in-out transform ${
-                      collapsed
+                    className={`font-medium text-[#787878] whitespace-nowrap transition-all duration-500 ease-in-out transform ${collapsed
                         ? "opacity-0 -translate-x-4 scale-95 w-0 ml-0"
                         : "opacity-100 translate-x-0 scale-100 w-auto ml-1"
-                    }`}
+                      }`}
                   >
                     {menuItem.name}
                   </span>
