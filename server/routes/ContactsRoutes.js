@@ -13,6 +13,7 @@ import {
 
 import {
     createAssignment,
+    getAssignedByUser,
     getAssignmentForEvent,
     getAssignmentsForUser,
     revokeAssignment,
@@ -40,8 +41,10 @@ router.delete("/delete-contact/:id", DeleteContact);
 router.post("/add-event-existing-contact/:contactId", AddEventToExistingContact);
 router.put("/update-contacts-and-events/:id", UpdateContactAndEvents);
 router.delete("/delete-image/:id", DeleteImage);
+router.post("/verify-image/:id", DeleteImage);
 router.post("/assign/", createAssignment);
 router.get("/get-assignment/:userId", getAssignmentsForUser);
+router.get("/get-assigned-to/:userId", getAssignedByUser);
 router.get("/get-assignment-by-event/:eventId", getAssignmentForEvent);
 router.delete("/delete-assignment/:assignmentId", revokeAssignment);
 

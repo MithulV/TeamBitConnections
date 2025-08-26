@@ -524,7 +524,7 @@ export const UpdateContact = async (req, res) => {
                         event_date = ${event_date},
                         event_held_organization = ${event_held_organization},
                         event_location = ${event_location},
-                        verified = ${true} -- Assuming verification happens on update
+                        verified = ${event_verified} -- Assuming verification happens on update
                     WHERE
                         event_id = ${event_id}
                         AND contact_id = ${contact_id} -- Security check

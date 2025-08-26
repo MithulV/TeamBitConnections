@@ -109,6 +109,55 @@ export const getAssignmentsForUser = async (req, res) => {
     }
 };
 
+export const getAssignedByUser = async (req, res) => {
+    const { userId } = req.params;
+
+    try {
+        const assignmentsWithContactDetails = await db`
+            SELECT
+                ua.id AS assignment_id,
+                ua.assigned_by AS assigned_by,
+                ua.assigned_to AS assigned_to,
+
+                -- Include the full contact record for this assignment's event
+                c.*,
+                
+                -- Also include the specific event that was assigned
+                row_to_json(e) as event,
+                
+                -- Use subqueries to fetch and nest related contact data as JSON,
+                -- just like in GetUnVerifiedContacts.
+                (SELECT row_to_json(ca) FROM contact_address ca WHERE ca.contact_id = c.contact_id) as address,
+                (SELECT row_to_json(ce) FROM contact_education ce WHERE ce.contact_id = c.contact_id) as education,
+                (SELECT json_agg(cx) FROM contact_experience cx WHERE cx.contact_id = c.contact_id) as experiences
+                
+            FROM
+                -- Start with the user's assignments
+                user_assignments ua
+            
+            -- Join to the 'event' table to get event details
+            -- NOTE: Corrected the join condition from your original code.
+            -- It now correctly joins on the event's primary key.
+            INNER JOIN event e ON ua.event_id = e.event_id
+            
+            -- Join from the event to the 'contact' table to get the main contact info
+            INNER JOIN contact c ON e.contact_id = c.contact_id
+            
+            WHERE
+                -- Filter for the specific user
+                ua.assigned_by = ${userId}
+                
+            ORDER BY
+                ua.created_at DESC
+        `;
+
+        return res.status(200).json({ data: assignmentsWithContactDetails });
+    } catch (err) {
+        console.error("Error fetching assignments for user:", err.message);
+        return res.status(500).json({ message: "Internal Server Error", error: err.message });
+    }
+};
+
 export const getAssignmentForEvent = async (req, res) => {
     const { eventId } = req.params;
 
