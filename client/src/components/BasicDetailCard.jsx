@@ -37,7 +37,7 @@ function Tooltip({ label, children }) {
   )
 }
 
-export default function BasicDetailCard({ name, phone, email, event, role, location, org, date, onType, onDelete, editOrAdd }) {
+export default function BasicDetailCard({ name, phone, email, event, role, location, org, date, onType, onDelete, editOrAdd, assignedOn }) {
   const icons = {
     edit: <Edit2 size={14} />,
     add: <UserRoundPlus size={14} />
@@ -108,17 +108,20 @@ export default function BasicDetailCard({ name, phone, email, event, role, locat
 
       {/* Date and Action Buttons */}
       <div className="flex items-center justify-between mt-2 pt-0.5 border-t border-gray-100">
-        <div className="text-xs text-gray-500">Added on : {date}</div>
-
+        {
+          assignedOn ? (<div className="text-xs text-gray-500">Assigned on : {assignedOn}</div>
+          ) : (<div className="text-xs text-gray-500">Added on : {date}</div>
+          )
+        }
         <div className="flex items-center gap-2">
-          <Tooltip label={editOrAdd}>
+          {editOrAdd && <Tooltip label={editOrAdd}>
             <button
               onClick={onType}
               className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
             >
               {icons[editOrAdd] || null}
             </button>
-          </Tooltip>
+          </Tooltip>}
 
           <Tooltip label="Delete">
             <button
@@ -130,6 +133,7 @@ export default function BasicDetailCard({ name, phone, email, event, role, locat
           </Tooltip>
         </div>
       </div>
+
     </div>
   )
 }

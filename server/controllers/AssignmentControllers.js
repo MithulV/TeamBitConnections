@@ -118,12 +118,13 @@ export const getAssignedByUser = async (req, res) => {
                 ua.id AS assignment_id,
                 ua.assigned_by AS assigned_by,
                 ua.assigned_to AS assigned_to,
+                ua.created_at AS assigned_on,
 
                 -- Include the full contact record for this assignment's event
                 c.*,
                 
                 -- Also include the specific event that was assigned
-                row_to_json(e) as event,
+                json_build_array(row_to_json(e)) as events,
                 
                 -- Use subqueries to fetch and nest related contact data as JSON,
                 -- just like in GetUnVerifiedContacts.
@@ -151,7 +152,7 @@ export const getAssignedByUser = async (req, res) => {
                 ua.created_at DESC
         `;
 
-        return res.status(200).json({ data: assignmentsWithContactDetails });
+        return res.status(200).json(assignmentsWithContactDetails);
     } catch (err) {
         console.error("Error fetching assignments for user:", err.message);
         return res.status(500).json({ message: "Internal Server Error", error: err.message });

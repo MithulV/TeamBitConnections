@@ -9,12 +9,90 @@ import DetailsInput from '../components/DetailsInput';
 import Alert from '../components/Alert';
 import Avatar from '../assets/Avatar.png';
 
+const DeleteConfirmationModal = ({
+    isOpen,
+    onConfirm,
+    onCancel,
+    itemName = "this user",
+    deleteType = "contact", // Add deleteType prop to distinguish between different deletion types
+}) => {
+    if (!isOpen) return null;
+
+    const getDeleteMessage = () => {
+        switch (deleteType) {
+            case "contact":
+                return `Are you sure you want to delete ${itemName}? This will remove the contact from your assignments.`;
+            case "assignment":
+                return `Are you sure you want to remove the assignment for ${itemName}? You will no longer be responsible for updating this contact.`;
+            default:
+                return `Are you sure you want to delete ${itemName}? This action cannot be undone.`;
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            {/* Backdrop with blur effect */}
+            <div
+                className="absolute inset-0 bg-black/60 bg-opacity-50 backdrop-blur-sm transition-all duration-300"
+                onClick={onCancel}
+            ></div>
+
+            {/* Modal */}
+            <div className="relative bg-white rounded-lg shadow-2xl max-w-md w-full transform transition-all duration-300 scale-100 animate-fadeIn">
+                {/* Header with Material Design styling */}
+                <div className="flex items-start gap-3 p-6 pb-4">
+                    {/* Warning Icon with circular background */}
+                    <div className="flex items-center justify-center w-10 h-10 bg-orange-50 rounded-full flex-shrink-0 mt-1">
+                        <svg
+                            className="w-6 h-6 text-orange-500"
+                            fill="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z" />
+                        </svg>
+                    </div>
+                    <div className="flex-1">
+                        <h2 className="text-xl font-medium text-gray-900 mb-1">
+                            Confirm Delete
+                        </h2>
+                    </div>
+                </div>
+
+                {/* Content */}
+                <div className="px-6 pb-6">
+                    <p className="text-gray-600 text-sm leading-relaxed pl-13">
+                        {getDeleteMessage()}
+                    </p>
+                </div>
+
+                {/* Actions with Material Design button styling */}
+                <div className="flex justify-end gap-3 px-6 pb-6">
+                    <button
+                        onClick={onCancel}
+                        className="px-6 py-2 text-sm font-medium text-blue-600 bg-transparent border-none rounded-md hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-all duration-200 uppercase tracking-wide"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        onClick={onConfirm}
+                        className="px-6 py-2 text-sm font-medium text-red-600 bg-transparent border-none rounded-md hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 transition-all duration-200 uppercase tracking-wide"
+                    >
+                        Delete
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 function UserAssignments() {
     const [data, setData] = useState([]);
     const [isAdding, setIsAdding] = useState(false);
     const [addingUser, setAddingUser] = useState(null);
     const [activeView, setActiveView] = useState("formData");
     const [loading, setLoading] = useState(true);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [userToDelete, setUserToDelete] = useState(null);
     const [alert, setAlert] = useState({
         isOpen: false,
         severity: "success",
@@ -111,10 +189,68 @@ function UserAssignments() {
         }
     };
 
+    // Updated handleDeleteClick for assignments
     const handleDeleteClick = (contact_id) => {
-        // Delete functionality if needed
-        console.log("Delete clicked for:", contact_id);
-        showAlert("info", "Delete functionality not implemented yet.");
+        const user = data.find((user) => user.contact_id === contact_id);
+        if (user) {
+            setUserToDelete({
+                id: contact_id,
+                assignment_id: user.assignment_id,
+                name: user?.name || "this user",
+                type: "assignment"
+            });
+            setShowDeleteModal(true);
+        }
+    };
+
+    // Updated confirmDelete function to handle assignment deletion
+    const confirmDelete = async () => {
+        if (userToDelete) {
+            try {
+                switch (userToDelete.type) {
+                    case "assignment":
+                        // Call assignment deletion API - this removes the assignment, not the contact
+                        if (userToDelete.assignment_id) {
+                            await axios.delete(`http://localhost:8000/api/delete-assignment/${userToDelete.assignment_id}`);
+                        } else {
+                            // If no assignment_id, use contact_id based deletion (adjust API endpoint as needed)
+                            await axios.delete(`http://localhost:8000/api/remove-assignment-by-contact/${userToDelete.id}`);
+                        }
+
+                        // Remove from UI
+                        setData((prevData) =>
+                            prevData.filter(user => user.contact_id !== userToDelete.id)
+                        );
+                        showAlert("success", `Assignment for ${userToDelete.name} has been successfully removed.`);
+                        break;
+
+                    case "contact":
+                        // If you want to delete the actual contact (not just remove assignment)
+                        await axios.delete(`http://localhost:8000/api/delete-contact/${userToDelete.id}`);
+                        
+                        setData((prevData) =>
+                            prevData.filter(user => user.contact_id !== userToDelete.id)
+                        );
+                        showAlert("success", `${userToDelete.name} has been successfully deleted.`);
+                        break;
+
+                    default:
+                        showAlert("error", "Unknown deletion type.");
+                        return;
+                }
+
+                setShowDeleteModal(false);
+                setUserToDelete(null);
+            } catch (error) {
+                showAlert("error", "Failed to delete. Please try again.");
+                console.log("Error deleting:", error);
+            }
+        }
+    };
+
+    const cancelDelete = () => {
+        setShowDeleteModal(false);
+        setUserToDelete(null);
     };
 
     if (loading) {
@@ -186,7 +322,7 @@ function UserAssignments() {
                                     <div className="bg-white rounded-lg p-4 mb-6 shadow-sm border border-gray-200">
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center">
-                                                <div className="w-3 h-3 bg-green-400 rounded-full mr-2"></div>
+                                                <div className={`w-3 h-3 ${data.length===0?"bg-red-500":"bg-green-400"} rounded-full mr-2`}></div>
                                                 <span className="text-sm text-gray-600">
                                                     {data.length} Assigned Contact{data.length !== 1 ? 's' : ''}
                                                 </span>
@@ -221,6 +357,10 @@ function UserAssignments() {
                                                     onDelete={() => handleDeleteClick(participant.contact_id)}
                                                     onType={() => onAdd(participant.contact_id)}
                                                     editOrAdd={"add"}
+                                                    assignedOn={participant.assigned_on ? format(
+                                                        parseISO(participant.assigned_on),
+                                                        "MMMM dd, yyyy"
+                                                    ) : "N/A"}
                                                 />
                                             ))}
                                         </div>
@@ -238,7 +378,7 @@ function UserAssignments() {
                                                         strokeLinecap="round"
                                                         strokeLinejoin="round"
                                                         strokeWidth={2}
-                                                        d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                                                        d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20v-2a3 3 0 515.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
                                                     />
                                                 </svg>
                                             </div>
@@ -271,6 +411,15 @@ function UserAssignments() {
                                     )}
                                 </div>
                             ) : null}
+
+                            {/* Delete Confirmation Modal */}
+                            <DeleteConfirmationModal
+                                isOpen={showDeleteModal}
+                                onConfirm={confirmDelete}
+                                onCancel={cancelDelete}
+                                itemName={userToDelete?.name}
+                                deleteType={userToDelete?.type}
+                            />
                         </>
                     )}
                 </div>
