@@ -13,6 +13,7 @@ import UserEntries from '../pages/UserEntries'
 import ProfileView from '../pages/ProfileView';
 import DetailsInput from '../components/DetailsInput';
 import VisitingCardDetails from '../pages/VisitingCardDetails';
+import UserAssignments from '../pages/UserAssignments';
 // A helper component to render the correct home page based on role
 const RoleBasedHome = () => {
     const { role } = useAuthStore();
@@ -79,7 +80,7 @@ function Applayout() {
 
                     <Route path="/" element={<UserHome />} />
                     <Route path="/entries" element={<UserEntries />} />
-
+                    <Route path='/assigned' element={<UserAssignments/>}/>
                 </Routes>
             </main>
         </div>
