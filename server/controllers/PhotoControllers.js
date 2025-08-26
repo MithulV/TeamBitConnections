@@ -79,7 +79,7 @@ export const DeleteImage = async (req, res) => {
 export const VerifyImages = async (req, res) => {
     try {
         const { id } = req.params;
-        const pictures = await db`UPDATE SET verified=TRUE FROM photos WHERE id = ${id}`;
+        const pictures = await db`UPDATE photos SET verified=TRUE WHERE id = ${id} RETURNING *`;
 
         if (!pictures || pictures.length === 0) {
             return res.status(404).json({ success: false, message: "No pictures found for this user." });
