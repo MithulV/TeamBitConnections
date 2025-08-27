@@ -49,10 +49,6 @@ export const GetUnVerifiedImages = async (req, res) => {
     try {
         const pictures = await db`SELECT * FROM photos WHERE verified IS NULL OR verified = FALSE`;
 
-        if (!pictures || pictures.length === 0) {
-            return res.status(404).json({ success: false, message: "No pictures found for this user." });
-        }
-
         return res.status(200).json({ success: true, data: pictures });
     } catch (err) {
         console.error("Error fetching pictures:", err); // Use console.error for logging errors
