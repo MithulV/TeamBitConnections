@@ -219,7 +219,7 @@ function MiddleManRecords() {
         switch (userToDelete.type) {
           case "contact":
             // Call contact deletion API (if you have one)
-            // await axios.delete(`http://localhost:8000/api/delete-contact/${userToDelete.id}`);
+            await axios.delete(`http://localhost:8000/api/delete-contact/${userToDelete.id}`);
             
             // Remove from UI (optimistic update)
             setData((prevData) =>

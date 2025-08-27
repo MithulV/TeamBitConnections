@@ -407,6 +407,7 @@ export const UpdateContact = async (req, res) => {
     event_date,
     event_held_organization,
     event_location,
+    event_verified,
 
     // --- ARRAYS of OBJECTS ---
     experiences,

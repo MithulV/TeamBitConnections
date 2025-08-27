@@ -61,6 +61,7 @@ function DetailsInput({ onBack, onSave, initialData = null, isAddMode = false, i
     event_held_organization: '',
     event_location: '',
     linkedin_url: '',
+    event_verified: true,
 
     // Logger for notes
     logger: '',
@@ -131,6 +132,8 @@ function DetailsInput({ onBack, onSave, initialData = null, isAddMode = false, i
         event_date: formatDate(firstEvent.event_date),
         event_held_organization: firstEvent.event_held_organization || '',
         event_location: firstEvent.event_location || '',
+        event_verified: true,
+
 
         // --- Experience History (from 'experiences' array) ---
         experience: Array.isArray(initialData.experiences) && initialData.experiences.length > 0
@@ -242,6 +245,7 @@ function DetailsInput({ onBack, onSave, initialData = null, isAddMode = false, i
   const handleSubmit = (e) => {
     e.preventDefault();
     console.log('Form Data:', formData);
+
     if (onSave) {
       onSave(formData);
     }
@@ -353,6 +357,7 @@ function DetailsInput({ onBack, onSave, initialData = null, isAddMode = false, i
         }))
         : [{ job_title: '', company: '', department: '', from_date: '', to_date: '', company_skills: '' }],
       logger: '',
+      event_verified: true,
     });
   };
 
