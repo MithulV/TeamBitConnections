@@ -5,6 +5,7 @@ function DetailsInput({ onBack, onSave, initialData = null, isAddMode = false, i
   const [formData, setFormData] = useState({
     //contact_id
     contact_id: '',
+    assignment_id: null,
 
     // Personal Details
     name: '',
@@ -83,7 +84,7 @@ function DetailsInput({ onBack, onSave, initialData = null, isAddMode = false, i
       setFormData(prevData => ({
         // --- contact_id ---
         contact_id: initialData.contact_id || '',
-
+        assignment_id: initialData.assignment_id || null,
         // --- Personal Details ---
         name: initialData.name || '',
         dob: formatDate(initialData.dob),
@@ -300,7 +301,7 @@ function DetailsInput({ onBack, onSave, initialData = null, isAddMode = false, i
       to_date: exp.to_date || null,
       company_skills: exp.company_skills || null
     }));
-
+    console.log("Form Data", formData)
     // Build the API payload
     const apiPayload = {
       // Contact Fields
@@ -321,6 +322,8 @@ function DetailsInput({ onBack, onSave, initialData = null, isAddMode = false, i
       logger: formData.logger || null,
       linkedin_url: formData.linkedin_url || null,
       contact_id: formData.contact_id,
+      assignment_id: formData.assignment_id || null,
+      event_verified: formData.event_verified || false,
 
       // Single Objects
       ...(address && { address }),
@@ -328,12 +331,12 @@ function DetailsInput({ onBack, onSave, initialData = null, isAddMode = false, i
 
       // Events (only include if event data exists)
       ...(formData.event_name && {
+        event_id: formData.event_id,
         event_name: formData.event_name,
         event_role: formData.event_role || null,
         event_date: formData.event_date || null,
         event_held_organization: formData.event_held_organization || null,
         event_location: formData.event_location || null,
-        event_verified: formData.event_verified || false
       }),
 
       // Include event_id only in edit mode
@@ -364,6 +367,7 @@ function DetailsInput({ onBack, onSave, initialData = null, isAddMode = false, i
       // Reset to empty form for new entries
       setFormData({
         contact_id: '',
+        assignment_id: null,
         name: '',
         dob: '',
         gender: '',
@@ -420,6 +424,7 @@ function DetailsInput({ onBack, onSave, initialData = null, isAddMode = false, i
 
     setFormData({
       contact_id: initialData.contact_id || '',
+      assignment_id: initialData.assignment_id || null,
       name: initialData.name || '',
       dob: formatDate(initialData.dob),
       gender: initialData.gender || '',
