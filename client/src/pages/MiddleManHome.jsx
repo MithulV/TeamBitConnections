@@ -6,7 +6,7 @@ import DetailsInput from "../components/DetailsInput";
 import Header from "../components/Header";
 import { useAuthStore } from "../store/AuthStore";
 import axios from "axios";
-
+import Alert from "../components/Alert";
 // Helper function to generate initials from a name
 const getInitials = (name = "") => {
   if (!name) return "";
@@ -15,6 +15,84 @@ const getInitials = (name = "") => {
     .map((n) => n[0])
     .join("")
     .toUpperCase();
+};
+
+const DeleteConfirmationModal = ({
+  isOpen,
+  onConfirm,
+  onCancel,
+  itemName = "this user",
+  deleteType = "contact", // Add deleteType prop to distinguish between different deletion types
+}) => {
+  if (!isOpen) return null;
+
+  const getDeleteMessage = () => {
+    switch (deleteType) {
+      case "contact":
+        return `Are you sure you want to delete ${itemName}? This will remove the contact from unverified list.`;
+      case "assignment":
+        return `Are you sure you want to delete the assignment for ${itemName}? This will remove the user from your assigned list.`;
+      case "visitingCard":
+        return `Are you sure you want to delete this visiting card? This action cannot be undone.`;
+      default:
+        return `Are you sure you want to delete ${itemName}? This action cannot be undone.`;
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* Backdrop with blur effect */}
+      <div
+        className="absolute inset-0 bg-black/60 bg-opacity-50 backdrop-blur-sm transition-all duration-300"
+        onClick={onCancel}
+      ></div>
+
+      {/* Modal */}
+      <div className="relative bg-white rounded-lg shadow-2xl max-w-md w-full transform transition-all duration-300 scale-100 animate-fadeIn">
+        {/* Header with Material Design styling */}
+        <div className="flex items-start gap-3 p-6 pb-4">
+          {/* Warning Icon with circular background */}
+          <div className="flex items-center justify-center w-10 h-10 bg-orange-50 rounded-full flex-shrink-0 mt-1">
+            <svg
+              className="w-6 h-6 text-orange-500"
+              fill="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z" />
+            </svg>
+          </div>
+          <div className="flex-1">
+            <h2 className="text-xl font-medium text-gray-900 mb-1">
+              Confirm Delete
+            </h2>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="px-6 pb-6">
+          <p className="text-gray-600 text-sm leading-relaxed pl-13">
+            {getDeleteMessage()}
+          </p>
+        </div>
+
+        {/* Actions with Material Design button styling */}
+        <div className="flex justify-end gap-3 px-6 pb-6">
+          <button
+            onClick={onCancel}
+            className="px-6 py-2 text-sm font-medium text-blue-600 bg-transparent border-none rounded-md hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-all duration-200 uppercase tracking-wide"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            className="px-6 py-2 text-sm font-medium text-red-600 bg-transparent border-none rounded-md hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 transition-all duration-200 uppercase tracking-wide"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 // Helper function to assign a consistent color based on the contact's ID
@@ -27,6 +105,7 @@ const colors = [
   "#DB2777", // Pink
   "#0891B2", // Cyan
 ];
+
 const getAvatarColor = (id) => {
   if (!id) return colors[0];
   return colors[id % colors.length];
@@ -39,7 +118,28 @@ const MiddleManHome = () => {
   const [categoryFilter, setCategoryFilter] = useState("All Categories");
   const [isEditing, setIsEditing] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [userToDelete, setUserToDelete] = useState(null);
   const { role } = useAuthStore(); // Get role from your auth store
+  const [alert, setAlert] = useState({
+    isOpen: false,
+    severity: "success",
+    message: "",
+  });
+  const showAlert = (severity, message) => {
+    setAlert({
+      isOpen: true,
+      severity,
+      message,
+    });
+  };
+
+  const closeAlert = () => {
+    setAlert((prev) => ({
+      ...prev,
+      isOpen: false,
+    }));
+  };
 
   // useEffect to fetch data when the component mounts or the role changes
   useEffect(() => {
@@ -53,22 +153,22 @@ const MiddleManHome = () => {
         console.error("Invalid role for fetching contacts:", role);
         return;
       }
-      
+
       try {
         const response = await axios.get(`http://localhost:8000/api/get-contacts-by-category/?category=${category}`);
-        
+
         // --- DATA TRANSFORMATION ---
         // Map the API response to the format your ContactCard and UI expects
         const formattedContacts = response.data.map(item => ({
           // 1. Spread the original API object first to get all its properties.
-          ...item, 
-          
+          ...item,
+
           // 2. Now, overwrite or create new properties needed for the UI.
           // This ensures your transformed values are the final ones.
           role: item.experiences?.[0]?.job_title || 'N/A',
           company: item.experiences?.[0]?.company || 'N/A',
           location: `${item.address?.city || ''}, ${item.address?.state || ''}`.trim() === ',' ? 'N/A' : `${item.address?.city || ''}, ${item.address?.state || ''}`,
-          
+
           // This correctly transforms the skills string into an array.
           skills: item.skills ? item.skills.split(',').map(skill => skill.trim()) : [],
 
@@ -95,7 +195,7 @@ const MiddleManHome = () => {
   // Filter logic now operates on the 'contacts' state variable
   const filteredContacts = contacts.filter((contact) => {
     const searchTermLower = searchTerm.toLowerCase();
-    
+
     // Check if skills is an array before joining
     const skillsString = Array.isArray(contact.skills) ? contact.skills.join(' ').toLowerCase() : '';
 
@@ -119,13 +219,35 @@ const MiddleManHome = () => {
     setIsEditing(true);
   };
 
-  const handleEditComplete = (updatedData) => {
-    // Here you would typically make an API call to save the data.
-    // For now, we'll just close the form.
-    console.log("Saving data:", updatedData);
-    setIsEditing(false);
-    setEditingUser(null);
-    // Optionally, re-fetch data or update state optimistically.
+  const handleEditComplete = async (updatedData) => {
+    try {
+      console.log("Saving data:", updatedData);
+
+      const response = await axios.put(
+        `http://localhost:8000/api/update-contact/${updatedData.contact_id}`,
+        updatedData
+      );
+
+      setIsEditing(false);
+      setEditingUser(null);
+      setContacts(prev =>
+        prev.map(contact =>
+          contact.contact_id === updatedData.contact_id
+            ? {
+              ...contact,
+              ...updatedData,
+              contact_id: contact.contact_id // Ensure ID doesn't change
+            }
+            : contact
+        )
+      );
+
+      // Assuming showAlert is a global or imported function
+      showAlert("success", "Successfully edited user");
+    } catch (error) {
+      console.error("Failed to edit user:", error);
+      showAlert("error", "Failed to edit user!");
+    }
   };
 
   const handleEditCancel = () => {
@@ -133,8 +255,55 @@ const MiddleManHome = () => {
     setEditingUser(null);
   };
 
+  // Delete functionality handlers
+  const handleDelete = (contact) => {
+    setUserToDelete({
+      ...contact,
+      type: 'contact' // Set the delete type
+    });
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!userToDelete) return;
+
+    try {
+      // Make API call to delete the contact
+      await axios.delete(`http://localhost:8000/api/delete-contact/${userToDelete.contact_id}`);
+
+      // Remove the contact from local state
+      setContacts(prev =>
+        prev.filter(contact => contact.contact_id !== userToDelete.contact_id)
+      );
+
+      // Close modal and reset state
+      setShowDeleteModal(false);
+      setUserToDelete(null);
+      showAlert("success", "Successfully deleted user");
+      console.log('Contact deleted successfully');
+    } catch (error) {
+      console.error('Failed to delete contact:', error);
+      showAlert("error", "failed to delete user");
+      // You might want to show an error message to the user here
+      // For example, you could add a toast notification or error state
+    }
+  };
+
+  const cancelDelete = () => {
+    setShowDeleteModal(false);
+    setUserToDelete(null);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
+      <Alert
+        isOpen={alert.isOpen}
+        severity={alert.severity}
+        message={alert.message}
+        onClose={closeAlert}
+        position="bottom"
+        duration={4000}
+      />
       <Header />
       <div className="p-6">
         <div className="max-w-7xl mx-auto">
@@ -212,6 +381,7 @@ const MiddleManHome = () => {
                     key={contact.contact_id} // Use a unique and stable key
                     contact={contact}
                     onEdit={() => handleEditClick(contact)}
+                    onDelete={() => handleDelete(contact)}
                   />
                 ))}
               </div>
@@ -229,6 +399,15 @@ const MiddleManHome = () => {
           )}
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmationModal
+        isOpen={showDeleteModal}
+        onConfirm={confirmDelete}
+        onCancel={cancelDelete}
+        itemName={userToDelete?.name}
+        deleteType={userToDelete?.type} // Pass the delete type
+      />
     </div>
   );
 };
