@@ -328,6 +328,7 @@ function DetailsInput({ onBack, onSave, initialData = null, isAddMode = false, i
 
       // Events (only include if event data exists)
       ...(formData.event_name && {
+        event_id:formData.event_id,
         event_name: formData.event_name,
         event_role: formData.event_role || null,
         event_date: formData.event_date || null,
