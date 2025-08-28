@@ -5,7 +5,7 @@ import Alert from "../components/Alert";
 import BasicDetailCard from "../components/BasicDetailCard";
 import Header from "../components/Header";
 import axios from "axios";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Trash2 } from "lucide-react";
 import { parseISO, format } from "date-fns";
 import { useAuthStore } from "../store/AuthStore";
 
@@ -111,24 +111,55 @@ function UserEntries() {
     setShowDeleteModal(true);
   };
 
+  const handleDeleteImage = (imageId, imageName) => {
+    setUserToDelete({
+      id: imageId,
+      name: imageName || "this visiting card",
+      type: "image",
+    });
+    setShowDeleteModal(true);
+  };
+
   const confirmDelete = async () => {
     if (userToDelete) {
       try {
         console.log(userToDelete);
-        const response = await axios.delete(
-          `http://localhost:8000/api/delete-contact/${userToDelete.id}`
-        );
+
+        if (userToDelete.type === "image") {
+          // Delete image
+          const response = await axios.delete(
+            `http://localhost:8000/api/delete-image/${userToDelete.id}`
+          );
+
+          // Remove from imageData state
+          setImageData((prevData) => ({
+            ...prevData,
+            data: prevData.data.filter((image) => image.id !== userToDelete.id),
+          }));
+
+          showAlert(
+            "success",
+            `${userToDelete.name} has been successfully deleted.`
+          );
+        } else {
+          // Delete contact
+          const response = await axios.delete(
+            `http://localhost:8000/api/delete-contact/${userToDelete.id}`
+          );
+
+          showAlert(
+            "success",
+            `${userToDelete.name} has been successfully deleted.`
+          );
+          // Refresh data after deletion
+          handleSelectContact();
+        }
+
         setShowDeleteModal(false);
-        showAlert(
-          "success",
-          `${userToDelete.name} has been successfully deleted.`
-        );
         setUserToDelete(null);
-        // Refresh data after deletion
-        handleSelectContact();
       } catch (error) {
-        showAlert("error", "Failed to delete user. Please try again.");
-        console.log("Error deleting user", userToDelete.id, error);
+        showAlert("error", "Failed to delete. Please try again.");
+        console.log("Error deleting", userToDelete.id, error);
       }
     }
   };
@@ -188,15 +219,15 @@ function UserEntries() {
         console.log(response);
         showAlert(
           "success",
-          `${updatedData.name || editingUser.name} has been successfully updated.`
+          `${
+            updatedData.name || editingUser.name
+          } has been successfully updated.`
         );
 
         // Update the contact with matching contact_id
         setProfileData((prevData) =>
           prevData.map((p) =>
-            p.contact_id === editingUser.id
-              ? { ...p, ...updatedData }
-              : p
+            p.contact_id === editingUser.id ? { ...p, ...updatedData } : p
           )
         );
       }
@@ -288,7 +319,7 @@ function UserEntries() {
       {/* Main Content Area */}
       <div className="flex-1 overflow-auto">
         {/* View Toggle Buttons */}
-        <div className={`p-6 pb-0 ${isEditing ? 'hidden' : 'block'}`}>
+        <div className={`p-6 pb-0 ${isEditing ? "hidden" : "block"}`}>
           <div className="max-w-7xl mx-auto">
             <div className="flex gap-4 mb-6">
               <button
@@ -344,8 +375,13 @@ function UserEntries() {
                         parseISO(participant.created_at),
                         "MMMM dd, yyyy"
                       )}
-                      org={participant.events?.[0]?.event_held_organization || "N/A"}
-                      location={participant.events?.[0]?.event_location || "N/A"}
+                      org={
+                        participant.events?.[0]?.event_held_organization ||
+                        "N/A"
+                      }
+                      location={
+                        participant.events?.[0]?.event_location || "N/A"
+                      }
                       profileImage={participant.profileImage || Avatar}
                       onDelete={() => handleDeleteClick(participant.id)}
                       onType={() => onEdit(participant)}
@@ -362,7 +398,7 @@ function UserEntries() {
                       imageData.data.map((card, index) => (
                         <div
                           key={card.id ?? index}
-                          className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200 h-48 w-full"
+                          className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200 h-48 w-full relative group"
                         >
                           <img
                             src={`http://localhost:8000/${card.file_path.replace(
@@ -375,6 +411,21 @@ function UserEntries() {
                               e.target.src = Avatar;
                             }}
                           />
+                          {/* Delete button overlay */}
+                          <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                            <button
+                              onClick={() =>
+                                handleDeleteImage(
+                                  card.id,
+                                  `Visiting Card ${card.id}`
+                                )
+                              }
+                              className="p-2 bg-red-500 hover:bg-red-600 text-white rounded-full shadow-lg transition-colors duration-200"
+                              title="Delete visiting card"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
                         </div>
                       ))}
                   </div>
