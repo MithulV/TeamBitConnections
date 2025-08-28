@@ -192,35 +192,29 @@ export const GetUnVerifiedContacts = async (req, res) => {
         const { userId } = req.params;
 
         const contactsWithEvents = await db`
-            SELECT
-                c.*,
-                
-                -- These subqueries remain the same, fetching related data for the contact.
-                (SELECT row_to_json(ca) FROM contact_address ca WHERE ca.contact_id = c.contact_id) as address,
-                (SELECT row_to_json(ce) FROM contact_education ce WHERE ce.contact_id = c.contact_id) as education,
-                (SELECT json_agg(cx) FROM contact_experience cx WHERE cx.contact_id = c.contact_id) as experiences,
-                
-                -- KEY CHANGE: The single event object for this row is now wrapped in an array.
-                -- We also rename the field back to "events" (plural) for consistency.
-                json_build_array(row_to_json(e)) as events
-            FROM
-                -- Start from the 'event' table to create a row for each event.
-                event e
-            
-            -- Join the 'contact' information onto each event.
-            INNER JOIN contact c ON e.contact_id = c.contact_id
-            
-            WHERE
-                -- Filter to only include rows where the event is unverified.
-                e.verified = false
-            ORDER BY
-                c.contact_id DESC, e.event_id DESC
+        SELECT c.*, 
+              (SELECT row_to_json(ca) FROM contact_address ca WHERE ca.contact_id = c.contact_id) as address,
+              (SELECT row_to_json(ce) FROM contact_education ce WHERE ce.contact_id = c.contact_id) as education,
+              (SELECT json_agg(cx) FROM contact_experience cx WHERE cx.contact_id = c.contact_id) as experiences,
+              json_build_array(row_to_json(e)) as events
+        FROM event e 
+        INNER JOIN contact c ON e.contact_id = c.contact_id 
+        WHERE e.verified = FALSE
+          AND NOT EXISTS (
+            SELECT 1 FROM user_assignments ua 
+            WHERE ua.event_id = e.event_id 
+              AND ua.completed = FALSE
+          )
+        ORDER BY c.contact_id DESC, e.event_id DESC;
         `;
 
         return res.status(200).json(contactsWithEvents);
     } catch (err) {
         console.error(err);
-        return res.status(500).json({ message: "Server Error!", error: err.message });
+        return res.status(500).json({
+            message: "Server Error!",
+            error: err.message,
+        });
     }
 };
 
@@ -348,6 +342,7 @@ export const UpdateContact = async (req, res) => {
     const { contact_id } = req.params;
     const {
         // --- Contact Fields ---
+        assignment_id,
         name,
         phone_number,
         email_address,
@@ -358,7 +353,6 @@ export const UpdateContact = async (req, res) => {
         category,
         secondary_email,
         secondary_phone_number,
-        created_by,
         emergency_contact_name,
         emergency_contact_relationship,
         emergency_contact_phone_number,
@@ -397,7 +391,6 @@ export const UpdateContact = async (req, res) => {
                     category = ${category || null},
                     secondary_email = ${secondary_email || null},
                     secondary_phone_number = ${secondary_phone_number || null},
-                    created_by = ${created_by || null},
                     emergency_contact_name = ${emergency_contact_name || null},
                     emergency_contact_relationship = ${emergency_contact_relationship || null},
                     emergency_contact_phone_number = ${emergency_contact_phone_number || null},
@@ -480,6 +473,7 @@ export const UpdateContact = async (req, res) => {
 
             // 5. Update Events Array (if provided)
             if (event_id) {
+              console.log("asdkjasdhsadfjkasdkldjlfkdj;l")
                 const [updatedEvent] = await t`
                     UPDATE event SET
                         event_name = ${event_name},
@@ -500,10 +494,10 @@ export const UpdateContact = async (req, res) => {
 
             // 6. NEW: Update user_assignments if assignment_id is provided
             if (assignment_id) {
-                [updatedAssignment] = await t`
+                console.log(assignment_id);
+                const [updatedAssignment] = await t`
           UPDATE user_assignments SET
-            completed = TRUE,
-            updated_at = NOW() -- It's good practice to update the timestamp
+            completed = TRUE
           WHERE id = ${assignment_id}
           RETURNING *
         `;
