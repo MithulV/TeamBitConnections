@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { RotateCcw, Plus, Trash2, FileStack, Save } from 'lucide-react';
 
-function DetailsInput({ onBack, onSave, initialData = null, isAddMode = false, isEditMode = false,assignToUser }) {
+function DetailsInput({ onBack, onSave, initialData = null, isAddMode = false, isEditMode = false, assignToUser }) {
   const [formData, setFormData] = useState({
     //contact_id
     contact_id: '',
@@ -34,16 +34,18 @@ function DetailsInput({ onBack, onSave, initialData = null, isAddMode = false, i
     zipcode: '',
 
     // Education
-    pg_course_name: '',
-    pg_college: '',
-    pg_university: '',
-    pg_from_date: '',
-    pg_to_date: '',
-    ug_course_name: '',
-    ug_college: '',
-    ug_university: '',
-    ug_from_date: '',
-    ug_to_date: '',
+    education: {
+      pg_course_name: '',
+      pg_college: '',
+      pg_university: '',
+      pg_from_date: '',
+      pg_to_date: '',
+      ug_course_name: '',
+      ug_college: '',
+      ug_university: '',
+      ug_from_date: '',
+      ug_to_date: '',
+    },
 
     // General Skills
     skills: '',
@@ -73,7 +75,7 @@ function DetailsInput({ onBack, onSave, initialData = null, isAddMode = false, i
       const formatDate = (dateString) => {
         if (!dateString) return '';
         return dateString.split('T')[0];
-      };                                                                            
+      };
 
       // Safely access the first event, if it exists
       const firstEvent = initialData.events && initialData.events.length > 0 ? initialData.events[0] : {};
@@ -110,16 +112,18 @@ function DetailsInput({ onBack, onSave, initialData = null, isAddMode = false, i
         zipcode: initialData.address?.zipcode || '',
 
         // --- Education Fields (from nested 'education' object) ---
-        pg_course_name: initialData.education?.pg_course_name || '',
-        pg_college: initialData.education?.pg_college || '',
-        pg_university: initialData.education?.pg_university || '',
-        pg_from_date: formatDate(initialData.education?.pg_from_date),
-        pg_to_date: formatDate(initialData.education?.pg_to_date),
-        ug_course_name: initialData.education?.ug_course_name || '',
-        ug_college: initialData.education?.ug_college || '',
-        ug_university: initialData.education?.ug_university || '',
-        ug_from_date: formatDate(initialData.education?.ug_from_date),
-        ug_to_date: formatDate(initialData.education?.ug_to_date),
+        education: {
+          pg_course_name: initialData.education?.pg_course_name || '',
+          pg_college: initialData.education?.pg_college || '',
+          pg_university: initialData.education?.pg_university || '',
+          pg_from_date: formatDate(initialData.education?.pg_from_date),
+          pg_to_date: formatDate(initialData.education?.pg_to_date),
+          ug_course_name: initialData.education?.ug_course_name || '',
+          ug_college: initialData.education?.ug_college || '',
+          ug_university: initialData.education?.ug_university || '',
+          ug_from_date: formatDate(initialData.education?.ug_from_date),
+          ug_to_date: formatDate(initialData.education?.ug_to_date),
+        },
 
         // --- Professional and Additional Info ---
         skills: initialData.skills || '',
@@ -187,16 +191,16 @@ function DetailsInput({ onBack, onSave, initialData = null, isAddMode = false, i
   ];
 
   const educationFields = [
-    { label: "PG Course Name", type: "text", name: "pg_course_name", placeholder: "Enter PG course name", value: formData.pg_course_name },
-    { label: "PG College", type: "text", name: "pg_college", placeholder: "Enter PG college", value: formData.pg_college },
-    { label: "PG University", type: "text", name: "pg_university", placeholder: "Enter PG university", value: formData.pg_university },
-    { label: "PG From Date", type: "date", name: "pg_from_date", value: formData.pg_from_date },
-    { label: "PG To Date", type: "date", name: "pg_to_date", value: formData.pg_to_date },
-    { label: "UG Course Name", type: "text", name: "ug_course_name", placeholder: "Enter UG course name", value: formData.ug_course_name },
-    { label: "UG College", type: "text", name: "ug_college", placeholder: "Enter UG college", value: formData.ug_college },
-    { label: "UG University", type: "text", name: "ug_university", placeholder: "Enter UG university", value: formData.ug_university },
-    { label: "UG From Date", type: "date", name: "ug_from_date", value: formData.ug_from_date },
-    { label: "UG To Date", type: "date", name: "ug_to_date", value: formData.ug_to_date },
+    { label: "PG Course Name", type: "text", name: "pg_course_name", placeholder: "Enter PG course name", value: formData.education.pg_course_name },
+    { label: "PG College", type: "text", name: "pg_college", placeholder: "Enter PG college", value: formData.education.pg_college },
+    { label: "PG University", type: "text", name: "pg_university", placeholder: "Enter PG university", value: formData.education.pg_university },
+    { label: "PG From Date", type: "date", name: "pg_from_date", value: formData.education.pg_from_date },
+    { label: "PG To Date", type: "date", name: "pg_to_date", value: formData.education.pg_to_date },
+    { label: "UG Course Name", type: "text", name: "ug_course_name", placeholder: "Enter UG course name", value: formData.education.ug_course_name },
+    { label: "UG College", type: "text", name: "ug_college", placeholder: "Enter UG college", value: formData.education.ug_college },
+    { label: "UG University", type: "text", name: "ug_university", placeholder: "Enter UG university", value: formData.education.ug_university },
+    { label: "UG From Date", type: "date", name: "ug_from_date", value: formData.education.ug_from_date },
+    { label: "UG To Date", type: "date", name: "ug_to_date", value: formData.education.ug_to_date },
   ];
 
   const additionalInfo = [
@@ -221,6 +225,18 @@ function DetailsInput({ onBack, onSave, initialData = null, isAddMode = false, i
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  // Special handler for education fields
+  const handleEducationChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      education: {
+        ...prev.education,
+        [name]: value
+      }
+    }));
+  };
+
   const handleExperienceChange = (index, e) => {
     const { name, value } = e.target;
     const updatedExperience = [...formData.experience];
@@ -242,12 +258,104 @@ function DetailsInput({ onBack, onSave, initialData = null, isAddMode = false, i
     }
   };
 
+  // Transform form data to match API expectations
+  const transformFormDataForAPI = (formData) => {
+    // Build address object (only include if at least one field has value)
+    const addressFields = ['street', 'city', 'state', 'country', 'zipcode'];
+    const hasAddressData = addressFields.some(field => formData[field]?.trim());
+    
+    const address = hasAddressData ? {
+      street: formData.street || null,
+      city: formData.city || null,
+      state: formData.state || null,
+      country: formData.country || null,
+      zipcode: formData.zipcode || null
+    } : null;
+
+    // Build education object (only include if at least one field has value)
+    const educationFields = Object.keys(formData.education);
+    const hasEducationData = educationFields.some(field => formData.education[field]?.trim());
+    
+    const education = hasEducationData ? {
+      pg_course_name: formData.education.pg_course_name || null,
+      pg_college: formData.education.pg_college || null,
+      pg_university: formData.education.pg_university || null,
+      pg_from_date: formData.education.pg_from_date || null,
+      pg_to_date: formData.education.pg_to_date || null,
+      ug_course_name: formData.education.ug_course_name || null,
+      ug_college: formData.education.ug_college || null,
+      ug_university: formData.education.ug_university || null,
+      ug_from_date: formData.education.ug_from_date || null,
+      ug_to_date: formData.education.ug_to_date || null
+    } : null;
+
+    // Filter out empty experiences
+    const experiences = formData.experience.filter(exp => 
+      exp.job_title?.trim() || exp.company?.trim()
+    ).map(exp => ({
+      job_title: exp.job_title || null,
+      company: exp.company || null,
+      department: exp.department || null,
+      from_date: exp.from_date || null,
+      to_date: exp.to_date || null,
+      company_skills: exp.company_skills || null
+    }));
+
+    // Build the API payload
+    const apiPayload = {
+      // Contact Fields
+      name: formData.name || null,
+      phone_number: formData.phone_number || null,
+      email_address: formData.email_address || null,
+      dob: formData.dob || null,
+      gender: formData.gender || null,
+      nationality: formData.nationality || null,
+      marital_status: formData.marital_status || null,
+      category: formData.category || null,
+      secondary_email: formData.secondary_email || null,
+      secondary_phone_number: formData.secondary_phone_number || null,
+      emergency_contact_name: formData.emergency_contact_name || null,
+      emergency_contact_relationship: formData.emergency_contact_relationship || null,
+      emergency_contact_phone_number: formData.emergency_contact_phone_number || null,
+      skills: formData.skills || null,
+      logger: formData.logger || null,
+      linkedin_url: formData.linkedin_url || null,
+      contact_id: formData.contact_id,
+
+      // Single Objects
+      ...(address && { address }),
+      ...(education && { education }),
+
+      // Events (only include if event data exists)
+      ...(formData.event_name && {
+        event_name: formData.event_name,
+        event_role: formData.event_role || null,
+        event_date: formData.event_date || null,
+        event_held_organization: formData.event_held_organization || null,
+        event_location: formData.event_location || null,
+        event_verified: formData.event_verified || false
+      }),
+
+      // Include event_id only in edit mode
+      ...(isEditMode && formData.event_id && { event_id: formData.event_id }),
+
+      // Arrays of Objects
+      ...(experiences.length > 0 && { experiences })
+    };
+
+    return apiPayload;
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log('Form Data:', formData);
+    
+    // Transform the form data to match API expectations
+    const apiPayload = transformFormDataForAPI(formData);
+    
+    console.log('Transformed API Payload:', apiPayload);
 
     if (onSave) {
-      onSave(formData);
+      onSave(apiPayload);
     }
   };
 
@@ -275,16 +383,18 @@ function DetailsInput({ onBack, onSave, initialData = null, isAddMode = false, i
         state: '',
         country: '',
         zipcode: '',
-        pg_course_name: '',
-        pg_college: '',
-        pg_university: '',
-        pg_from_date: '',
-        pg_to_date: '',
-        ug_course_name: '',
-        ug_college: '',
-        ug_university: '',
-        ug_from_date: '',
-        ug_to_date: '',
+        education: {
+          pg_course_name: '',
+          pg_college: '',
+          pg_university: '',
+          pg_from_date: '',
+          pg_to_date: '',
+          ug_course_name: '',
+          ug_college: '',
+          ug_university: '',
+          ug_from_date: '',
+          ug_to_date: '',
+        },
         skills: '',
         experience: [{ job_title: '', company: '', department: '', from_date: '', to_date: '', company_skills: '' }],
         event_id: '',
@@ -295,6 +405,7 @@ function DetailsInput({ onBack, onSave, initialData = null, isAddMode = false, i
         event_location: '',
         linkedin_url: '',
         logger: '',
+        event_verified: true,
       });
       return;
     }
@@ -328,16 +439,18 @@ function DetailsInput({ onBack, onSave, initialData = null, isAddMode = false, i
       state: initialData.address?.state || '',
       country: initialData.address?.country || '',
       zipcode: initialData.address?.zipcode || '',
-      pg_course_name: initialData.education?.pg_course_name || '',
-      pg_college: initialData.education?.pg_college || '',
-      pg_university: initialData.education?.pg_university || '',
-      pg_from_date: formatDate(initialData.education?.pg_from_date),
-      pg_to_date: formatDate(initialData.education?.pg_to_date),
-      ug_course_name: initialData.education?.ug_course_name || '',
-      ug_college: initialData.education?.ug_college || '',
-      ug_university: initialData.education?.ug_university || '',
-      ug_from_date: formatDate(initialData.education?.ug_from_date),
-      ug_to_date: formatDate(initialData.education?.ug_to_date),
+      education: {
+        pg_course_name: initialData.education?.pg_course_name || '',
+        pg_college: initialData.education?.pg_college || '',
+        pg_university: initialData.education?.pg_university || '',
+        pg_from_date: formatDate(initialData.education?.pg_from_date),
+        pg_to_date: formatDate(initialData.education?.pg_to_date),
+        ug_course_name: initialData.education?.ug_course_name || '',
+        ug_college: initialData.education?.ug_college || '',
+        ug_university: initialData.education?.ug_university || '',
+        ug_from_date: formatDate(initialData.education?.ug_from_date),
+        ug_to_date: formatDate(initialData.education?.ug_to_date),
+      },
       skills: initialData.skills || '',
       linkedin_url: initialData.linkedin_url || '',
       event_id: firstEvent.event_id || '',
@@ -365,14 +478,57 @@ function DetailsInput({ onBack, onSave, initialData = null, isAddMode = false, i
     <div key={index} className="space-y-2">
       <label htmlFor={field.name} className="block text-sm font-medium text-gray-700">{field.label}</label>
       {field.type === 'select' ? (
-        <select id={field.name} name={field.name} value={field.value} onChange={handleInputChange} required={field.label.includes('*')} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0077b8]">
+        <select 
+          id={field.name} 
+          name={field.name} 
+          value={field.value} 
+          onChange={handleInputChange} 
+          required={field.label.includes('*')} 
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0077b8]"
+        >
           {field.options.map(option => <option key={option} value={option}>{option}</option>)}
         </select>
       ) : field.type === 'textarea' ? (
-        <textarea id={field.name} name={field.name} value={field.value} placeholder={field.placeholder} onChange={handleInputChange} required={field.label.includes('*')} rows={3} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0077b8] resize-vertical" />
+        <textarea 
+          id={field.name} 
+          name={field.name} 
+          value={field.value} 
+          placeholder={field.placeholder} 
+          onChange={handleInputChange} 
+          required={field.label.includes('*')} 
+          rows={3} 
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0077b8] resize-vertical" 
+        />
       ) : (
-        <input type={field.type} id={field.name} name={field.name} value={field.value} placeholder={field.placeholder} onKeyPress={field.name.includes('phone') ? handlePhoneKeyPress : undefined} inputMode={field.inputMode} onChange={handleInputChange} required={field.label.includes('*')} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0077b8]" />
+        <input 
+          type={field.type} 
+          id={field.name} 
+          name={field.name} 
+          value={field.value} 
+          placeholder={field.placeholder} 
+          onKeyPress={field.name.includes('phone') ? handlePhoneKeyPress : undefined} 
+          inputMode={field.inputMode} 
+          onChange={handleInputChange} 
+          required={field.label.includes('*')} 
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0077b8]" 
+        />
       )}
+    </div>
+  );
+
+  // Special render function for education fields
+  const renderEducationField = (field, index) => (
+    <div key={index} className="space-y-2">
+      <label htmlFor={field.name} className="block text-sm font-medium text-gray-700">{field.label}</label>
+      <input 
+        type={field.type} 
+        id={field.name} 
+        name={field.name} 
+        value={field.value} 
+        placeholder={field.placeholder} 
+        onChange={handleEducationChange}
+        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0077b8]" 
+      />
     </div>
   );
 
@@ -458,7 +614,7 @@ function DetailsInput({ onBack, onSave, initialData = null, isAddMode = false, i
           </div>
           <div>
             <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b border-gray-200 pb-2">Education</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">{educationFields.map(renderField)}</div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">{educationFields.map(renderEducationField)}</div>
           </div>
 
           {/* === SKILLS SECTION === */}
