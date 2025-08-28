@@ -241,7 +241,7 @@ function MiddleManRecords() {
 
           case "visitingCard":
             // Call visiting card deletion API (add this API endpoint)
-            await axios.delete(`http://localhost:8000/api/delete-visiting-card/${userToDelete.id}`);
+            await axios.delete(`http://localhost:8000/api/delete-image/${userToDelete.id}`);
             
             // Remove from UI
             setVisitingCard((prevData) =>
