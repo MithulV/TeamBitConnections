@@ -109,6 +109,8 @@ const ContactCard = ({ contact, onDelete, onEdit }) => {
       .toUpperCase();
   };
 
+  
+
   return (
     <>
       <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
