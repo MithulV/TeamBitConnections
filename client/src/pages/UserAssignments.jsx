@@ -227,7 +227,7 @@ function UserAssignments() {
                     case "contact":
                         // If you want to delete the actual contact (not just remove assignment)
                         await axios.delete(`http://localhost:8000/api/delete-contact/${userToDelete.id}`);
-                        
+
                         setData((prevData) =>
                             prevData.filter(user => user.contact_id !== userToDelete.id)
                         );
@@ -322,7 +322,7 @@ function UserAssignments() {
                                     <div className="bg-white rounded-lg p-4 mb-6 shadow-sm border border-gray-200">
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center">
-                                                <div className={`w-3 h-3 ${data.length===0?"bg-red-500":"bg-green-400"} rounded-full mr-2`}></div>
+                                                <div className={`w-3 h-3 ${data.length === 0 ? "bg-red-500" : "bg-green-400"} rounded-full mr-2`}></div>
                                                 <span className="text-sm text-gray-600">
                                                     {data.length} Assigned Contact{data.length !== 1 ? 's' : ''}
                                                 </span>
@@ -356,6 +356,7 @@ function UserAssignments() {
                                                     profileImage={participant.profileImage || Avatar}
                                                     onDelete={() => handleDeleteClick(participant.contact_id)}
                                                     onType={() => onAdd(participant.contact_id)}
+                                                    assignment_id={participant.assignment_id}
                                                     editOrAdd={"add"}
                                                     assignedOn={participant.assigned_on ? format(
                                                         parseISO(participant.assigned_on),

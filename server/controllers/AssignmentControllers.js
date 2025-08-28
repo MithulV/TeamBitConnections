@@ -96,7 +96,7 @@ export const getAssignmentsForUser = async (req, res) => {
             
             WHERE
                 -- Filter for the specific user
-                ua.assigned_to = ${userId}
+                ua.assigned_to = ${userId} AND ua.completed = FALSE
                 
             ORDER BY
                 ua.created_at DESC
