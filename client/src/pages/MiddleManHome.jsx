@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { Search, ChevronDown, Trash2, X } from "lucide-react";
-import StatusBar from "../components/StatusBar";
 import ContactCard from "../components/MiddleManCard";
 import DetailsInput from "../components/DetailsInput";
 import Header from "../components/Header";
@@ -35,12 +34,12 @@ const getAvatarColor = (id) => {
 };
 
 // Delete Confirmation Modal Component with Loading State
-const DeleteConfirmationModal = ({ 
-  isOpen, 
-  onConfirm, 
-  onCancel, 
-  itemName = "this contact", 
-  isDeleting = false 
+const DeleteConfirmationModal = ({
+  isOpen,
+  onConfirm,
+  onCancel,
+  itemName = "this contact",
+  isDeleting = false,
 }) => {
   if (!isOpen) return null;
 
@@ -73,19 +72,26 @@ const DeleteConfirmationModal = ({
         {/* Header */}
         <div className="flex items-start gap-3 p-6 pb-4">
           <div className="flex items-center justify-center w-10 h-10 bg-orange-50 rounded-full flex-shrink-0 mt-1">
-            <svg className="w-6 h-6 text-orange-500" fill="currentColor" viewBox="0 0 24 24">
+            <svg
+              className="w-6 h-6 text-orange-500"
+              fill="currentColor"
+              viewBox="0 0 24 24"
+            >
               <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z" />
             </svg>
           </div>
           <div className="flex-1">
-            <h2 className="text-xl font-medium text-gray-900 mb-1">Confirm Delete</h2>
+            <h2 className="text-xl font-medium text-gray-900 mb-1">
+              Confirm Delete
+            </h2>
           </div>
         </div>
 
         {/* Content */}
         <div className="px-6 pb-6">
           <p className="text-gray-600 text-sm leading-relaxed pl-13">
-            Are you sure you want to delete {itemName}? This will permanently remove the contact and all associated data.
+            Are you sure you want to delete {itemName}? This will permanently
+            remove the contact and all associated data.
           </p>
         </div>
 
@@ -142,11 +148,9 @@ const DeleteConfirmationModal = ({
 const MiddleManHome = () => {
   const [contacts, setContacts] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("All Status");
-  const [categoryFilter, setCategoryFilter] = useState("All Categories");
   const [isEditing, setIsEditing] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
-  
+
   // Delete modal states with loading
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [contactToDelete, setContactToDelete] = useState(null);
@@ -156,7 +160,7 @@ const MiddleManHome = () => {
     severity: "success",
     message: "",
   });
-  
+
   const { role } = useAuthStore();
 
   const showAlert = (severity, message) => {
@@ -179,7 +183,7 @@ const MiddleManHome = () => {
     const getCategoryContacts = async () => {
       if (!role) return;
 
-      const rolesDict = { "cata": "A", "catb": "B", "catc": "C" };
+      const rolesDict = { cata: "A", catb: "B", catc: "C" };
       const category = rolesDict[role];
 
       if (!category) {
@@ -187,16 +191,25 @@ const MiddleManHome = () => {
         showAlert("error", "Invalid role for fetching contacts");
         return;
       }
-      
+
       try {
-        const response = await axios.get(`http://localhost:8000/api/get-contacts-by-category/?category=${category}`);
-        
-        const formattedContacts = response.data.map(item => ({
-          ...item, 
-          role: item.experiences?.[0]?.job_title || 'N/A',
-          company: item.experiences?.[0]?.company || 'N/A',
-          location: `${item.address?.city || ''}, ${item.address?.state || ''}`.trim() === ',' ? 'N/A' : `${item.address?.city || ''}, ${item.address?.state || ''}`,
-          skills: item.skills ? item.skills.split(',').map(skill => skill.trim()) : [],
+        const response = await axios.get(
+          `http://localhost:8000/api/get-contacts-by-category/?category=${category}`
+        );
+
+        const formattedContacts = response.data.map((item) => ({
+          ...item,
+          role: item.experiences?.[0]?.job_title || "N/A",
+          company: item.experiences?.[0]?.company || "N/A",
+          location:
+            `${item.address?.city || ""}, ${
+              item.address?.state || ""
+            }`.trim() === ","
+              ? "N/A"
+              : `${item.address?.city || ""}, ${item.address?.state || ""}`,
+          skills: item.skills
+            ? item.skills.split(",").map((skill) => skill.trim())
+            : [],
           initials: getInitials(item.name),
           avatarColor: getAvatarColor(item.contact_id),
         }));
@@ -211,16 +224,12 @@ const MiddleManHome = () => {
     getCategoryContacts();
   }, [role]);
 
-  const taskStatus = {
-    completed: 7,
-    total: 16,
-    percentage: 44,
-  };
-
-  // Filter logic
+  // Filter logic - only search term filtering
   const filteredContacts = contacts.filter((contact) => {
     const searchTermLower = searchTerm.toLowerCase();
-    const skillsString = Array.isArray(contact.skills) ? contact.skills.join(' ').toLowerCase() : '';
+    const skillsString = Array.isArray(contact.skills)
+      ? contact.skills.join(" ").toLowerCase()
+      : "";
 
     const matchesSearch =
       contact.name?.toLowerCase().includes(searchTermLower) ||
@@ -228,10 +237,7 @@ const MiddleManHome = () => {
       contact.role?.toLowerCase().includes(searchTermLower) ||
       skillsString.includes(searchTermLower);
 
-    const matchesStatus = statusFilter === "All Status" || contact.status === statusFilter;
-    const matchesCategory = categoryFilter === "All Categories" || contact.category === categoryFilter;
-
-    return matchesSearch && matchesStatus && matchesCategory;
+    return matchesSearch;
   });
 
   // Edit handlers
@@ -243,26 +249,28 @@ const MiddleManHome = () => {
   const handleEditComplete = async (updatedData) => {
     try {
       console.log("Saving data:", updatedData);
-      
+
       const response = await axios.put(
         `http://localhost:8000/api/update-contact/${updatedData.contact_id}`,
         updatedData
       );
-      
+
       console.log("Update response:", response);
-      
-      setContacts(prevContacts =>
-        prevContacts.map(contact =>
+
+      setContacts((prevContacts) =>
+        prevContacts.map((contact) =>
           contact.contact_id === updatedData.contact_id
             ? { ...contact, ...updatedData }
             : contact
         )
       );
-      
-      showAlert("success", `${updatedData.name} has been successfully updated.`);
+
+      showAlert(
+        "success",
+        `${updatedData.name} has been successfully updated.`
+      );
       setIsEditing(false);
       setEditingUser(null);
-      
     } catch (error) {
       console.error("Failed to update contact:", error);
       showAlert("error", "Failed to update contact. Please try again.");
@@ -284,7 +292,7 @@ const MiddleManHome = () => {
   // Updated delete confirmation with loading state
   const handleDeleteConfirm = async () => {
     console.log("Delete confirmed for:", contactToDelete);
-    
+
     if (!contactToDelete) {
       console.log("No contact to delete");
       return;
@@ -293,19 +301,28 @@ const MiddleManHome = () => {
     setIsDeleting(true); // Start loading
 
     try {
-      console.log("Making API call to delete contact:", contactToDelete.contact_id);
-      
-      await axios.delete(`http://localhost:8000/api/delete-contact/${contactToDelete.contact_id}/`);
-      
-      console.log("Delete successful, updating state");
-      
-      // Update state
-      setContacts(prevContacts => 
-        prevContacts.filter(contact => contact.contact_id !== contactToDelete.contact_id)
+      console.log(
+        "Making API call to delete contact:",
+        contactToDelete.contact_id
       );
-      
-      showAlert("success", `${contactToDelete.name} has been successfully deleted.`);
-      
+
+      await axios.delete(
+        `http://localhost:8000/api/delete-contact/${contactToDelete.contact_id}/`
+      );
+
+      console.log("Delete successful, updating state");
+
+      // Update state
+      setContacts((prevContacts) =>
+        prevContacts.filter(
+          (contact) => contact.contact_id !== contactToDelete.contact_id
+        )
+      );
+
+      showAlert(
+        "success",
+        `${contactToDelete.name} has been successfully deleted.`
+      );
     } catch (error) {
       console.error("Delete failed:", error);
       showAlert("error", "Failed to delete contact. Please try again.");
@@ -364,48 +381,7 @@ const MiddleManHome = () => {
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
                 </div>
-                <div className="w-full md:w-auto flex gap-4">
-                  <div className="flex-1 relative">
-                    <select
-                      className="w-full appearance-none bg-white border border-gray-300 rounded-lg px-4 py-3 pr-8 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                      value={statusFilter}
-                      onChange={(e) => setStatusFilter(e.target.value)}
-                    >
-                      <option>All Status</option>
-                      <option>Active</option>
-                      <option>Prospect</option>
-                      <option>Inactive</option>
-                    </select>
-                    <ChevronDown
-                      size={16}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 pointer-events-none"
-                    />
-                  </div>
-                  <div className="flex-1 relative">
-                    <select
-                      className="w-full appearance-none bg-white border border-gray-300 rounded-lg px-4 py-3 pr-8 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                      value={categoryFilter}
-                      onChange={(e) => setCategoryFilter(e.target.value)}
-                    >
-                      <option>All Categories</option>
-                      <option>A</option>
-                      <option>B</option>
-                      <option>C</option>
-                    </select>
-                    <ChevronDown
-                      size={16}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 pointer-events-none"
-                    />
-                  </div>
-                </div>
               </div>
-
-              {/* Status Bar */}
-              <StatusBar
-                completed={taskStatus.completed}
-                total={taskStatus.total}
-                percentage={taskStatus.percentage}
-              />
 
               {/* Contact Cards Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
