@@ -9,6 +9,7 @@ import {
     GetUnVerifiedContacts,
     UpdateContactAndEvents,
     GetContactsByCategory,
+    GetFilteredContacts,
 } from "../controllers/ContactControllers.js";
 
 import {
@@ -29,6 +30,7 @@ import {
 } from "../controllers/PhotoControllers.js";
 
 const router = express.Router();
+router.get("/contacts/filter/", GetFilteredContacts);
 router.get("/contacts/:userId", GetContacts);
 router.get("/get-unverified-contacts/", GetUnVerifiedContacts);
 router.get("/get-unverified-images/", GetUnVerifiedImages);
