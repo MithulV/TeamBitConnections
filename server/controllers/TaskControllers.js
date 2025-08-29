@@ -2,7 +2,7 @@ import cron from 'node-cron'
 import db from '../src/config/db.js'
 import dotenv from 'dotenv'
 import nodemailer from 'nodemailer';
-
+// Schedule updated_at 2 month check daily at 6:00 AM
 cron.schedule('0 9 * * *', async () => {
     console.log("task : ", new Date());
     await checkForTask();
