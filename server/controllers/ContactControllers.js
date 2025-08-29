@@ -473,7 +473,7 @@ export const UpdateContact = async (req, res) => {
 
             // 5. Update Events Array (if provided)
             if (event_id) {
-              console.log("asdkjasdhsadfjkasdkldjlfkdj;l")
+                console.log("asdkjasdhsadfjkasdkldjlfkdj;l");
                 const [updatedEvent] = await t`
                     UPDATE event SET
                         event_name = ${event_name},
@@ -615,5 +615,211 @@ export const SearchContacts = async (req, res) => {
     } catch (err) {
         console.error(err);
         return res.status(500).json({ message: "Server Error!", error: err.message });
+    }
+};
+
+export const GetFilteredContacts = async (req, res) => {
+    const {
+        // Basic Contact Filters
+        name,
+        phone_number,
+        email_address,
+        category,
+        gender,
+        nationality,
+        marital_status,
+        skills,
+        created_by,
+
+        // Address Filters
+        address_city,
+        address_state,
+        address_country,
+        address_zipcode,
+        address_street,
+
+        // Education Filters
+        pg_course_name,
+        pg_college,
+        pg_university,
+        ug_course_name,
+        ug_college,
+        ug_university,
+        education_from_year,
+        education_to_year,
+
+        // Experience Filters
+        job_title,
+        company,
+        department,
+        experience_from_year,
+        experience_to_year,
+
+        // Event Filters
+        event_name,
+        event_role,
+        event_organization,
+        event_location,
+        event_year,
+
+        // Date Range Filters
+        created_from,
+        created_to,
+        dob_from,
+        dob_to,
+
+        // Pagination
+        page = 1,
+        limit = 20,
+
+        // Sorting
+        sort_by = "name",
+        sort_order = "ASC",
+    } = req.query;
+
+    try {
+        // Build dynamic WHERE conditions
+        const conditions = [];
+
+        // Basic contact filters
+        if (name) conditions.push(`c.name ILIKE '%${name}%'`);
+        if (phone_number) conditions.push(`c.phone_number ILIKE '%${phone_number}%'`);
+        if (email_address) conditions.push(`c.email_address ILIKE '%${email_address}%'`);
+        if (category) conditions.push(`c.category = '${category}'`);
+        if (gender) conditions.push(`c.gender = '${gender}'`);
+        if (nationality) conditions.push(`c.nationality ILIKE '%${nationality}%'`);
+        if (marital_status) conditions.push(`c.marital_status = '${marital_status}'`);
+        if (skills) conditions.push(`c.skills ILIKE '%${skills}%'`);
+        if (created_by) conditions.push(`c.created_by = '${created_by}'`);
+
+        // Address filters
+        if (address_city) conditions.push(`ca.city ILIKE '%${address_city}%'`);
+        if (address_state) conditions.push(`ca.state ILIKE '%${address_state}%'`);
+        if (address_country) conditions.push(`ca.country ILIKE '%${address_country}%'`);
+        if (address_zipcode) conditions.push(`ca.zipcode = '${address_zipcode}'`);
+        if (address_street) conditions.push(`ca.street ILIKE '%${address_street}%'`);
+
+        // Education filters
+        if (pg_course_name) conditions.push(`ce.pg_course_name ILIKE '%${pg_course_name}%'`);
+        if (pg_college) conditions.push(`ce.pg_college ILIKE '%${pg_college}%'`);
+        if (pg_university) conditions.push(`ce.pg_university ILIKE '%${pg_university}%'`);
+        if (ug_course_name) conditions.push(`ce.ug_course_name ILIKE '%${ug_course_name}%'`);
+        if (ug_college) conditions.push(`ce.ug_college ILIKE '%${ug_college}%'`);
+        if (ug_university) conditions.push(`ce.ug_university ILIKE '%${ug_university}%'`);
+
+        // Experience filters
+        if (job_title) conditions.push(`exp.job_title ILIKE '%${job_title}%'`);
+        if (company) conditions.push(`exp.company ILIKE '%${company}%'`);
+        if (department) conditions.push(`exp.department ILIKE '%${department}%'`);
+
+        // Event filters
+        if (event_name) conditions.push(`e.event_name ILIKE '%${event_name}%'`);
+        if (event_role) conditions.push(`e.event_role ILIKE '%${event_role}%'`);
+        if (event_organization) conditions.push(`e.event_held_organization ILIKE '%${event_organization}%'`);
+        if (event_location) conditions.push(`e.event_location ILIKE '%${event_location}%'`);
+
+        // Date filters
+        if (created_from) conditions.push(`c.created_at >= '${created_from}'`);
+        if (created_to) conditions.push(`c.created_at <= '${created_to}'`);
+        if (dob_from) conditions.push(`c.dob >= '${dob_from}'`);
+        if (dob_to) conditions.push(`c.dob <= '${dob_to}'`);
+
+        // Year-based filters
+        if (education_from_year)
+            conditions.push(
+                `(EXTRACT(YEAR FROM ce.pg_from_date) >= ${education_from_year} OR EXTRACT(YEAR FROM ce.ug_from_date) >= ${education_from_year})`
+            );
+        if (education_to_year)
+            conditions.push(
+                `(EXTRACT(YEAR FROM ce.pg_to_date) <= ${education_to_year} OR EXTRACT(YEAR FROM ce.ug_to_date) <= ${education_to_year})`
+            );
+        if (experience_from_year) conditions.push(`EXTRACT(YEAR FROM exp.from_date) >= ${experience_from_year}`);
+        if (experience_to_year) conditions.push(`EXTRACT(YEAR FROM exp.to_date) <= ${experience_to_year}`);
+        if (event_year) conditions.push(`EXTRACT(YEAR FROM e.event_date) = ${event_year}`);
+
+        const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+        const offset = (page - 1) * limit;
+        const validSortFields = ["name", "email_address", "phone_number", "created_at", "dob"];
+        const sortField = validSortFields.includes(sort_by) ? sort_by : "name";
+        const sortDirection = sort_order.toUpperCase() === "DESC" ? "DESC" : "ASC";
+
+        // Main query using postgres.js template literals
+        const contacts = await db`
+            SELECT DISTINCT 
+                c.*,
+                ca.street, ca.city, ca.state, ca.country, ca.zipcode,
+                ce.pg_course_name, ce.pg_college, ce.pg_university, 
+                ce.pg_from_date, ce.pg_to_date,
+                ce.ug_course_name, ce.ug_college, ce.ug_university, 
+                ce.ug_from_date, ce.ug_to_date
+            FROM contact c
+            LEFT JOIN contact_address ca ON c.contact_id = ca.contact_id
+            LEFT JOIN contact_education ce ON c.contact_id = ce.contact_id
+            LEFT JOIN contact_experience exp ON c.contact_id = exp.contact_id
+            LEFT JOIN event e ON c.contact_id = e.contact_id
+            ${whereClause ? db.unsafe(whereClause) : db``}
+            ORDER BY ${db.unsafe(`c.${sortField} ${sortDirection}`)}
+            LIMIT ${limit} OFFSET ${offset}
+        `;
+
+        // Get total count for pagination
+        const [countResult] = await db`
+            SELECT COUNT(DISTINCT c.contact_id) as total
+            FROM contact c
+            LEFT JOIN contact_address ca ON c.contact_id = ca.contact_id
+            LEFT JOIN contact_education ce ON c.contact_id = ce.contact_id
+            LEFT JOIN contact_experience exp ON c.contact_id = exp.contact_id
+            LEFT JOIN event e ON c.contact_id = e.contact_id
+            ${whereClause ? db.unsafe(whereClause) : db``}
+        `;
+
+        const totalContacts = parseInt(countResult.total);
+        const totalPages = Math.ceil(totalContacts / limit);
+
+        // Get detailed data for each contact
+        const contactsWithDetails = await Promise.all(
+            contacts.map(async (contact) => {
+                // Get all experiences for this contact
+                const experiences = await db`
+                    SELECT * FROM contact_experience 
+                    WHERE contact_id = ${contact.contact_id} 
+                    ORDER BY from_date DESC
+                `;
+
+                // Get all events for this contact
+                const events = await db`
+                    SELECT * FROM event 
+                    WHERE contact_id = ${contact.contact_id} 
+                    ORDER BY event_date DESC
+                `;
+
+                return {
+                    ...contact,
+                    experiences: experiences,
+                    events: events,
+                };
+            })
+        );
+
+        return res.status(200).json({
+            message: "Contacts retrieved successfully!",
+            data: {
+                contacts: contactsWithDetails,
+                pagination: {
+                    current_page: parseInt(page),
+                    total_pages: totalPages,
+                    total_contacts: totalContacts,
+                    limit: parseInt(limit),
+                    has_next: page < totalPages,
+                    has_previous: page > 1,
+                },
+            },
+        });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({
+            message: "Server Error!",
+            error: err.message,
+        });
     }
 };
