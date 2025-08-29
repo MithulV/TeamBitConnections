@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Search, ChevronDown, Trash2, X } from "lucide-react";
+import { Search, ChevronDown, Trash2, X, Grid3X3 } from "lucide-react";
 import ContactCard from "../components/MiddleManCard";
 import DetailsInput from "../components/DetailsInput";
 import Header from "../components/Header";
@@ -150,6 +150,30 @@ const MiddleManHome = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isEditing, setIsEditing] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
+  const [isGridModalOpen, setIsGridModalOpen] = useState(false);
+
+  // Filter states
+  const [activeFilters, setActiveFilters] = useState({
+    skills: [],
+    gender: [],
+    nationality: [],
+    marital_status: [],
+    age: [],
+    city: [],
+    state: [],
+    country: [],
+    pg_course_name: [],
+    pg_college: [],
+    pg_university: [],
+    ug_course_name: [],
+    ug_college: [],
+    ug_university: [],
+    job_title: [],
+    company: [],
+    department: [],
+    event_name: [],
+  });
+  const [expandedSections, setExpandedSections] = useState({});
 
   // Delete modal states with loading
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -381,6 +405,14 @@ const MiddleManHome = () => {
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
                 </div>
+                {/* Grid Icon Button */}
+                <button
+                  onClick={() => setIsGridModalOpen(true)}
+                  className="p-3 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+                  title="Open Grid View"
+                >
+                  <Grid3X3 size={20} className="text-gray-600" />
+                </button>
               </div>
 
               {/* Contact Cards Grid */}
@@ -409,6 +441,548 @@ const MiddleManHome = () => {
           )}
         </div>
       </div>
+
+      {/* Right Side Grid Modal */}
+      {isGridModalOpen && (
+        <div className="fixed inset-0 z-50 flex justify-end">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-transparent"
+            onClick={() => setIsGridModalOpen(false)}
+          />
+
+          {/* Modal Content - Right Side */}
+          <div className="relative z-10 mt-16 mr-4 w-80 bg-white rounded-lg shadow-2xl border border-gray-200 transform transition-transform duration-300 ease-in-out max-h-[80vh] overflow-y-auto">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <h2 className="text-lg font-semibold text-gray-900">Filters</h2>
+              <button
+                onClick={() => setIsGridModalOpen(false)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X size={20} className="text-gray-500" />
+              </button>
+            </div>
+
+            {/* Modal Body - Filter Content */}
+            <div className="p-4 space-y-4">
+              {/* Skills Filter */}
+              <div className="border-b border-gray-200 pb-3">
+                <button
+                  onClick={() =>
+                    setExpandedSections((prev) => ({
+                      ...prev,
+                      skills: !prev.skills,
+                    }))
+                  }
+                  className="flex items-center justify-between w-full text-left"
+                >
+                  <span className="font-medium text-gray-900">Skills</span>
+                  <ChevronDown
+                    className={`w-4 h-4 transform transition-transform ${
+                      expandedSections.skills ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+                {expandedSections.skills && (
+                  <div className="mt-2 space-y-2 max-h-32 overflow-y-auto">
+                    {[
+                      "JavaScript",
+                      "React",
+                      "Node.js",
+                      "Python",
+                      "Java",
+                      "C++",
+                      "SQL",
+                      "MongoDB",
+                    ].map((skill) => (
+                      <label
+                        key={skill}
+                        className="flex items-center space-x-2"
+                      >
+                        <input
+                          type="checkbox"
+                          className="text-blue-600 focus:ring-blue-500 rounded"
+                          checked={activeFilters.skills.includes(skill)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setActiveFilters((prev) => ({
+                                ...prev,
+                                skills: [...prev.skills, skill],
+                              }));
+                            } else {
+                              setActiveFilters((prev) => ({
+                                ...prev,
+                                skills: prev.skills.filter((s) => s !== skill),
+                              }));
+                            }
+                          }}
+                        />
+                        <span className="text-sm text-gray-600">{skill}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Basic Info Filters */}
+              <div className="border-b border-gray-200 pb-3">
+                <button
+                  onClick={() =>
+                    setExpandedSections((prev) => ({
+                      ...prev,
+                      basicInfo: !prev.basicInfo,
+                    }))
+                  }
+                  className="flex items-center justify-between w-full text-left"
+                >
+                  <span className="font-medium text-gray-900">
+                    Basic Information
+                  </span>
+                  <ChevronDown
+                    className={`w-4 h-4 transform transition-transform ${
+                      expandedSections.basicInfo ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+                {expandedSections.basicInfo && (
+                  <div className="mt-2 space-y-3">
+                    {/* Gender */}
+                    <div>
+                      <span className="text-sm font-medium text-gray-700">
+                        Gender
+                      </span>
+                      <div className="mt-1 space-y-1">
+                        {["Male", "Female", "Other"].map((gender) => (
+                          <label
+                            key={gender}
+                            className="flex items-center space-x-2"
+                          >
+                            <input
+                              type="checkbox"
+                              className="text-blue-600 focus:ring-blue-500 rounded"
+                              checked={activeFilters.gender.includes(gender)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setActiveFilters((prev) => ({
+                                    ...prev,
+                                    gender: [...prev.gender, gender],
+                                  }));
+                                } else {
+                                  setActiveFilters((prev) => ({
+                                    ...prev,
+                                    gender: prev.gender.filter(
+                                      (g) => g !== gender
+                                    ),
+                                  }));
+                                }
+                              }}
+                            />
+                            <span className="text-sm text-gray-600">
+                              {gender}
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Marital Status */}
+                    <div>
+                      <span className="text-sm font-medium text-gray-700">
+                        Marital Status
+                      </span>
+                      <div className="mt-1 space-y-1">
+                        {["Single", "Married", "Divorced", "Widowed"].map(
+                          (status) => (
+                            <label
+                              key={status}
+                              className="flex items-center space-x-2"
+                            >
+                              <input
+                                type="checkbox"
+                                className="text-blue-600 focus:ring-blue-500 rounded"
+                                checked={activeFilters.marital_status.includes(
+                                  status
+                                )}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setActiveFilters((prev) => ({
+                                      ...prev,
+                                      marital_status: [
+                                        ...prev.marital_status,
+                                        status,
+                                      ],
+                                    }));
+                                  } else {
+                                    setActiveFilters((prev) => ({
+                                      ...prev,
+                                      marital_status:
+                                        prev.marital_status.filter(
+                                          (s) => s !== status
+                                        ),
+                                    }));
+                                  }
+                                }}
+                              />
+                              <span className="text-sm text-gray-600">
+                                {status}
+                              </span>
+                            </label>
+                          )
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Location Filters */}
+              <div className="border-b border-gray-200 pb-3">
+                <button
+                  onClick={() =>
+                    setExpandedSections((prev) => ({
+                      ...prev,
+                      location: !prev.location,
+                    }))
+                  }
+                  className="flex items-center justify-between w-full text-left"
+                >
+                  <span className="font-medium text-gray-900">Location</span>
+                  <ChevronDown
+                    className={`w-4 h-4 transform transition-transform ${
+                      expandedSections.location ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+                {expandedSections.location && (
+                  <div className="mt-2 space-y-3">
+                    {/* Country */}
+                    <div>
+                      <span className="text-sm font-medium text-gray-700">
+                        Country
+                      </span>
+                      <div className="mt-1 space-y-1 max-h-24 overflow-y-auto">
+                        {[
+                          "USA",
+                          "Canada",
+                          "UK",
+                          "Australia",
+                          "Germany",
+                          "France",
+                          "India",
+                          "Japan",
+                        ].map((country) => (
+                          <label
+                            key={country}
+                            className="flex items-center space-x-2"
+                          >
+                            <input
+                              type="checkbox"
+                              className="text-blue-600 focus:ring-blue-500 rounded"
+                              checked={activeFilters.country.includes(country)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setActiveFilters((prev) => ({
+                                    ...prev,
+                                    country: [...prev.country, country],
+                                  }));
+                                } else {
+                                  setActiveFilters((prev) => ({
+                                    ...prev,
+                                    country: prev.country.filter(
+                                      (c) => c !== country
+                                    ),
+                                  }));
+                                }
+                              }}
+                            />
+                            <span className="text-sm text-gray-600">
+                              {country}
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Education Filters */}
+              <div className="border-b border-gray-200 pb-3">
+                <button
+                  onClick={() =>
+                    setExpandedSections((prev) => ({
+                      ...prev,
+                      education: !prev.education,
+                    }))
+                  }
+                  className="flex items-center justify-between w-full text-left"
+                >
+                  <span className="font-medium text-gray-900">Education</span>
+                  <ChevronDown
+                    className={`w-4 h-4 transform transition-transform ${
+                      expandedSections.education ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+                {expandedSections.education && (
+                  <div className="mt-2 space-y-3">
+                    {/* PG Courses */}
+                    <div>
+                      <span className="text-sm font-medium text-gray-700">
+                        PG Courses
+                      </span>
+                      <div className="mt-1 space-y-1 max-h-24 overflow-y-auto">
+                        {["MBA", "MS", "PhD", "M.Tech", "MA", "M.Com"].map(
+                          (course) => (
+                            <label
+                              key={course}
+                              className="flex items-center space-x-2"
+                            >
+                              <input
+                                type="checkbox"
+                                className="text-blue-600 focus:ring-blue-500 rounded"
+                                checked={activeFilters.pg_course_name.includes(
+                                  course
+                                )}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setActiveFilters((prev) => ({
+                                      ...prev,
+                                      pg_course_name: [
+                                        ...prev.pg_course_name,
+                                        course,
+                                      ],
+                                    }));
+                                  } else {
+                                    setActiveFilters((prev) => ({
+                                      ...prev,
+                                      pg_course_name:
+                                        prev.pg_course_name.filter(
+                                          (c) => c !== course
+                                        ),
+                                    }));
+                                  }
+                                }}
+                              />
+                              <span className="text-sm text-gray-600">
+                                {course}
+                              </span>
+                            </label>
+                          )
+                        )}
+                      </div>
+                    </div>
+
+                    {/* UG Courses */}
+                    <div>
+                      <span className="text-sm font-medium text-gray-700">
+                        UG Courses
+                      </span>
+                      <div className="mt-1 space-y-1 max-h-24 overflow-y-auto">
+                        {["B.Tech", "B.E", "BCA", "B.Com", "BA", "B.Sc"].map(
+                          (course) => (
+                            <label
+                              key={course}
+                              className="flex items-center space-x-2"
+                            >
+                              <input
+                                type="checkbox"
+                                className="text-blue-600 focus:ring-blue-500 rounded"
+                                checked={activeFilters.ug_course_name.includes(
+                                  course
+                                )}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setActiveFilters((prev) => ({
+                                      ...prev,
+                                      ug_course_name: [
+                                        ...prev.ug_course_name,
+                                        course,
+                                      ],
+                                    }));
+                                  } else {
+                                    setActiveFilters((prev) => ({
+                                      ...prev,
+                                      ug_course_name:
+                                        prev.ug_course_name.filter(
+                                          (c) => c !== course
+                                        ),
+                                    }));
+                                  }
+                                }}
+                              />
+                              <span className="text-sm text-gray-600">
+                                {course}
+                              </span>
+                            </label>
+                          )
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Work Experience Filters */}
+              <div className="border-b border-gray-200 pb-3">
+                <button
+                  onClick={() =>
+                    setExpandedSections((prev) => ({
+                      ...prev,
+                      work: !prev.work,
+                    }))
+                  }
+                  className="flex items-center justify-between w-full text-left"
+                >
+                  <span className="font-medium text-gray-900">
+                    Work Experience
+                  </span>
+                  <ChevronDown
+                    className={`w-4 h-4 transform transition-transform ${
+                      expandedSections.work ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+                {expandedSections.work && (
+                  <div className="mt-2 space-y-3">
+                    {/* Job Titles */}
+                    <div>
+                      <span className="text-sm font-medium text-gray-700">
+                        Job Title
+                      </span>
+                      <div className="mt-1 space-y-1 max-h-24 overflow-y-auto">
+                        {[
+                          "Software Engineer",
+                          "Product Manager",
+                          "Designer",
+                          "Data Scientist",
+                          "Marketing Manager",
+                          "Sales Executive",
+                        ].map((title) => (
+                          <label
+                            key={title}
+                            className="flex items-center space-x-2"
+                          >
+                            <input
+                              type="checkbox"
+                              className="text-blue-600 focus:ring-blue-500 rounded"
+                              checked={activeFilters.job_title.includes(title)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setActiveFilters((prev) => ({
+                                    ...prev,
+                                    job_title: [...prev.job_title, title],
+                                  }));
+                                } else {
+                                  setActiveFilters((prev) => ({
+                                    ...prev,
+                                    job_title: prev.job_title.filter(
+                                      (t) => t !== title
+                                    ),
+                                  }));
+                                }
+                              }}
+                            />
+                            <span className="text-sm text-gray-600">
+                              {title}
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Companies */}
+                    <div>
+                      <span className="text-sm font-medium text-gray-700">
+                        Company
+                      </span>
+                      <div className="mt-1 space-y-1 max-h-24 overflow-y-auto">
+                        {[
+                          "Google",
+                          "Microsoft",
+                          "Amazon",
+                          "Apple",
+                          "Meta",
+                          "Netflix",
+                          "Tesla",
+                          "IBM",
+                        ].map((company) => (
+                          <label
+                            key={company}
+                            className="flex items-center space-x-2"
+                          >
+                            <input
+                              type="checkbox"
+                              className="text-blue-600 focus:ring-blue-500 rounded"
+                              checked={activeFilters.company.includes(company)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setActiveFilters((prev) => ({
+                                    ...prev,
+                                    company: [...prev.company, company],
+                                  }));
+                                } else {
+                                  setActiveFilters((prev) => ({
+                                    ...prev,
+                                    company: prev.company.filter(
+                                      (c) => c !== company
+                                    ),
+                                  }));
+                                }
+                              }}
+                            />
+                            <span className="text-sm text-gray-600">
+                              {company}
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Filter Actions */}
+              <div className="pt-2 space-y-2">
+                <button
+                  onClick={() => {
+                    setActiveFilters({
+                      skills: [],
+                      gender: [],
+                      nationality: [],
+                      marital_status: [],
+                      age: [],
+                      city: [],
+                      state: [],
+                      country: [],
+                      pg_course_name: [],
+                      pg_college: [],
+                      pg_university: [],
+                      ug_course_name: [],
+                      ug_college: [],
+                      ug_university: [],
+                      job_title: [],
+                      company: [],
+                      department: [],
+                      event_name: [],
+                    });
+                  }}
+                  className="w-full px-3 py-2 text-sm text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                >
+                  Clear All Filters
+                </button>
+                <button
+                  onClick={() => setIsGridModalOpen(false)}
+                  className="w-full px-3 py-2 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Apply Filters
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Delete Confirmation Modal with Loading State */}
       <DeleteConfirmationModal
