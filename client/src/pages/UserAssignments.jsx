@@ -14,7 +14,8 @@ const DeleteConfirmationModal = ({
     onConfirm,
     onCancel,
     itemName = "this user",
-    deleteType = "contact", // Add deleteType prop to distinguish between different deletion types
+    deleteType = "contact",
+    isDeleting = false, // Add isDeleting prop
 }) => {
     if (!isOpen) return null;
 
@@ -34,7 +35,7 @@ const DeleteConfirmationModal = ({
             {/* Backdrop with blur effect */}
             <div
                 className="absolute inset-0 bg-black/60 bg-opacity-50 backdrop-blur-sm transition-all duration-300"
-                onClick={onCancel}
+                onClick={!isDeleting ? onCancel : undefined} // Prevent closing during deletion
             ></div>
 
             {/* Modal */}
@@ -69,15 +70,43 @@ const DeleteConfirmationModal = ({
                 <div className="flex justify-end gap-3 px-6 pb-6">
                     <button
                         onClick={onCancel}
-                        className="px-6 py-2 text-sm font-medium text-blue-600 bg-transparent border-none rounded-md hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-all duration-200 uppercase tracking-wide"
+                        disabled={isDeleting}
+                        className="px-6 py-2 text-sm font-medium text-blue-600 bg-transparent border-none rounded-md hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-all duration-200 uppercase tracking-wide disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         Cancel
                     </button>
                     <button
                         onClick={onConfirm}
-                        className="px-6 py-2 text-sm font-medium text-red-600 bg-transparent border-none rounded-md hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 transition-all duration-200 uppercase tracking-wide"
+                        disabled={isDeleting}
+                        className="px-6 py-2 text-sm font-medium text-red-600 bg-transparent border-none rounded-md hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 transition-all duration-200 uppercase tracking-wide disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 min-w-[100px]"
                     >
-                        Delete
+                        {isDeleting ? (
+                            <>
+                                <svg
+                                    className="animate-spin h-4 w-4 text-red-600"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <circle
+                                        className="opacity-25"
+                                        cx="12"
+                                        cy="12"
+                                        r="10"
+                                        stroke="currentColor"
+                                        strokeWidth="4"
+                                    ></circle>
+                                    <path
+                                        className="opacity-75"
+                                        fill="currentColor"
+                                        d="M4 12a8 8 0 018-8v8z"
+                                    ></path>
+                                </svg>
+                                Deleting...
+                            </>
+                        ) : (
+                            "Delete"
+                        )}
                     </button>
                 </div>
             </div>
@@ -93,6 +122,7 @@ function UserAssignments() {
     const [loading, setLoading] = useState(true);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [userToDelete, setUserToDelete] = useState(null);
+    const [isDeleting, setIsDeleting] = useState(false); // Add isDeleting state
     const [alert, setAlert] = useState({
         isOpen: false,
         severity: "success",
@@ -203,21 +233,15 @@ function UserAssignments() {
         }
     };
 
-    // Updated confirmDelete function to handle assignment deletion
+    // Updated confirmDelete function with loading state
     const confirmDelete = async () => {
         if (userToDelete) {
+            setIsDeleting(true); // Start loading
             try {
                 switch (userToDelete.type) {
                     case "assignment":
                         // Call assignment deletion API - this removes the assignment, not the contact
-                        if (userToDelete.assignment_id) {
-                            await axios.delete(`http://localhost:8000/api/delete-assignment/${userToDelete.assignment_id}`);
-                        } else {
-                            // If no assignment_id, use contact_id based deletion (adjust API endpoint as needed)
-                            await axios.delete(`http://localhost:8000/api/remove-assignment-by-contact/${userToDelete.id}`);
-                        }
-
-                        // Remove from UI
+                        await axios.delete(`http://localhost:8000/api/delete-assignment/${userToDelete.assignment_id}`);
                         setData((prevData) =>
                             prevData.filter(user => user.contact_id !== userToDelete.id)
                         );
@@ -244,11 +268,14 @@ function UserAssignments() {
             } catch (error) {
                 showAlert("error", "Failed to delete. Please try again.");
                 console.log("Error deleting:", error);
+            } finally {
+                setIsDeleting(false); // Stop loading
             }
         }
     };
 
     const cancelDelete = () => {
+        if (isDeleting) return; // Prevent closing during deletion
         setShowDeleteModal(false);
         setUserToDelete(null);
     };
@@ -413,13 +440,14 @@ function UserAssignments() {
                                 </div>
                             ) : null}
 
-                            {/* Delete Confirmation Modal */}
+                            {/* Delete Confirmation Modal with Loading State */}
                             <DeleteConfirmationModal
                                 isOpen={showDeleteModal}
                                 onConfirm={confirmDelete}
                                 onCancel={cancelDelete}
                                 itemName={userToDelete?.name}
                                 deleteType={userToDelete?.type}
+                                isDeleting={isDeleting} // Pass isDeleting state
                             />
                         </>
                     )}
