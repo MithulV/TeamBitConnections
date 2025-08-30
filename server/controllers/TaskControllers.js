@@ -1,11 +1,11 @@
-import cron from 'node-cron'
-import db from '../src/config/db.js'
-import dotenv from 'dotenv'
-import nodemailer from 'nodemailer';
+import cron from "node-cron";
+import db from "../src/config/db.js";
+import dotenv from "dotenv";
+import nodemailer from "nodemailer";
 // Schedule updated_at 2 month check daily at 6:00 AM
-cron.schedule('0 9 * * *', async () => {
-    console.log("task : ", new Date());
-    await checkForTask();
+cron.schedule("0 9 * * *", async () => {
+  console.log("task : ", new Date());
+  await checkForTask();
 });
 // Schedule birthday check daily at 6:00 AM
 cron.schedule("0 6 * * *", async () => {
@@ -45,10 +45,10 @@ const checkForUpdatedAtOneMonth = async (id) => {
       deadline.setDate(deadline.getDate() + 5); // 5 days from now
       const formattedDeadline = deadline.toISOString().split("T")[0]; // Format: YYYY-MM-DD
 
-            const taskDescription = `Update the details of ${result[0].name} whose phone number and email is ${result[0].phone_number} and ${result[0].email_address}`;
+      const taskDescription = `Update the details of ${result[0].name} whose phone number and email is ${result[0].phone_number} and ${result[0].email_address}`;
 
-            // First, check if the task already exists
-            const existingTask = await db`
+      // First, check if the task already exists
+      const existingTask = await db`
                 SELECT 1 FROM tasks 
                 WHERE task_assigned_category = ${result[0].category}
                 AND task_title = ${"Contact Details Updations"}
@@ -56,9 +56,9 @@ const checkForUpdatedAtOneMonth = async (id) => {
                 AND task_description = ${taskDescription}
                 LIMIT 1`;
 
-            // Only insert if no existing task found
-            if (!existingTask || existingTask.length === 0) {
-                const insertResult = await db`
+      // Only insert if no existing task found
+      if (!existingTask || existingTask.length === 0) {
+        const insertResult = await db`
                     INSERT INTO tasks (task_assigned_category, task_title, task_description, task_deadline, task_type) 
                     VALUES (
                         ${result[0].category},
@@ -68,41 +68,86 @@ const checkForUpdatedAtOneMonth = async (id) => {
                         ${"automated"}
                     )`;
 
-                console.log("Task created:", insertResult);
-            } else {
-                console.log("Task already exists, skipping insertion");
-            }
-        }
-    } catch (error) {
-        console.error("Error in checkForUpdatedAtOneMonth:", error);
+        console.log("Task created:", insertResult);
+      } else {
+        console.log("Task already exists, skipping insertion");
+      }
     }
+  } catch (error) {
+    console.error("Error in checkForUpdatedAtOneMonth:", error);
+  }
 };
-
 
 export const GetTasks = async (req, res) => {
-    const { category } = req.query;
-    try {
-        const tasks = await db`SELECT * FROM tasks WHERE task_completion=FALSE AND task_assigned_category=${category} ORDER BY task_deadline ASC`;
+  const { category } = req.query;
+  try {
+    // Get pending tasks
+    const tasks =
+      await db`SELECT * FROM tasks WHERE task_completion=FALSE AND task_assigned_category=${category}`;
 
-        return res.status(200).json({ success: true, data: tasks });
-    } catch (error) {
-        console.error("Error fetching tasks:", error);
-        return res.status(500).json({ success: false, error: "An internal server error occurred." });
-    }
+    // Get total count of all tasks for this category
+    const totalCount =
+      await db`SELECT COUNT(*) as count FROM tasks WHERE task_assigned_category=${category}`;
 
-    return res.status(200).json({ success: true, data: tasks });
+    // Get completed count for this category
+    const completedCount =
+      await db`SELECT COUNT(*) as count FROM tasks WHERE task_assigned_category=${category} AND task_completion=TRUE`;
+
+    // Get breakdown by task type for this category
+    const assignedTotal =
+      await db`SELECT COUNT(*) as count FROM tasks WHERE task_assigned_category=${category} AND task_type='assigned'`;
+    const assignedCompleted =
+      await db`SELECT COUNT(*) as count FROM tasks WHERE task_assigned_category=${category} AND task_type='assigned' AND task_completion=TRUE`;
+
+    const automatedTotal =
+      await db`SELECT COUNT(*) as count FROM tasks WHERE task_assigned_category=${category} AND task_type='automated'`;
+    const automatedCompleted =
+      await db`SELECT COUNT(*) as count FROM tasks WHERE task_assigned_category=${category} AND task_type='automated' AND task_completion=TRUE`;
+
+    const stats = {
+      total: parseInt(totalCount[0].count),
+      completed: parseInt(completedCount[0].count),
+      pending: tasks.length,
+      breakdown: {
+        assigned: {
+          total: parseInt(assignedTotal[0].count),
+          completed: parseInt(assignedCompleted[0].count),
+          pending: tasks.filter((task) => task.task_type === "assigned").length,
+        },
+        automated: {
+          total: parseInt(automatedTotal[0].count),
+          completed: parseInt(automatedCompleted[0].count),
+          pending: tasks.filter((task) => task.task_type === "automated")
+            .length,
+        },
+      },
+    };
+
+    return res.status(200).json({
+      success: true,
+      data: tasks,
+      stats: stats,
+    });
+  } catch (error) {
+    console.error("Error fetching tasks:", error);
+    return res
+      .status(500)
+      .json({ success: false, error: "An internal server error occurred." });
+  }
 };
-export const CompleteTask=async(req,res)=>{
-    const {id}=req.params;
-    try {
-        const task= await db`UPDATE tasks SET task_completion = TRUE WHERE id=${id}`;
-        return res.status(200).json({success:true});
-        
-    } catch (error) {
-        console.error("Error fetching tasks:", error);
-        return res.status(500).json({ success: false, error: "An internal server error occurred." });
-    }
-}
+export const CompleteTask = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const task =
+      await db`UPDATE tasks SET task_completion = TRUE WHERE id=${id}`;
+    return res.status(200).json({ success: true });
+  } catch (error) {
+    console.error("Error fetching tasks:", error);
+    return res
+      .status(500)
+      .json({ success: false, error: "An internal server error occurred." });
+  }
+};
 
 dotenv.config();
 // Configure email transporter

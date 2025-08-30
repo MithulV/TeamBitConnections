@@ -4,103 +4,27 @@ import {
   Filter,
   Calendar,
   CheckCircle2,
-  Eye,
   Clock,
   Target,
-  Trophy,
+  Eye,
+  X,
 } from "lucide-react";
 import Header from "../components/Header";
 import { useAuthStore } from "../store/AuthStore";
 import axios from "axios";
-// Mock API functions (replace with your actual API calls)
-const mockTasks = [
-  {
-    id: 1,
-    task_title: "Verify Customer Address",
-    task_type: "assigned",
-    task_assigned_category: "high",
-    task_assigned_date: "2025-08-20",
-    task_deadline: "2025-08-25",
-    task_description:
-      "Check and confirm customer's address record for account verification. This includes validating the provided address against government records and ensuring all details are accurate.",
-    status: "pending",
-  },
-  {
-    id: 2,
-    task_title: "Process Payment Verification",
-    task_type: "automated",
-    task_assigned_category: "medium",
-    task_assigned_date: "2025-08-18",
-    task_deadline: "2025-08-23",
-    task_description:
-      "Automated verification of customer payment method and transaction history. System will validate payment credentials and flag any suspicious activities.",
-    status: "pending",
-  },
-  {
-    id: 3,
-    task_title: "Update Customer Profile",
-    task_type: "assigned",
-    task_assigned_category: "low",
-    task_assigned_date: "2025-08-19",
-    task_deadline: "2025-08-26",
-    task_description:
-      "Review and update customer information based on recent documentation. Ensure all profile fields are complete and accurate.",
-    status: "pending",
-  },
-  {
-    id: 4,
-    task_title: "Send Welcome Email",
-    task_type: "automated",
-    task_assigned_category: "low",
-    task_assigned_date: "2025-08-15",
-    task_deadline: "2025-08-20",
-    task_description:
-      "Automated welcome email sent to new customer after account creation. Include onboarding materials and next steps.",
-    status: "completed",
-  },
-  {
-    id: 5,
-    task_title: "Schedule Follow-up Call",
-    task_type: "assigned",
-    task_assigned_category: "high",
-    task_assigned_date: "2025-08-22",
-    task_deadline: "2025-08-27",
-    task_description:
-      "Schedule and conduct follow-up call with customer regarding service satisfaction. Document any concerns or feedback.",
-    status: "pending",
-  },
-  {
-    id: 6,
-    task_title: "Generate Monthly Report",
-    task_type: "reporting",
-    task_assigned_category: "medium",
-    task_assigned_date: "2025-08-25",
-    task_deadline: "2025-08-30",
-    task_description:
-      "Automated generation of monthly customer activity and engagement report. Include metrics on customer satisfaction and service utilization.",
-    status: "pending",
-  },
-];
-
-const fetchTasks = async () => {
-  // Simulate API call
-  return new Promise((resolve) => {
-    setTimeout(() => resolve(mockTasks), 500);
-  });
-};
-
-const updateTaskStatus = async (taskId, status) => {
-  // Simulate API call
-  return new Promise((resolve) => {
-    setTimeout(() => resolve({ success: true }), 300);
-  });
-};
 
 const TasksPage = () => {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState("All");
+  const [selectedTask, setSelectedTask] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+  const [taskStats, setTaskStats] = useState({
+    total: 0,
+    completed: 0,
+    pending: 0,
+  });
 
   const authStore = useAuthStore();
   console.log(authStore.role);
@@ -127,14 +51,19 @@ const TasksPage = () => {
 
         if (category) {
           const response = await axios.get(
-            `http://localhost:8000/api/get-tasks/?category=${category}`,
+            `http://localhost:8000/api/get-tasks/?category=${category}`
           );
 
           setTasks(response.data.data || []);
+          setTaskStats(
+            response.data.stats || { total: 0, completed: 0, pending: 0 }
+          );
           console.log("Tasks fetched:", response.data);
+          console.log("Task stats:", response.data.stats);
         } else {
           console.log("No valid category found, setting empty tasks");
           setTasks([]);
+          setTaskStats({ total: 0, completed: 0, pending: 0 });
         }
       } catch (error) {
         console.error("Error fetching tasks:", error);
@@ -153,12 +82,43 @@ const TasksPage = () => {
 
   const handleCompleteTask = async (taskId) => {
     try {
-      await updateTaskStatus(taskId, "completed");
-      setTasks((prevTasks) =>
-        prevTasks.map((task) =>
-          task.id === taskId ? { ...task, status: "completed" } : task
-        )
+      // Find the task being completed to know its type
+      const taskToComplete = tasks.find((task) => task.id === taskId);
+
+      const response = await axios.put(
+        `http://localhost:8000/api/complete-task/${taskId}`
       );
+
+      if (response.data.success) {
+        // Remove the completed task from the current tasks list
+        setTasks((prevTasks) => prevTasks.filter((task) => task.id !== taskId));
+
+        // Update stats to reflect the completion
+        setTaskStats((prevStats) => {
+          const newStats = {
+            ...prevStats,
+            completed: prevStats.completed + 1,
+            pending: prevStats.pending - 1,
+          };
+
+          // Update breakdown stats if breakdown exists and we know the task type
+          if (prevStats.breakdown && taskToComplete) {
+            const taskType = taskToComplete.task_type;
+            if (taskType === "assigned" || taskType === "automated") {
+              newStats.breakdown = {
+                ...prevStats.breakdown,
+                [taskType]: {
+                  ...prevStats.breakdown[taskType],
+                  completed: prevStats.breakdown[taskType].completed + 1,
+                  pending: prevStats.breakdown[taskType].pending - 1,
+                },
+              };
+            }
+          }
+
+          return newStats;
+        });
+      }
     } catch (error) {
       console.error("Error completing task:", error);
     }
@@ -169,6 +129,11 @@ const TasksPage = () => {
     setShowModal(true);
   };
 
+  const closeModal = () => {
+    setShowModal(false);
+    setSelectedTask(null);
+  };
+
   const filteredTasks = tasks.filter((task) => {
     const matchesSearch =
       task.task_title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -177,23 +142,41 @@ const TasksPage = () => {
     const matchesFilter =
       filterType === "All" ||
       (filterType === "Assigned" && task.task_type === "assigned") ||
-      (filterType === "Automated" && task.task_type === "automated") ||
-      (filterType === "Reporting" && task.task_type === "reporting") ||
-      (filterType === "Completed" && task.status === "completed");
+      (filterType === "Automated" && task.task_type === "automated");
 
     return matchesSearch && matchesFilter;
   });
 
-  const pendingTasks = filteredTasks.filter(
-    (task) => task.status === "pending"
-  );
-  const completedTasks = filteredTasks.filter(
-    (task) => task.status === "completed"
-  );
-  const totalTasks = filteredTasks.length;
-  const completedCount = completedTasks.length;
+  // Calculate progress based on filtered tasks using real breakdown data
+  const pendingTasks = filteredTasks;
+
+  // Get actual stats for the current filter from backend breakdown
+  const getFilteredStats = () => {
+    if (filterType === "All") {
+      return {
+        completed: taskStats.completed,
+        total: taskStats.total,
+        pending: taskStats.pending,
+      };
+    } else if (filterType === "Assigned") {
+      return (
+        taskStats.breakdown?.assigned || { completed: 0, total: 0, pending: 0 }
+      );
+    } else if (filterType === "Automated") {
+      return (
+        taskStats.breakdown?.automated || { completed: 0, total: 0, pending: 0 }
+      );
+    }
+    return { completed: 0, total: 0, pending: 0 };
+  };
+
+  const filteredStats = getFilteredStats();
+  const filteredCompletedCount = filteredStats.completed;
+  const filteredTotalTasks = filteredStats.total;
   const progressPercentage =
-    totalTasks > 0 ? (completedCount / totalTasks) * 100 : 0;
+    filteredTotalTasks > 0
+      ? (filteredCompletedCount / filteredTotalTasks) * 100
+      : 0;
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -224,7 +207,7 @@ const TasksPage = () => {
     <div className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg transition-all duration-200 hover:border-gray-300">
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1">
-          <h3 className="font-semibold text-gray-900 text-lg mb-2">
+          <h3 className="font-semibold text-gray-900 text-lg mb-2 line-clamp-1">
             {task.task_title}
           </h3>
           <div className="flex items-center gap-3 mb-3">
@@ -245,41 +228,43 @@ const TasksPage = () => {
             </span>
           </div>
           <div className="flex items-center gap-4 text-sm text-gray-600 mb-3">
-            <span className="flex items-center gap-1">
+            <span className="flex items-center gap-1 bg-green-100 rounded-2xl p-1">
               <Calendar size={14} />
-              Assigned: {formatDate(task.task_assigned_date)}
+              Assigned: {formatDate(task.created_at)}
             </span>
             <span
               className={`flex items-center gap-1 ${getDueDateColor(
                 task.task_deadline,
-                task.status
-              )}`}
+                "pending"
+              )} bg-red-100 rounded-2xl p-1`}
             >
               <Clock size={14} />
               Due: {formatDate(task.task_deadline)}
             </span>
           </div>
         </div>
-        {task.status === "completed" && (
-          <CheckCircle2 className="text-green-500 ml-2" size={24} />
-        )}
       </div>
 
       <p className="text-gray-600 text-sm mb-4 line-clamp-3">
         {task.task_description}
       </p>
 
-      {task.status === "pending" && (
-        <div className="flex gap-2">
-          <button
-            onClick={() => handleCompleteTask(task.id)}
-            className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors"
-          >
-            <CheckCircle2 size={16} />
-            Complete
-          </button>
-        </div>
-      )}
+      <div className="flex gap-2">
+        <button
+          onClick={() => handleViewDetails(task)}
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
+        >
+          <Eye size={16} />
+          View Details
+        </button>
+        <button
+          onClick={() => handleCompleteTask(task.id)}
+          className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors"
+        >
+          <CheckCircle2 size={16} />
+          Complete
+        </button>
+      </div>
     </div>
   );
 
@@ -326,8 +311,6 @@ const TasksPage = () => {
                   <option value="All">All Tasks</option>
                   <option value="Assigned">Assigned</option>
                   <option value="Automated">Automated</option>
-                  <option value="Reporting">Reporting</option>
-                  <option value="Completed">Completed</option>
                 </select>
               </div>
             </div>
@@ -337,10 +320,12 @@ const TasksPage = () => {
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <Target className="text-blue-600" size={20} />
-                  <span className="font-medium text-gray-900">Progress</span>
+                  <span className="font-medium text-gray-900">
+                    Progress ({filterType} Tasks)
+                  </span>
                 </div>
                 <span className="text-sm font-medium text-gray-600">
-                  {completedCount} of {totalTasks} completed
+                  {filteredCompletedCount} of {filteredTotalTasks} completed
                 </span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-3">
@@ -350,23 +335,11 @@ const TasksPage = () => {
                 ></div>
               </div>
               <div className="text-sm text-gray-500 mt-1">
-                {progressPercentage.toFixed(0)}% complete
+                {progressPercentage.toFixed(0)}% complete •{" "}
+                {filteredTasks.length} pending
               </div>
             </div>
           </div>
-
-          {/* All tasks completed message */}
-          {pendingTasks.length === 0 && totalTasks > 0 && (
-            <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-xl border border-green-200 p-8 text-center mb-6">
-              <Trophy className="mx-auto text-green-500 mb-4" size={48} />
-              <h3 className="text-2xl font-bold text-green-800 mb-2">
-                All tasks completed! 
-              </h3>
-              <p className="text-green-600">
-                Great job! You've finished all your tasks.
-              </p>
-            </div>
-          )}
 
           {/* Tasks Grid */}
           {filteredTasks.length === 0 && searchTerm ? (
@@ -384,15 +357,116 @@ const TasksPage = () => {
               {pendingTasks.map((task) => (
                 <TaskCard key={task.id} task={task} />
               ))}
-              {filterType === "All" || filterType === "Completed"
-                ? completedTasks.map((task) => (
-                    <TaskCard key={task.id} task={task} />
-                  ))
-                : null}
             </div>
           )}
         </div>
       </div>
+
+      {/* Task Details Modal */}
+      {showModal && selectedTask && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h2 className="text-2xl font-semibold text-gray-900">
+                Task Details
+              </h2>
+              <button
+                onClick={closeModal}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X size={20} className="text-gray-500" />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6">
+              {/* Task Title */}
+              <h3 className="text-xl font-semibold text-gray-900 mb-4">
+                {selectedTask.task_title}
+              </h3>
+
+              {/* Task Type and Category */}
+              <div className="flex items-center gap-3 mb-4">
+                <span
+                  className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                    selectedTask.task_type === "assigned"
+                      ? "bg-blue-100 text-blue-700"
+                      : selectedTask.task_type === "automated"
+                      ? "bg-purple-100 text-purple-700"
+                      : "bg-gray-100 text-gray-700"
+                  }`}
+                >
+                  {selectedTask.task_type === "assigned"
+                    ? "👤 Assigned"
+                    : selectedTask.task_type === "automated"
+                    ? "🤖 Automated"
+                    : `📋 ${selectedTask.task_type}`}
+                </span>
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-700">
+                  Category: {selectedTask.task_assigned_category}
+                </span>
+              </div>
+
+              {/* Dates */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div className="flex items-center gap-2 p-3 bg-green-50 rounded-lg">
+                  <Calendar size={18} className="text-green-600" />
+                  <div>
+                    <p className="text-sm text-green-600 font-medium">
+                      Assigned Date
+                    </p>
+                    <p className="text-green-800">
+                      {formatDate(selectedTask.created_at)}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 p-3 bg-red-50 rounded-lg">
+                  <Clock size={18} className="text-red-600" />
+                  <div>
+                    <p className="text-sm text-red-600 font-medium">Due Date</p>
+                    <p className="text-red-800">
+                      {formatDate(selectedTask.task_deadline)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Description */}
+              <div className="mb-6">
+                <h4 className="text-lg font-medium text-gray-900 mb-3">
+                  Description
+                </h4>
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
+                    {selectedTask.task_description}
+                  </p>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 pt-4 border-t border-gray-200">
+                <button
+                  onClick={() => {
+                    handleCompleteTask(selectedTask.id);
+                    closeModal();
+                  }}
+                  className="flex items-center gap-2 px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors"
+                >
+                  <CheckCircle2 size={18} />
+                  Complete Task
+                </button>
+                <button
+                  onClick={closeModal}
+                  className="px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-medium transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
