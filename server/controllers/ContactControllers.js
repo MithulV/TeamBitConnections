@@ -892,3 +892,41 @@ export const GetFilteredContacts = async (req, res) => {
         });
     }
 };
+
+export const GetFilterOptions = async (req, res) => {
+    try {
+        const genders = await db`
+            SELECT DISTINCT gender as value, COUNT(*) as count 
+            FROM contact WHERE gender IS NOT NULL 
+            GROUP BY gender ORDER BY count DESC
+        `;
+
+        const categories = await db`
+            SELECT DISTINCT category as value, COUNT(*) as count 
+            FROM contact WHERE category IS NOT NULL 
+            GROUP BY category ORDER BY count DESC
+        `;
+
+        const countries = await db`
+            SELECT DISTINCT ca.country as value, COUNT(*) as count
+            FROM contact c JOIN contact_address ca ON c.contact_id = ca.contact_id
+            WHERE ca.country IS NOT NULL GROUP BY ca.country ORDER BY count DESC
+        `;
+
+        const companies = await db`
+            SELECT DISTINCT exp.company as value, COUNT(*) as count
+            FROM contact c JOIN contact_experience exp ON c.contact_id = exp.contact_id
+            WHERE exp.company IS NOT NULL GROUP BY exp.company ORDER BY count DESC
+        `;
+
+        return res.json({
+            genders,
+            categories,
+            countries,
+            companies,
+            // Add more as needed
+        });
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+};

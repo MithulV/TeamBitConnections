@@ -10,6 +10,7 @@ import {
   UpdateContactAndEvents,
   GetContactsByCategory,
   GetFilteredContacts,
+  GetFilterOptions,
 } from "../controllers/ContactControllers.js";
 
 import {
@@ -56,4 +57,5 @@ router.get("/get-assignment-by-event/:eventId", getAssignmentForEvent);
 router.delete("/delete-assignment/:assignmentId", revokeAssignment);
 router.get("/get-tasks/", GetTasks);
 router.put("/complete-task/:id", CompleteTask);
+router.get("/get-filter-options", GetFilterOptions);
 export default router;
