@@ -10,62 +10,75 @@ import {
   Trophy,
 } from "lucide-react";
 import Header from "../components/Header";
-
+import { useAuthStore } from "../store/AuthStore";
+import axios from "axios";
 // Mock API functions (replace with your actual API calls)
 const mockTasks = [
   {
     id: 1,
-    title: "Verify Customer Address",
-    type: "assigned",
+    task_title: "Verify Customer Address",
+    task_type: "assigned",
+    task_assigned_category: "high",
+    task_assigned_date: "2025-08-20",
+    task_deadline: "2025-08-25",
+    task_description:
+      "Check and confirm customer's address record for account verification. This includes validating the provided address against government records and ensuring all details are accurate.",
     status: "pending",
-    dueDate: "2025-08-25",
-    description:
-      "Check and confirm customer's address record for account verification.",
   },
   {
     id: 2,
-    title: "Process Payment Verification",
-    type: "automated",
+    task_title: "Process Payment Verification",
+    task_type: "automated",
+    task_assigned_category: "medium",
+    task_assigned_date: "2025-08-18",
+    task_deadline: "2025-08-23",
+    task_description:
+      "Automated verification of customer payment method and transaction history. System will validate payment credentials and flag any suspicious activities.",
     status: "pending",
-    dueDate: "2025-08-23",
-    description:
-      "Automated verification of customer payment method and transaction history.",
   },
   {
     id: 3,
-    title: "Update Customer Profile",
-    type: "assigned",
+    task_title: "Update Customer Profile",
+    task_type: "assigned",
+    task_assigned_category: "low",
+    task_assigned_date: "2025-08-19",
+    task_deadline: "2025-08-26",
+    task_description:
+      "Review and update customer information based on recent documentation. Ensure all profile fields are complete and accurate.",
     status: "pending",
-    dueDate: "2025-08-26",
-    description:
-      "Review and update customer information based on recent documentation.",
   },
   {
     id: 4,
-    title: "Send Welcome Email",
-    type: "automated",
+    task_title: "Send Welcome Email",
+    task_type: "automated",
+    task_assigned_category: "low",
+    task_assigned_date: "2025-08-15",
+    task_deadline: "2025-08-20",
+    task_description:
+      "Automated welcome email sent to new customer after account creation. Include onboarding materials and next steps.",
     status: "completed",
-    dueDate: "2025-08-20",
-    description:
-      "Automated welcome email sent to new customer after account creation.",
   },
   {
     id: 5,
-    title: "Schedule Follow-up Call",
-    type: "assigned",
+    task_title: "Schedule Follow-up Call",
+    task_type: "assigned",
+    task_assigned_category: "high",
+    task_assigned_date: "2025-08-22",
+    task_deadline: "2025-08-27",
+    task_description:
+      "Schedule and conduct follow-up call with customer regarding service satisfaction. Document any concerns or feedback.",
     status: "pending",
-    dueDate: "2025-08-27",
-    description:
-      "Schedule and conduct follow-up call with customer regarding service satisfaction.",
   },
   {
     id: 6,
-    title: "Generate Monthly Report",
-    type: "automated",
+    task_title: "Generate Monthly Report",
+    task_type: "reporting",
+    task_assigned_category: "medium",
+    task_assigned_date: "2025-08-25",
+    task_deadline: "2025-08-30",
+    task_description:
+      "Automated generation of monthly customer activity and engagement report. Include metrics on customer satisfaction and service utilization.",
     status: "pending",
-    dueDate: "2025-08-30",
-    description:
-      "Automated generation of monthly customer activity and engagement report.",
   },
 ];
 
@@ -88,24 +101,55 @@ const TasksPage = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState("All");
-  const [selectedTask, setSelectedTask] = useState(null);
-  const [showModal, setShowModal] = useState(false);
 
-  useEffect(() => {
-    loadTasks();
-  }, []);
+  const authStore = useAuthStore();
+  console.log(authStore.role);
 
-  const loadTasks = async () => {
-    setLoading(true);
-    try {
-      const data = await fetchTasks();
-      setTasks(data);
-    } catch (error) {
-      console.error("Error fetching tasks:", error);
-    } finally {
-      setLoading(false);
+  const getCategory = (category) => {
+    switch (category) {
+      case "cata":
+        return "A";
+      case "catb":
+        return "B";
+      case "catc":
+        return "C";
+      default:
+        return null; // Return null for unknown categories
     }
   };
+
+  useEffect(() => {
+    const fetchTaskData = async () => {
+      try {
+        const category = getCategory(authStore.role);
+        console.log("User role:", authStore.role);
+        console.log("Mapped category:", category);
+
+        if (category) {
+          const response = await axios.get(
+            `http://localhost:8000/api/get-tasks/?category=${category}`,
+          );
+
+          setTasks(response.data.data || []);
+          console.log("Tasks fetched:", response.data);
+        } else {
+          console.log("No valid category found, setting empty tasks");
+          setTasks([]);
+        }
+      } catch (error) {
+        console.error("Error fetching tasks:", error);
+        setTasks([]); // Set empty array in case of error
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (authStore.role) {
+      fetchTaskData();
+    } else {
+      setLoading(false);
+    }
+  }, [authStore.role]);
 
   const handleCompleteTask = async (taskId) => {
     try {
@@ -119,21 +163,16 @@ const TasksPage = () => {
       console.error("Error completing task:", error);
     }
   };
-
-  const handleViewDetails = (task) => {
-    setSelectedTask(task);
-    setShowModal(true);
-  };
-
   const filteredTasks = tasks.filter((task) => {
     const matchesSearch =
-      task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      task.description.toLowerCase().includes(searchTerm.toLowerCase());
+      task.task_title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      task.task_description.toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesFilter =
       filterType === "All" ||
-      (filterType === "Assigned" && task.type === "assigned") ||
-      (filterType === "Automated" && task.type === "automated") ||
+      (filterType === "Assigned" && task.task_type === "assigned") ||
+      (filterType === "Automated" && task.task_type === "automated") ||
+      (filterType === "Reporting" && task.task_type === "reporting") ||
       (filterType === "Completed" && task.status === "completed");
 
     return matchesSearch && matchesFilter;
@@ -180,26 +219,38 @@ const TasksPage = () => {
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1">
           <h3 className="font-semibold text-gray-900 text-lg mb-2">
-            {task.title}
+            {task.task_title}
           </h3>
           <div className="flex items-center gap-3 mb-3">
             <span
               className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                task.type === "assigned"
+                task.task_type === "assigned"
                   ? "bg-blue-100 text-blue-700"
-                  : "bg-purple-100 text-purple-700"
+                  : task.task_type === "automated"
+                  ? "bg-purple-100 text-purple-700"
+                  : "bg-gray-100 text-gray-700"
               }`}
             >
-              {task.type === "assigned" ? "👤 Assigned" : "🤖 Automated"}
+              {task.task_type === "assigned"
+                ? "👤 Assigned"
+                : task.task_type === "automated"
+                ? "🤖 Automated"
+                : `📋 ${task.task_type}`}
+            </span>
+          </div>
+          <div className="flex items-center gap-4 text-sm text-gray-600 mb-3">
+            <span className="flex items-center gap-1">
+              <Calendar size={14} />
+              Assigned: {formatDate(task.task_assigned_date)}
             </span>
             <span
-              className={`inline-flex items-center gap-1 text-sm ${getDueDateColor(
-                task.dueDate,
+              className={`flex items-center gap-1 ${getDueDateColor(
+                task.task_deadline,
                 task.status
               )}`}
             >
-              <Calendar size={14} />
-              {formatDate(task.dueDate)}
+              <Clock size={14} />
+              Due: {formatDate(task.task_deadline)}
             </span>
           </div>
         </div>
@@ -208,8 +259,8 @@ const TasksPage = () => {
         )}
       </div>
 
-      <p className="text-gray-600 text-sm mb-4 line-clamp-2">
-        {task.description}
+      <p className="text-gray-600 text-sm mb-4 line-clamp-3">
+        {task.task_description}
       </p>
 
       {task.status === "pending" && (
@@ -221,134 +272,10 @@ const TasksPage = () => {
             <CheckCircle2 size={16} />
             Complete
           </button>
-          <button
-            onClick={() => handleViewDetails(task)}
-            className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors"
-          >
-            <Eye size={16} />
-            View Details
-          </button>
         </div>
       )}
     </div>
   );
-
-  const TaskModal = () =>
-    showModal &&
-    selectedTask && (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-        <div className="bg-white rounded-xl max-w-md w-full p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xl font-semibold text-gray-900">
-              Task Details
-            </h3>
-            <button
-              onClick={() => setShowModal(false)}
-              className="text-gray-400 hover:text-gray-600 text-2xl font-light"
-            >
-              ×
-            </button>
-          </div>
-
-          <div className="space-y-4">
-            <div>
-              <h4 className="font-medium text-gray-900 mb-1">
-                {selectedTask.title}
-              </h4>
-              <div className="flex items-center gap-2 mb-3">
-                <span
-                  className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                    selectedTask.type === "assigned"
-                      ? "bg-blue-100 text-blue-700"
-                      : "bg-purple-100 text-purple-700"
-                  }`}
-                >
-                  {selectedTask.type === "assigned"
-                    ? "👤 Assigned"
-                    : "🤖 Automated"}
-                </span>
-                <span
-                  className={`inline-flex items-center gap-1 text-sm ${getDueDateColor(
-                    selectedTask.dueDate,
-                    selectedTask.status
-                  )}`}
-                >
-                  <Calendar size={14} />
-                  Due {formatDate(selectedTask.dueDate)}
-                </span>
-              </div>
-            </div>
-
-            <div>
-              <h5 className="font-medium text-gray-700 mb-2">Description</h5>
-              <p className="text-gray-600 text-sm">
-                {selectedTask.description}
-              </p>
-            </div>
-
-            <div>
-              <h5 className="font-medium text-gray-700 mb-2">Status</h5>
-              <span
-                className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium ${
-                  selectedTask.status === "completed"
-                    ? "bg-green-100 text-green-700"
-                    : "bg-yellow-100 text-yellow-700"
-                }`}
-              >
-                {selectedTask.status === "completed" ? (
-                  <>
-                    <CheckCircle2 size={14} />
-                    Completed
-                  </>
-                ) : (
-                  <>
-                    <Clock size={14} />
-                    Pending
-                  </>
-                )}
-              </span>
-            </div>
-          </div>
-
-          <div className="mt-6 flex gap-2">
-            {selectedTask.status === "pending" && (
-              <button
-                onClick={() => {
-                  handleCompleteTask(selectedTask.id);
-                  setShowModal(false);
-                }}
-                className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors"
-              >
-                <CheckCircle2 size={16} />
-                Mark Complete
-              </button>
-            )}
-            <button
-              onClick={() => setShowModal(false)}
-              className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors"
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-
-  if (loading) {
-    return (
-      <div className="p-6">
-        <div className="animate-pulse space-y-6">
-          <div className="h-8 bg-gray-200 rounded w-1/4"></div>
-          <div className="h-12 bg-gray-200 rounded"></div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div key={i} className="h-48 bg-gray-200 rounded-xl"></div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -393,6 +320,7 @@ const TasksPage = () => {
                   <option value="All">All Tasks</option>
                   <option value="Assigned">Assigned</option>
                   <option value="Automated">Automated</option>
+                  <option value="Reporting">Reporting</option>
                   <option value="Completed">Completed</option>
                 </select>
               </div>
@@ -426,7 +354,7 @@ const TasksPage = () => {
             <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-xl border border-green-200 p-8 text-center mb-6">
               <Trophy className="mx-auto text-green-500 mb-4" size={48} />
               <h3 className="text-2xl font-bold text-green-800 mb-2">
-                All tasks completed! 🎉
+                All tasks completed! 
               </h3>
               <p className="text-green-600">
                 Great job! You've finished all your tasks.
@@ -457,9 +385,6 @@ const TasksPage = () => {
                 : null}
             </div>
           )}
-
-          {/* Task Details Modal */}
-          <TaskModal />
         </div>
       </div>
     </div>
