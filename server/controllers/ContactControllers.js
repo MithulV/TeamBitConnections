@@ -688,54 +688,41 @@ export const SearchContacts = async (req, res) => {
 };
 
 export const GetFilteredContacts = async (req, res) => {
+    const queryParams = req.query;
+    
+    // Convert single values to arrays for consistent handling
+    const normalizeParam = (param) => {
+        if (!param) return null;
+        return Array.isArray(param) ? param : [param];
+    };
+
     const {
         // Basic Contact Filters
         name,
         phone_number,
         email_address,
-        category,
-        gender,
-        nationality,
-        marital_status,
-        skills,
         created_by,
-
-        // Address Filters
-        address_city,
-        address_state,
-        address_country,
-        address_zipcode,
-        address_street,
-
-        // Education Filters
-        pg_course_name,
-        pg_college,
-        pg_university,
-        ug_course_name,
-        ug_college,
-        ug_university,
-        education_from_year,
-        education_to_year,
-
-        // Experience Filters
-        job_title,
-        company,
-        department,
-        experience_from_year,
-        experience_to_year,
-
-        // Event Filters
-        event_name,
-        event_role,
-        event_organization,
-        event_location,
-        event_year,
 
         // Date Range Filters
         created_from,
         created_to,
         dob_from,
         dob_to,
+
+        // Education Year Filters
+        education_from_year,
+        education_to_year,
+
+        // Experience Year Filters
+        experience_from_year,
+        experience_to_year,
+
+        // Event Year Filter
+        event_year,
+
+        // Single value filters
+        address_zipcode,
+        address_street,
 
         // Pagination
         page = 1,
@@ -744,7 +731,30 @@ export const GetFilteredContacts = async (req, res) => {
         // Sorting
         sort_by = "name",
         sort_order = "ASC",
-    } = req.query;
+    } = queryParams;
+
+    // Normalize array parameters
+    const category = normalizeParam(queryParams.category);
+    const gender = normalizeParam(queryParams.gender);
+    const nationality = normalizeParam(queryParams.nationality);
+    const marital_status = normalizeParam(queryParams.marital_status);
+    const skills = normalizeParam(queryParams.skills);
+    const address_country = normalizeParam(queryParams.address_country);
+    const address_state = normalizeParam(queryParams.address_state);
+    const address_city = normalizeParam(queryParams.address_city);
+    const pg_course_name = normalizeParam(queryParams.pg_course_name);
+    const pg_college = normalizeParam(queryParams.pg_college);
+    const pg_university = normalizeParam(queryParams.pg_university);
+    const ug_course_name = normalizeParam(queryParams.ug_course_name);
+    const ug_college = normalizeParam(queryParams.ug_college);
+    const ug_university = normalizeParam(queryParams.ug_university);
+    const job_title = normalizeParam(queryParams.job_title);
+    const company = normalizeParam(queryParams.company);
+    const department = normalizeParam(queryParams.department);
+    const event_name = normalizeParam(queryParams.event_name);
+    const event_role = normalizeParam(queryParams.event_role);
+    const event_organization = normalizeParam(queryParams.event_organization);
+    const event_location = normalizeParam(queryParams.event_location);
 
     try {
         // Build dynamic WHERE conditions
@@ -754,38 +764,121 @@ export const GetFilteredContacts = async (req, res) => {
         if (name) conditions.push(`c.name ILIKE '%${name}%'`);
         if (phone_number) conditions.push(`c.phone_number ILIKE '%${phone_number}%'`);
         if (email_address) conditions.push(`c.email_address ILIKE '%${email_address}%'`);
-        if (category) conditions.push(`c.category = '${category}'`);
-        if (gender) conditions.push(`c.gender = '${gender}'`);
-        if (nationality) conditions.push(`c.nationality ILIKE '%${nationality}%'`);
-        if (marital_status) conditions.push(`c.marital_status = '${marital_status}'`);
-        if (skills) conditions.push(`c.skills ILIKE '%${skills}%'`);
         if (created_by) conditions.push(`c.created_by = '${created_by}'`);
 
+        // Array-based filters for ENUM fields (exact match)
+        if (category) {
+            const categoryValues = category.map(cat => `'${cat}'`).join(',');
+            conditions.push(`c.category IN (${categoryValues})`);
+        }
+        
+        if (gender) {
+            const genderValues = gender.map(g => `'${g}'`).join(',');
+            conditions.push(`c.gender IN (${genderValues})`);
+        }
+        
+        if (marital_status) {
+            const maritalValues = marital_status.map(ms => `'${ms}'`).join(',');
+            conditions.push(`c.marital_status IN (${maritalValues})`);
+        }
+
+        // Array-based filters for text fields (partial match with OR)
+        if (nationality) {
+            const nationalityConditions = nationality.map(nat => `c.nationality ILIKE '%${nat}%'`);
+            conditions.push(`(${nationalityConditions.join(' OR ')})`);
+        }
+        
+        if (skills) {
+            const skillsConditions = skills.map(skill => `c.skills ILIKE '%${skill}%'`);
+            conditions.push(`(${skillsConditions.join(' OR ')})`);
+        }
+
         // Address filters
-        if (address_city) conditions.push(`ca.city ILIKE '%${address_city}%'`);
-        if (address_state) conditions.push(`ca.state ILIKE '%${address_state}%'`);
-        if (address_country) conditions.push(`ca.country ILIKE '%${address_country}%'`);
+        if (address_city) {
+            const cityConditions = address_city.map(city => `ca.city ILIKE '%${city}%'`);
+            conditions.push(`(${cityConditions.join(' OR ')})`);
+        }
+        
+        if (address_state) {
+            const stateConditions = address_state.map(state => `ca.state ILIKE '%${state}%'`);
+            conditions.push(`(${stateConditions.join(' OR ')})`);
+        }
+        
+        if (address_country) {
+            const countryConditions = address_country.map(country => `ca.country ILIKE '%${country}%'`);
+            conditions.push(`(${countryConditions.join(' OR ')})`);
+        }
+        
         if (address_zipcode) conditions.push(`ca.zipcode = '${address_zipcode}'`);
         if (address_street) conditions.push(`ca.street ILIKE '%${address_street}%'`);
 
         // Education filters
-        if (pg_course_name) conditions.push(`ce.pg_course_name ILIKE '%${pg_course_name}%'`);
-        if (pg_college) conditions.push(`ce.pg_college ILIKE '%${pg_college}%'`);
-        if (pg_university) conditions.push(`ce.pg_university ILIKE '%${pg_university}%'`);
-        if (ug_course_name) conditions.push(`ce.ug_course_name ILIKE '%${ug_course_name}%'`);
-        if (ug_college) conditions.push(`ce.ug_college ILIKE '%${ug_college}%'`);
-        if (ug_university) conditions.push(`ce.ug_university ILIKE '%${ug_university}%'`);
+        if (pg_course_name) {
+            const pgCourseConditions = pg_course_name.map(course => `ce.pg_course_name ILIKE '%${course}%'`);
+            conditions.push(`(${pgCourseConditions.join(' OR ')})`);
+        }
+        
+        if (pg_college) {
+            const pgCollegeConditions = pg_college.map(college => `ce.pg_college ILIKE '%${college}%'`);
+            conditions.push(`(${pgCollegeConditions.join(' OR ')})`);
+        }
+        
+        if (pg_university) {
+            const pgUniversityConditions = pg_university.map(uni => `ce.pg_university ILIKE '%${uni}%'`);
+            conditions.push(`(${pgUniversityConditions.join(' OR ')})`);
+        }
+        
+        if (ug_course_name) {
+            const ugCourseConditions = ug_course_name.map(course => `ce.ug_course_name ILIKE '%${course}%'`);
+            conditions.push(`(${ugCourseConditions.join(' OR ')})`);
+        }
+        
+        if (ug_college) {
+            const ugCollegeConditions = ug_college.map(college => `ce.ug_college ILIKE '%${college}%'`);
+            conditions.push(`(${ugCollegeConditions.join(' OR ')})`);
+        }
+        
+        if (ug_university) {
+            const ugUniversityConditions = ug_university.map(uni => `ce.ug_university ILIKE '%${uni}%'`);
+            conditions.push(`(${ugUniversityConditions.join(' OR ')})`);
+        }
 
         // Experience filters
-        if (job_title) conditions.push(`exp.job_title ILIKE '%${job_title}%'`);
-        if (company) conditions.push(`exp.company ILIKE '%${company}%'`);
-        if (department) conditions.push(`exp.department ILIKE '%${department}%'`);
+        if (job_title) {
+            const jobTitleConditions = job_title.map(jt => `exp.job_title ILIKE '%${jt}%'`);
+            conditions.push(`(${jobTitleConditions.join(' OR ')})`);
+        }
+        
+        if (company) {
+            const companyConditions = company.map(comp => `exp.company ILIKE '%${comp}%'`);
+            conditions.push(`(${companyConditions.join(' OR ')})`);
+        }
+        
+        if (department) {
+            const departmentConditions = department.map(dept => `exp.department ILIKE '%${dept}%'`);
+            conditions.push(`(${departmentConditions.join(' OR ')})`);
+        }
 
         // Event filters
-        if (event_name) conditions.push(`e.event_name ILIKE '%${event_name}%'`);
-        if (event_role) conditions.push(`e.event_role ILIKE '%${event_role}%'`);
-        if (event_organization) conditions.push(`e.event_held_organization ILIKE '%${event_organization}%'`);
-        if (event_location) conditions.push(`e.event_location ILIKE '%${event_location}%'`);
+        if (event_name) {
+            const eventNameConditions = event_name.map(name => `e.event_name ILIKE '%${name}%'`);
+            conditions.push(`(${eventNameConditions.join(' OR ')})`);
+        }
+        
+        if (event_role) {
+            const eventRoleConditions = event_role.map(role => `e.event_role ILIKE '%${role}%'`);
+            conditions.push(`(${eventRoleConditions.join(' OR ')})`);
+        }
+        
+        if (event_organization) {
+            const eventOrgConditions = event_organization.map(org => `e.event_held_organization ILIKE '%${org}%'`);
+            conditions.push(`(${eventOrgConditions.join(' OR ')})`);
+        }
+        
+        if (event_location) {
+            const eventLocationConditions = event_location.map(loc => `e.event_location ILIKE '%${loc}%'`);
+            conditions.push(`(${eventLocationConditions.join(' OR ')})`);
+        }
 
         // Date filters
         if (created_from) conditions.push(`c.created_at >= '${created_from}'`);
@@ -807,6 +900,8 @@ export const GetFilteredContacts = async (req, res) => {
         if (event_year) conditions.push(`EXTRACT(YEAR FROM e.event_date) = ${event_year}`);
 
         const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+        console.log('WHERE clause:', whereClause);
+        
         const offset = (page - 1) * limit;
         const validSortFields = ["name", "email_address", "phone_number", "created_at", "dob"];
         const sortField = validSortFields.includes(sort_by) ? sort_by : "name";
@@ -893,40 +988,113 @@ export const GetFilteredContacts = async (req, res) => {
     }
 };
 
+
 export const GetFilterOptions = async (req, res) => {
     try {
+        // Get all filter options with counts (remove destructuring brackets)
         const genders = await db`
-            SELECT DISTINCT gender as value, COUNT(*) as count 
+            SELECT DISTINCT gender as value, COUNT(*)::text as count 
             FROM contact WHERE gender IS NOT NULL 
             GROUP BY gender ORDER BY count DESC
         `;
 
         const categories = await db`
-            SELECT DISTINCT category as value, COUNT(*) as count 
+            SELECT DISTINCT category as value, COUNT(*)::text as count 
             FROM contact WHERE category IS NOT NULL 
             GROUP BY category ORDER BY count DESC
         `;
 
+        const nationalities = await db`
+            SELECT DISTINCT nationality as value, COUNT(*)::text as count 
+            FROM contact WHERE nationality IS NOT NULL 
+            GROUP BY nationality ORDER BY count DESC
+        `;
+
+        const maritalStatuses = await db`
+            SELECT DISTINCT marital_status as value, COUNT(*)::text as count 
+            FROM contact WHERE marital_status IS NOT NULL 
+            GROUP BY marital_status ORDER BY count DESC
+        `;
+
         const countries = await db`
-            SELECT DISTINCT ca.country as value, COUNT(*) as count
+            SELECT DISTINCT ca.country as value, COUNT(DISTINCT c.contact_id)::text as count
             FROM contact c JOIN contact_address ca ON c.contact_id = ca.contact_id
             WHERE ca.country IS NOT NULL GROUP BY ca.country ORDER BY count DESC
         `;
 
+        const states = await db`
+            SELECT DISTINCT ca.state as value, COUNT(DISTINCT c.contact_id)::text as count
+            FROM contact c JOIN contact_address ca ON c.contact_id = ca.contact_id
+            WHERE ca.state IS NOT NULL GROUP BY ca.state ORDER BY count DESC
+        `;
+
+        const cities = await db`
+            SELECT DISTINCT ca.city as value, COUNT(DISTINCT c.contact_id)::text as count
+            FROM contact c JOIN contact_address ca ON c.contact_id = ca.contact_id
+            WHERE ca.city IS NOT NULL GROUP BY ca.city ORDER BY count DESC
+        `;
+
         const companies = await db`
-            SELECT DISTINCT exp.company as value, COUNT(*) as count
+            SELECT DISTINCT exp.company as value, COUNT(DISTINCT c.contact_id)::text as count
             FROM contact c JOIN contact_experience exp ON c.contact_id = exp.contact_id
             WHERE exp.company IS NOT NULL GROUP BY exp.company ORDER BY count DESC
         `;
 
+        const jobTitles = await db`
+            SELECT DISTINCT exp.job_title as value, COUNT(DISTINCT c.contact_id)::text as count
+            FROM contact c JOIN contact_experience exp ON c.contact_id = exp.contact_id
+            WHERE exp.job_title IS NOT NULL GROUP BY exp.job_title ORDER BY count DESC
+        `;
+
+        const pgCourses = await db`
+            SELECT DISTINCT ce.pg_course_name as value, COUNT(DISTINCT c.contact_id)::text as count
+            FROM contact c JOIN contact_education ce ON c.contact_id = ce.contact_id
+            WHERE ce.pg_course_name IS NOT NULL GROUP BY ce.pg_course_name ORDER BY count DESC
+        `;
+
+        const ugCourses = await db`
+            SELECT DISTINCT ce.ug_course_name as value, COUNT(DISTINCT c.contact_id)::text as count
+            FROM contact c JOIN contact_education ce ON c.contact_id = ce.contact_id
+            WHERE ce.ug_course_name IS NOT NULL GROUP BY ce.ug_course_name ORDER BY count DESC
+        `;
+
+        // Parse skills if stored as comma-separated values
+        const skillsData = await db`
+            SELECT skills FROM contact 
+            WHERE skills IS NOT NULL AND skills != ''
+        `;
+
+        const skillCounts = {};
+        skillsData.forEach(row => {
+            if (row.skills) {
+                const skills = row.skills.split(',').map(s => s.trim()).filter(s => s);
+                skills.forEach(skill => {
+                    skillCounts[skill] = (skillCounts[skill] || 0) + 1;
+                });
+            }
+        });
+
+        const skills = Object.entries(skillCounts)
+            .map(([skill, count]) => ({ value: skill, count: count.toString() }))
+            .sort((a, b) => parseInt(b.count) - parseInt(a.count));
+
         return res.json({
             genders,
             categories,
+            nationalities,
+            marital_statuses: maritalStatuses,
             countries,
+            states,
+            cities,
             companies,
-            // Add more as needed
+            job_titles: jobTitles,
+            pg_courses: pgCourses,
+            ug_courses: ugCourses,
+            skills
         });
     } catch (err) {
+        console.error(err);
         return res.status(500).json({ error: err.message });
     }
 };
+
