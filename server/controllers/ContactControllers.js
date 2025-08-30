@@ -8,6 +8,7 @@ export const CreateContact = async (req, res) => {
         phone_number,
         email_address,
         verified,
+        contact_status,
         dob,
         gender,
         nationality,
@@ -522,35 +523,103 @@ export const UpdateContact = async (req, res) => {
 // DELETE: A contact and ALL of their associated data (except photos)
 export const DeleteContact = async (req, res) => {
     const { id } = req.params;
+    const { userType } = req.query;
 
     try {
         await db.begin(async (t) => {
-            // First, check if contact exists to provide a clear error message
-            const [contact] = await t`SELECT contact_id FROM contact WHERE contact_id = ${id}`;
+            // Get contact with status and verified fields
+            const [contact] = await t`
+                SELECT contact_id, contact_status, verified 
+                FROM event 
+                WHERE contact_id = ${id}
+            `;
+            
             if (!contact) {
                 throw new Error("Contact not found");
             }
 
-            // Delete from all child tables
-            await t`DELETE FROM contact_address WHERE contact_id = ${id}`;
-            await t`DELETE FROM contact_education WHERE contact_id = ${id}`;
-            await t`DELETE FROM contact_experience WHERE contact_id = ${id}`;
-            await t`DELETE FROM event WHERE contact_id = ${id}`;
+            // Handle based on user type
+            if (userType === 'user') {
+                // Check if user is allowed to delete based on status and verified
+                if ((contact.contact_status === 'pending' || contact.contact_status === 'rejected') 
+                    && contact.verified === false) {
+                    
+                    // Allow deletion - contact is pending/rejected and not verified
+                    await performCompleteDeletion(t, id);
+                    
+                    return res.status(200).json({
+                        message: "Contact and all associated data deleted successfully!",
+                        action: "deleted"
+                    });
+                    
+                } else if (contact.contact_status === 'approved' && contact.verified === true) {
+                    
+                    // Deny deletion - contact is approved and verified
+                    return res.status(403).json({
+                        message: "Cannot delete approved and verified contacts. Contact support if needed.",
+                        action: "denied",
+                        reason: "Contact is approved and verified",
+                        contact_status: contact.contact_status,
+                        verified: contact.verified
+                    });
+                    
+                } else {
+                    // Handle edge cases (e.g., approved but not verified, etc.)
+                    return res.status(403).json({
+                        message: "You don't have permission to delete this contact as it is approved.",
+                        action: "denied",
+                        reason: "Insufficient permissions for current contact state",
+                        contact_status: contact.contact_status,
+                        verified: contact.verified
+                    });
+                }
+            } 
+            else if (['cata', 'catb', 'catc', 'admin'].includes(userType)) {
+                // Middlemen or Admin - set status as rejected
+                await t`
+                    UPDATE event 
+                    SET contact_status = 'rejected'
+                    WHERE contact_id = ${id}
+                `;
 
-            // Finally, delete the parent contact record
-            await t`DELETE FROM contact WHERE contact_id = ${id}`;
+                return res.status(200).json({
+                    message: "Contact status updated to rejected successfully!",
+                    action: "rejected",
+                    previousStatus: contact.contact_status
+                });
+            } 
+            else {
+                throw new Error("Invalid user type");
+            }
         });
 
-        return res.status(200).json({
-            message: "Contact and all associated data deleted successfully!",
-        });
     } catch (err) {
         console.error(err);
-        return err.message === "Contact not found"
-            ? res.status(404).json({ message: "Contact not found." })
-            : res.status(500).json({ message: "Server Error!", error: err.message });
+        
+        if (err.message === "Contact not found") {
+            return res.status(404).json({ message: "Contact not found." });
+        } else if (err.message === "Invalid user type") {
+            return res.status(400).json({ message: "Invalid user type provided." });
+        } else {
+            return res.status(500).json({ 
+                message: "Server Error!", 
+                error: err.message 
+            });
+        }
     }
 };
+
+// Helper function for complete deletion
+const performCompleteDeletion = async (transaction, contactId) => {
+    // Delete from all child tables
+    await transaction`DELETE FROM contact_address WHERE contact_id = ${contactId}`;
+    await transaction`DELETE FROM contact_education WHERE contact_id = ${contactId}`;
+    await transaction`DELETE FROM contact_experience WHERE contact_id = ${contactId}`;
+    await transaction`DELETE FROM event WHERE contact_id = ${contactId}`;
+    // Finally, delete the parent contact record
+    await transaction`DELETE FROM contact WHERE contact_id = ${contactId}`;
+};
+
 
 // ADD EVENT to an existing contact
 export const AddEventToExistingContact = async (req, res) => {

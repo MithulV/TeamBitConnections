@@ -119,7 +119,7 @@ const DeleteConfirmationModal = ({
 function MiddleManRecords() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [userToDelete, setUserToDelete] = useState(null);
-  const [isDeleting, setIsDeleting] = useState(false); // Add isDeleting state
+  const [isDeleting, setIsDeleting] = useState(false); 
   const [isAdding, setIsAdding] = useState(false);
   const [addingUser, setAddingUser] = useState(null);
   const [activeView, setActiveView] = useState("formData");
@@ -244,7 +244,7 @@ function MiddleManRecords() {
       try {
         switch (userToDelete.type) {
           case "contact":
-            await axios.delete(`http://localhost:8000/api/delete-contact/${userToDelete.id}`);
+            await axios.delete(`http://localhost:8000/api/delete-contact/${userToDelete.id}?userType=${role}`);
             
             setData((prevData) =>
               prevData.filter((item) => item.contact_id !== userToDelete.id)
@@ -262,7 +262,7 @@ function MiddleManRecords() {
             break;
 
           case "visitingCard":
-            await axios.delete(`http://localhost:8000/api/delete-image/${userToDelete.id}`);
+            await axios.delete(`http://localhost:8000/api/delete-image/${userToDelete.id}?userType=${role}`);
             
             setVisitingCard((prevData) =>
               prevData.filter(card => card.id !== userToDelete.id)
