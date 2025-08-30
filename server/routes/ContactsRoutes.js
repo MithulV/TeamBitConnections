@@ -1,34 +1,34 @@
 import express from "express";
 import {
-    CreateContact,
-    GetContacts,
-    UpdateContact,
-    DeleteContact,
-    SearchContacts,
-    AddEventToExistingContact,
-    GetUnVerifiedContacts,
-    UpdateContactAndEvents,
-    GetContactsByCategory,
-    GetFilteredContacts,
+  CreateContact,
+  GetContacts,
+  UpdateContact,
+  DeleteContact,
+  SearchContacts,
+  AddEventToExistingContact,
+  GetUnVerifiedContacts,
+  UpdateContactAndEvents,
+  GetContactsByCategory,
+  GetFilteredContacts,
 } from "../controllers/ContactControllers.js";
 
 import {
-    createAssignment,
-    getAssignedByUser,
-    getAssignmentForEvent,
-    getAssignmentsForUser,
-    revokeAssignment,
+  createAssignment,
+  getAssignedByUser,
+  getAssignmentForEvent,
+  getAssignmentsForUser,
+  revokeAssignment,
 } from "../controllers/AssignmentControllers.js";
 
 import {
-    upload,
-    UploadImage,
-    GetPicturesByUserId,
-    GetUnVerifiedImages,
-    DeleteImage,
-    VerifyImages,
+  upload,
+  UploadImage,
+  GetPicturesByUserId,
+  GetUnVerifiedImages,
+  DeleteImage,
+  VerifyImages,
 } from "../controllers/PhotoControllers.js";
-import { GetTasks,CompleteTask } from "../controllers/TaskControllers.js";
+import { GetTasks, CompleteTask } from "../controllers/TaskControllers.js";
 
 const router = express.Router();
 router.get("/contacts/filter/", GetFilteredContacts);
@@ -42,7 +42,10 @@ router.post("/upload-contact/", upload.single("image"), UploadImage);
 router.get("/get-contact-images/:userId", GetPicturesByUserId);
 router.put("/update-contact/:contact_id", UpdateContact);
 router.delete("/delete-contact/:id", DeleteContact);
-router.post("/add-event-existing-contact/:contactId", AddEventToExistingContact);
+router.post(
+  "/add-event-existing-contact/:contactId",
+  AddEventToExistingContact
+);
 router.put("/update-contacts-and-events/:id", UpdateContactAndEvents);
 router.delete("/delete-image/:id", DeleteImage);
 router.post("/verify-image/:id", VerifyImages);
@@ -52,5 +55,5 @@ router.get("/get-assigned-to/:userId", getAssignedByUser);
 router.get("/get-assignment-by-event/:eventId", getAssignmentForEvent);
 router.delete("/delete-assignment/:assignmentId", revokeAssignment);
 router.get("/get-tasks/", GetTasks);
-router.post("/complete-tasks/",CompleteTask);
+router.put("/complete-task/:id", CompleteTask);
 export default router;
