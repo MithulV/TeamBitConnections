@@ -80,9 +80,9 @@ const checkForUpdatedAtOneMonth = async (id) => {
 
 
 export const GetTasks = async (req, res) => {
-    const { category } = req.params;
+    const { category } = req.query;
     try {
-        const tasks = await db`SELECT * FROM tasks WHERE task_completion=FALSE AND task_assigned_category=${category}`;
+        const tasks = await db`SELECT * FROM tasks WHERE task_completion=FALSE AND task_assigned_category=${category} ORDER BY task_deadline ASC`;
 
         return res.status(200).json({ success: true, data: tasks });
     } catch (error) {
