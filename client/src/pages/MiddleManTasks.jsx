@@ -119,7 +119,6 @@ const TasksPage = () => {
       console.error("Error completing task:", error);
     }
   };
-
   const handleViewDetails = (task) => {
     setSelectedTask(task);
     setShowModal(true);
