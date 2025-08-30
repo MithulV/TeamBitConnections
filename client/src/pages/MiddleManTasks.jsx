@@ -163,6 +163,12 @@ const TasksPage = () => {
       console.error("Error completing task:", error);
     }
   };
+
+  const handleViewDetails = (task) => {
+    setSelectedTask(task);
+    setShowModal(true);
+  };
+
   const filteredTasks = tasks.filter((task) => {
     const matchesSearch =
       task.task_title.toLowerCase().includes(searchTerm.toLowerCase()) ||
