@@ -1,9 +1,9 @@
-import cron from "node-cron";
-import db from "../src/config/db.js";
-import dotenv from "dotenv";
-import nodemailer from "nodemailer";
-
-cron.schedule("0 9 * * *", async () => {
+import cron from 'node-cron'
+import db from '../src/config/db.js'
+import dotenv from 'dotenv'
+import nodemailer from 'nodemailer';
+// Schedule updated_at 2 month check daily at 6:00 AM
+cron.schedule('0 9 * * *', async () => {
     console.log("task : ", new Date());
     await checkForTask();
 });
@@ -45,34 +45,62 @@ const checkForUpdatedAtOneMonth = async (id) => {
             deadline.setDate(deadline.getDate() + 5); // 5 days from now
             const formattedDeadline = deadline.toISOString().split("T")[0]; // Format: YYYY-MM-DD
 
-            const insertResult = await db`
-                INSERT INTO tasks (task_assigned_category, task_title, task_description, task_deadline, task_type) 
-                VALUES (
-                    ${result[0].category},
-                    ${"Contact Details Updations"},
-                    ${`Update the details of ${result[0].name} whose phone number and email is ${result[0].phone_number} and ${result[0].email_address}`},
-                    ${formattedDeadline},
-                    ${"automated"}
-                )             `;
+            const taskDescription = `Update the details of ${result[0].name} whose phone number and email is ${result[0].phone_number} and ${result[0].email_address}`;
 
-            console.log("Task created:", insertResult);
+            // First, check if the task already exists
+            const existingTask = await db`
+                SELECT 1 FROM tasks 
+                WHERE task_assigned_category = ${result[0].category}
+                AND task_title = ${"Contact Details Updations"}
+                AND task_type = ${"automated"}
+                AND task_description = ${taskDescription}
+                LIMIT 1`;
+
+            // Only insert if no existing task found
+            if (!existingTask || existingTask.length === 0) {
+                const insertResult = await db`
+                    INSERT INTO tasks (task_assigned_category, task_title, task_description, task_deadline, task_type) 
+                    VALUES (
+                        ${result[0].category},
+                        ${"Contact Details Updations"},
+                        ${taskDescription},
+                        ${formattedDeadline},
+                        ${"automated"}
+                    )`;
+
+                console.log("Task created:", insertResult);
+            } else {
+                console.log("Task already exists, skipping insertion");
+            }
         }
     } catch (error) {
         console.error("Error in checkForUpdatedAtOneMonth:", error);
     }
 };
 
+
 export const GetTasks = async (req, res) => {
-    const { category } = req.query;
+    const { category } = req.params;
     try {
         const tasks = await db`SELECT * FROM tasks WHERE task_completion=FALSE AND task_assigned_category=${category}`;
 
         return res.status(200).json({ success: true, data: tasks });
-    } catch (err) {
-        console.error("Error fetching tasks:", err); // Use console.error for logging errors
+    } catch (error) {
+        console.error("Error fetching tasks:", error);
         return res.status(500).json({ success: false, error: "An internal server error occurred." });
     }
 };
+export const CompleteTask=async(req,res)=>{
+    const {id}=req.params;
+    try {
+        const task= await db`UPDATE tasks SET task_completion = TRUE WHERE id=${id}`;
+        return res.status(200).json({success:true});
+        
+    } catch (error) {
+        console.error("Error fetching tasks:", error);
+        return res.status(500).json({ success: false, error: "An internal server error occurred." });
+    }
+}
 
 dotenv.config();
 // Configure email transporter
