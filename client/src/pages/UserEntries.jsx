@@ -135,8 +135,8 @@ function UserEntries() {
     }));
   };
 
-  const handleDeleteClick = (id) => {
-    const user = profileData.find((user) => user.id === id);
+  const handleDeleteClick = (contact_id) => {
+    const user = profileData.find((user) => user.contact_id === contact_id);
     setUserToDelete({ id: user?.contact_id, name: user?.name || "this user" });
     setShowDeleteModal(true);
   };
@@ -150,53 +150,94 @@ function UserEntries() {
     setShowDeleteModal(true);
   };
 
-  // Updated confirmDelete with loading state
-  const confirmDelete = async () => {
-    if (userToDelete) {
-      setIsDeleting(true); // Start loading
-      try {
-        console.log(userToDelete);
+// Updated confirmDelete with proper state management
+const confirmDelete = async () => {
+  if (userToDelete) {
+    setIsDeleting(true); // Start loading
+    try {
+      console.log(userToDelete);
 
-        if (userToDelete.type === "image") {
-          // Delete image
-          const response = await axios.delete(
-            `http://localhost:8000/api/delete-image/${userToDelete.id}`
+      if (userToDelete.type === "image") {
+        // Delete image
+        const response = await axios.delete(
+          `http://localhost:8000/api/delete-image/${userToDelete.id}?userType=${role}`
+        );
+
+        // ✅ Update state locally instead of API call
+        setImageData((prevData) => ({
+          ...prevData,
+          data: prevData.data.filter((image) => image.id !== userToDelete.id),
+        }));
+
+        showAlert(
+          "success",
+          `${userToDelete.name} has been successfully deleted.`
+        );
+      } else {
+        // Delete contact
+        const response = await axios.delete(
+          `http://localhost:8000/api/delete-contact/${userToDelete.id}?userType=${role}`
+        );
+
+        // Handle different response actions
+        if (response.data.action === "deleted") {
+          // ✅ Complete deletion - update profileData state locally
+          setProfileData((prevData) => 
+            prevData.filter((contact) => contact.contact_id !== userToDelete.id)
           );
-
-          // Remove from imageData state
-          setImageData((prevData) => ({
-            ...prevData,
-            data: prevData.data.filter((image) => image.id !== userToDelete.id),
-          }));
-
-          showAlert(
-            "success",
-            `${userToDelete.name} has been successfully deleted.`
+          showAlert("success", response.data.message);
+          
+        } else if (response.data.action === "rejected") {
+          // ✅ Status updated to rejected - update contact status in profileData
+          setProfileData((prevData) => 
+            prevData.map((contact) => 
+              contact.contact_id === userToDelete.id 
+                ? { ...contact, contact_status: 'rejected' }
+                : contact
+            )
           );
+          showAlert("success", response.data.message);
+          
+        } else if (response.data.action === "denied") {
+          // Permission denied - show warning
+          showAlert("warning", response.data.message);
         } else {
-          // Delete contact
-          const response = await axios.delete(
-            `http://localhost:8000/api/delete-contact/${userToDelete.id}`
-          );
-
-          showAlert(
-            "success",
-            `${userToDelete.name} has been successfully deleted.`
-          );
-          // Refresh data after deletion
-          handleSelectContact();
+          // Fallback success message
+          showAlert("success", response.data.message || `${userToDelete.name} has been processed successfully.`);
         }
 
-        setShowDeleteModal(false);
-        setUserToDelete(null);
-      } catch (error) {
-        showAlert("error", "Failed to delete. Please try again.");
-        console.log("Error deleting", userToDelete.id, error);
-      } finally {
-        setIsDeleting(false); // Stop loading
+        // ✅ No need to call handleSelectContact() - state is already updated locally
       }
+
+      // ✅ Success: Close modal and reset state
+      setShowDeleteModal(false);
+      setUserToDelete(null);
+
+    } catch (error) {
+      // ✅ Handle different error responses - close modal and reset state on failure
+      console.log("Error deleting", userToDelete.id, error);
+      
+      if (error.response?.status === 403) {
+        // Permission denied
+        showAlert("error", error.response.data.message || "You don't have permission to delete this contact.");
+      } else if (error.response?.status === 404) {
+        // Contact not found
+        showAlert("error", "Contact not found.");
+      } else {
+        // General error
+        showAlert("error", "Failed to delete. Please try again.");
+      }
+
+      // ✅ Failure: Close modal and reset state
+      setShowDeleteModal(false);
+      setUserToDelete(null);
+
+    } finally {
+      setIsDeleting(false); // Stop loading
     }
-  };
+  }
+};
+
 
   const cancelDelete = () => {
     if (isDeleting) return; // Prevent closing during deletion
@@ -281,7 +322,7 @@ function UserEntries() {
     setEditingUser(null);
   };
 
-  const { id } = useAuthStore();
+  const { id,role} = useAuthStore();
 
   const handleSelectContact = async () => {
     try {
@@ -418,9 +459,10 @@ function UserEntries() {
                         participant.events?.[0]?.event_location || "N/A"
                       }
                       profileImage={participant.profileImage || Avatar}
-                      onDelete={() => handleDeleteClick(participant.id)}
+                      onDelete={() => handleDeleteClick(participant.contact_id)}
                       onType={() => onEdit(participant)}
                       editOrAdd={"edit"}
+                      status={participant.events?.[0]?.contact_status || "pending"}
                     />
                   );
                 })}
