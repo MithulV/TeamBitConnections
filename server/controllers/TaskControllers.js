@@ -76,9 +76,6 @@ const checkForUpdatedAtOneMonth = async (id) => {
     } catch (error) {
         console.error("Error in checkForUpdatedAtOneMonth:", error);
     }
-  } catch (error) {
-    console.error("Error in checkForUpdatedAtOneMonth:", error);
-  }
 };
 
 
@@ -94,12 +91,6 @@ export const GetTasks = async (req, res) => {
     }
 
     return res.status(200).json({ success: true, data: tasks });
-  } catch (err) {
-    console.error("Error fetching tasks:", err);
-    return res
-      .status(500)
-      .json({ success: false, error: "An internal server error occurred." });
-  }
 };
 export const CompleteTask=async(req,res)=>{
     const {id}=req.params;
