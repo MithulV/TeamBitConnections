@@ -28,7 +28,7 @@ import {
     DeleteImage,
     VerifyImages,
 } from "../controllers/PhotoControllers.js";
-import { GetTasks } from "../controllers/TaskControllers.js";
+import { GetTasks,CompleteTask } from "../controllers/TaskControllers.js";
 
 const router = express.Router();
 router.get("/contacts/filter/", GetFilteredContacts);
@@ -51,6 +51,6 @@ router.get("/get-assignment/:userId", getAssignmentsForUser);
 router.get("/get-assigned-to/:userId", getAssignedByUser);
 router.get("/get-assignment-by-event/:eventId", getAssignmentForEvent);
 router.delete("/delete-assignment/:assignmentId", revokeAssignment);
-router.get("/get-tasks/", GetTasks)
-
+router.get("/get-tasks/", GetTasks);
+router.post("/complete-tasks/",CompleteTask);
 export default router;
