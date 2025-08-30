@@ -116,8 +116,6 @@ export default function BasicDetailCard({
               </Tooltip>
             </div>
           </div>
-
-          {/* ✅ Status Badge in Header - Clean Placement */}
           <div className="flex items-start gap-3 shrink-0">
             {status && <StatusBadge status={status} />}
             
@@ -159,7 +157,7 @@ export default function BasicDetailCard({
       </div>
 
       {/* Footer - Date and Action Buttons */}
-      <div className="flex items-center justify-between px-5 py-4 border-t border-gray-100 bg-gray-50/30">
+      <div className="flex items-center justify-between mt-3 px-4  py-1 border-t border-gray-100 bg-gray-50/30">
         {assignedOn ? (
           <div className="text-xs text-gray-500">Assigned on : {assignedOn}</div>
         ) : (
