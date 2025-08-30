@@ -103,7 +103,6 @@ export const GetTasks = async (req, res) => {
       await db`SELECT COUNT(*) as count FROM tasks WHERE task_assigned_category=${category} AND task_type='automated'`;
     const automatedCompleted =
       await db`SELECT COUNT(*) as count FROM tasks WHERE task_assigned_category=${category} AND task_type='automated' AND task_completion=TRUE`;
-
     const stats = {
       total: parseInt(totalCount[0].count),
       completed: parseInt(completedCount[0].count),
