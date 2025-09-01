@@ -9,13 +9,12 @@ import MiddleManRecords from '../pages/MiddleManRecords';
 import MiddleManTasks from '../pages/MiddleManTasks';
 import PrivateRoute from '../pages/PrivateRoutes';
 import { useAuthStore } from '../store/AuthStore';
-import UserEntries from '../pages/UserEntries'
+import UserEntries from '../pages/UserEntries';
 import ProfileView from '../pages/ProfileView';
 import DetailsInput from '../components/DetailsInput';
 import VisitingCardDetails from '../pages/VisitingCardDetails';
 import UserAssignments from '../pages/UserAssignments';
-import FilterOptions from '../pages/FilterOptions';
-import ContactsPage from '../pages/FilterOptions';
+import TaskAssignments from '../pages/TaskAssignments';
 // A helper component to render the correct home page based on role
 const RoleBasedHome = () => {
     const { role } = useAuthStore();
@@ -51,7 +50,28 @@ const MiddleManRoutes = () => {
     );
 };
 
+// Admin-only route wrapper
+const AdminRouteWrapper = ({ children }) => {
+    const { role } = useAuthStore();
 
+    if (role !== 'admin') {
+        return <Navigate to="/" />;
+    }
+
+    return children;
+};
+
+// Wrapper component to protect the verify-records route
+const MiddleManRoutesWrapper = ({ children }) => {
+    const { role } = useAuthStore();
+    const allowedRoles = ['cata', 'catb', 'catc'];
+
+    if (!allowedRoles.includes(role)) {
+        // Redirect to their respective home page if they try to access a forbidden URL
+        return <Navigate to="/" />;
+    }
+    return children;
+};
 
 function Applayout() {
     return (
@@ -59,7 +79,6 @@ function Applayout() {
             <Navbar />
             <main className='w-full h-screen flex-1 overflow-x-hidden overflow-y-auto'>
                 <Routes>
-
                     {/* Public Route */}
                     <Route path="/login" element={<Login />} />
 
@@ -75,32 +94,25 @@ function Applayout() {
                         <Route path="/profile/:id" element={<ProfileView />} />
                         <Route path="/edit/:id" element={<DetailsInput />} />
                         <Route path="/visiting-card-details/:id" element={<VisitingCardDetails />} />
+                        <Route path="/entries" element={<UserEntries />} />
+                        <Route path='/assigned' element={<UserAssignments />} />
+
+                        {/* Admin-only route for task assignments */}
+                        <Route path="/task-assignments" element={
+                            <AdminRouteWrapper>
+                                <TaskAssignments />
+                            </AdminRouteWrapper>
+                        } />
                     </Route>
-                    
+
                     {/* Fallback route to redirect to home if logged in, or login if not */}
                     <Route path="/filteroptions" element={<ContactsPage />} />
                     <Route path="*" element={<Navigate to="/" />} />
-
-                    <Route path="/" element={<UserHome />} />
-                    <Route path="/entries" element={<UserEntries />} />
-                    <Route path='/assigned' element={<UserAssignments/>}/>
                 </Routes>
             </main>
         </div>
     );
 }
-
-// Wrapper component to protect the verify-records route
-const MiddleManRoutesWrapper = ({ children }) => {
-    const { role } = useAuthStore();
-    const allowedRoles = ['cata', 'catb', 'catc'];
-
-    if (!allowedRoles.includes(role)) {
-        // Redirect to their respective home page if they try to access a forbidden URL
-        return <Navigate to="/" />;
-    }
-    return children;
-};
 
 
 export default Applayout;

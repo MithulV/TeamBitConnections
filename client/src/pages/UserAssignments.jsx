@@ -190,19 +190,13 @@ function UserAssignments() {
             if (updatedData && addingUser) {
                 console.log("Saving data:", updatedData);
                 const response = await axios.put(
-                    `http://localhost:8000/api/update-contact/${updatedData.contact_id}`,
+                    `http://localhost:8000/api/update-contact/${updatedData.contact_id}?event_verified=false&contact_status=pending`,
                     updatedData
                 );
                 console.log("Update response:", response);
 
                 // Update the data state
-                setData((prevData) =>
-                    prevData.map((user) =>
-                        user.contact_id === updatedData.contact_id
-                            ? { ...user, ...updatedData }
-                            : user
-                    )
-                );
+                setData((prevData)=>prevData.filter(data=>data.contact_id!==updatedData.contact_id));
 
                 showAlert(
                     "success",
@@ -385,8 +379,8 @@ function UserAssignments() {
                                                     onType={() => onAdd(participant.contact_id)}
                                                     assignment_id={participant.assignment_id}
                                                     editOrAdd={"add"}
-                                                    assignedOn={participant.assigned_on ? format(
-                                                        parseISO(participant.assigned_on),
+                                                    assignedOn={participant.created_at ? format(
+                                                        parseISO(participant.created_at),
                                                         "MMMM dd, yyyy"
                                                     ) : "N/A"}
                                                 />
