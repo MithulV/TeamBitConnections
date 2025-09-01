@@ -8,6 +8,7 @@ import {
   Shield,
   NotebookText,
   Handshake,
+  ClipboardList,
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../store/AuthStore";
@@ -51,7 +52,10 @@ function Navbar() {
       },
       { name: "Tasks", icon: <NotebookText size={20} />, path: "/tasks" },
     ],
-    admin: [{ name: "Admin Panel", icon: <Shield size={20} />, path: "/" }],
+    admin: [
+      { name: "Admin Panel", icon: <Shield size={20} />, path: "/" },
+      { name: "Task Assignments", icon: <ClipboardList size={20} />, path: "/task-assignments" }
+    ],
   };
 
   // Get the menu items for the current role

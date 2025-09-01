@@ -14,7 +14,7 @@ const DeleteConfirmationModal = ({
   onConfirm,
   onCancel,
   itemName = "this user",
-  isDeleting = false, // Add isDeleting prop
+  isDeleting = false,
 }) => {
   if (!isOpen) return null;
 
@@ -23,7 +23,7 @@ const DeleteConfirmationModal = ({
       {/* Backdrop with blur effect */}
       <div
         className="absolute inset-0 bg-black/60 bg-opacity-50 backdrop-blur-sm transition-all duration-300"
-        onClick={!isDeleting ? onCancel : undefined} // Prevent closing during deletion
+        onClick={!isDeleting ? onCancel : undefined}
       ></div>
 
       {/* Modal */}
@@ -107,7 +107,7 @@ const DeleteConfirmationModal = ({
 function UserEntries() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [userToDelete, setUserToDelete] = useState(null);
-  const [isDeleting, setIsDeleting] = useState(false); // Add isDeleting state
+  const [isDeleting, setIsDeleting] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [activeView, setActiveView] = useState("formDetails");
@@ -150,97 +150,100 @@ function UserEntries() {
     setShowDeleteModal(true);
   };
 
-// Updated confirmDelete with proper state management
-const confirmDelete = async () => {
-  if (userToDelete) {
-    setIsDeleting(true); // Start loading
-    try {
-      console.log(userToDelete);
+  // Updated confirmDelete with proper state management
+  const confirmDelete = async () => {
+    if (userToDelete) {
+      setIsDeleting(true);
+      try {
+        console.log(userToDelete);
 
-      if (userToDelete.type === "image") {
-        // Delete image
-        const response = await axios.delete(
-          `http://localhost:8000/api/delete-image/${userToDelete.id}?userType=${role}`
-        );
-
-        // ✅ Update state locally instead of API call
-        setImageData((prevData) => ({
-          ...prevData,
-          data: prevData.data.filter((image) => image.id !== userToDelete.id),
-        }));
-
-        showAlert(
-          "success",
-          `${userToDelete.name} has been successfully deleted.`
-        );
-      } else {
-        // Delete contact
-        const response = await axios.delete(
-          `http://localhost:8000/api/delete-contact/${userToDelete.id}?userType=${role}`
-        );
-
-        // Handle different response actions
-        if (response.data.action === "deleted") {
-          // ✅ Complete deletion - update profileData state locally
-          setProfileData((prevData) => 
-            prevData.filter((contact) => contact.contact_id !== userToDelete.id)
+        if (userToDelete.type === "image") {
+          // Delete image
+          const response = await axios.delete(
+            `http://localhost:8000/api/delete-image/${userToDelete.id}?userType=${role}`
           );
-          showAlert("success", response.data.message);
-          
-        } else if (response.data.action === "rejected") {
-          // ✅ Status updated to rejected - update contact status in profileData
-          setProfileData((prevData) => 
-            prevData.map((contact) => 
-              contact.contact_id === userToDelete.id 
-                ? { ...contact, contact_status: 'rejected' }
-                : contact
-            )
+
+          // ✅ Update state locally instead of API call
+          setImageData((prevData) => ({
+            ...prevData,
+            data: prevData.data.filter((image) => image.id !== userToDelete.id),
+          }));
+
+          showAlert(
+            "success",
+            `${userToDelete.name} has been successfully deleted.`
           );
-          showAlert("success", response.data.message);
-          
-        } else if (response.data.action === "denied") {
-          // Permission denied - show warning
-          showAlert("warning", response.data.message);
         } else {
-          // Fallback success message
-          showAlert("success", response.data.message || `${userToDelete.name} has been processed successfully.`);
+          // Delete contact
+          const response = await axios.delete(
+            `http://localhost:8000/api/delete-contact/${userToDelete.id}?userType=${role}`
+          );
+
+          // Handle different response actions
+          if (response.data.action === "deleted") {
+            // ✅ Complete deletion - update profileData state locally
+            setProfileData((prevData) =>
+              prevData.filter((contact) => contact.contact_id !== userToDelete.id)
+            );
+            showAlert("success", response.data.message);
+          } else if (response.data.action === "rejected") {
+            // ✅ Status updated to rejected - update contact status in profileData
+            setProfileData((prevData) =>
+              prevData.map((contact) =>
+                contact.contact_id === userToDelete.id
+                  ? { ...contact, contact_status: "rejected" }
+                  : contact
+              )
+            );
+            showAlert("success", response.data.message);
+          } else if (response.data.action === "denied") {
+            // Permission denied - show warning
+            showAlert("warning", response.data.message);
+          } else {
+            // Fallback success message
+            showAlert(
+              "success",
+              response.data.message ||
+                `${userToDelete.name} has been processed successfully.`
+            );
+          }
+
+          // ✅ No need to call handleSelectContact() - state is already updated locally
         }
 
-        // ✅ No need to call handleSelectContact() - state is already updated locally
+        // ✅ Success: Close modal and reset state
+        setShowDeleteModal(false);
+        setUserToDelete(null);
+      } catch (error) {
+        // ✅ Handle different error responses - close modal and reset state on failure
+        console.log("Error deleting", userToDelete.id, error);
+
+        if (error.response?.status === 403) {
+          // Permission denied
+          showAlert(
+            "error",
+            error.response.data.message ||
+              "You don't have permission to delete this contact."
+          );
+        } else if (error.response?.status === 404) {
+          // Contact not found
+          showAlert("error", "Contact not found.");
+        } else {
+          // General error
+          showAlert("error", "Failed to delete. Please try again.");
+        }
+
+        // ✅ Failure: Close modal and reset state
+        setShowDeleteModal(false);
+        setUserToDelete(null);
+      } finally {
+        setIsDeleting(false);
       }
-
-      // ✅ Success: Close modal and reset state
-      setShowDeleteModal(false);
-      setUserToDelete(null);
-
-    } catch (error) {
-      // ✅ Handle different error responses - close modal and reset state on failure
-      console.log("Error deleting", userToDelete.id, error);
-      
-      if (error.response?.status === 403) {
-        // Permission denied
-        showAlert("error", error.response.data.message || "You don't have permission to delete this contact.");
-      } else if (error.response?.status === 404) {
-        // Contact not found
-        showAlert("error", "Contact not found.");
-      } else {
-        // General error
-        showAlert("error", "Failed to delete. Please try again.");
-      }
-
-      // ✅ Failure: Close modal and reset state
-      setShowDeleteModal(false);
-      setUserToDelete(null);
-
-    } finally {
-      setIsDeleting(false); // Stop loading
     }
-  }
-};
-
+  };
 
   const cancelDelete = () => {
-    if (isDeleting) return; // Prevent closing during deletion
+    if (isDeleting) return;
     setShowDeleteModal(false);
     setUserToDelete(null);
   };
@@ -322,7 +325,7 @@ const confirmDelete = async () => {
     setEditingUser(null);
   };
 
-  const { id,role} = useAuthStore();
+  const { id, role } = useAuthStore();
 
   const handleSelectContact = async () => {
     try {
@@ -462,10 +465,39 @@ const confirmDelete = async () => {
                       onDelete={() => handleDeleteClick(participant.contact_id)}
                       onType={() => onEdit(participant)}
                       editOrAdd={"edit"}
-                      status={participant.events?.[0]?.contact_status || "pending"}
+                      status={
+                        participant.events?.[0]?.contact_status || "pending"
+                      }
                     />
                   );
                 })}
+
+                {profileData.length === 0 && (
+                  <div className="col-span-full text-center py-16">
+                    <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mb-4">
+                      <svg
+                        className="w-8 h-8 text-gray-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"
+                        />
+                      </svg>
+                    </div>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                      No contacts found
+                    </h3>
+                    <p className="text-gray-500 mb-6 max-w-md mx-auto">
+                      You haven't added any contacts yet. Start adding contacts
+                      to see them here.
+                    </p>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="p-6">
@@ -506,6 +538,33 @@ const confirmDelete = async () => {
                         </div>
                       ))}
                   </div>
+
+                  {(!imageData?.data || imageData.data.length === 0) && (
+                    <div className="text-center py-16">
+                      <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mb-4">
+                        <svg
+                          className="w-8 h-8 text-gray-400"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                          />
+                        </svg>
+                      </div>
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">
+                        No visiting cards found
+                      </h3>
+                      <p className="text-gray-500 mb-6 max-w-md mx-auto">
+                        You haven't uploaded any visiting cards yet. Upload
+                        cards to see them here.
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -518,7 +577,7 @@ const confirmDelete = async () => {
           onConfirm={confirmDelete}
           onCancel={cancelDelete}
           itemName={userToDelete?.name}
-          isDeleting={isDeleting} // Pass isDeleting state
+          isDeleting={isDeleting}
         />
       </div>
     </div>

@@ -29,6 +29,7 @@ import Header from "../components/Header";
 import Alert from "../components/Alert";
 import { useAuthStore } from "../store/AuthStore";
 import { format, parseISO } from "date-fns";
+import { useNavigate } from "react-router-dom";
 
 const StatCard = ({ title, value, icon: Icon, color, trend, trendValue }) => (
   <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
@@ -96,6 +97,7 @@ const RecentActivityItem = ({ activity }) => (
 );
 
 function Admin() {
+  const navigate=useNavigate();
   const [stats, setStats] = useState({
     totalContacts: 0,
     verifiedContacts: 0,
@@ -218,7 +220,7 @@ function Admin() {
       description: "Create new assignments",
       icon: Handshake,
       color: "bg-green-500",
-      onClick: () => console.log("Assign tasks"),
+      onClick: () => navigate("/task-assignments"),
     },
     {
       title: "Generate Report",
