@@ -1,5 +1,19 @@
 import db from "../src/config/db.js";
 
+export const GetAllContact = async (req, res) => {
+    const { limit } = req.query;
+    try {
+        const result = await db`SELECT * FROM contact c join event e on c.contact_id = e.contact_id ORDER BY e.updated_at DESC LIMIT ${limit}`
+        return res.status(200).json({
+            data: result
+        })
+    } catch (error) {
+        console.log(error);
+        return res.status(409).json(
+            { message: "error fetching data" }
+        )
+    }
+}
 // CREATE: A contact and their core information (address, education, experiences, events)
 export const CreateContact = async (req, res) => {
     const {
@@ -54,9 +68,8 @@ export const CreateContact = async (req, res) => {
                     ${name}, ${phone_number}, ${email_address}, ${dob || null}, ${gender || null},
                     ${nationality || null}, ${marital_status || null}, ${category || null}, ${secondary_email || null},
                     ${secondary_phone_number || null}, ${created_by || null}, ${emergency_contact_name || null},
-                    ${emergency_contact_relationship || null}, ${emergency_contact_phone_number || null}, ${
-                skills || null
-            },
+                    ${emergency_contact_relationship || null}, ${emergency_contact_phone_number || null}, ${skills || null
+                },
                     ${logger || null}, ${linkedin_url || null}
                 ) RETURNING *
             `;
@@ -82,12 +95,10 @@ export const CreateContact = async (req, res) => {
             ug_course_name, ug_college, ug_university, ug_from_date, ug_to_date
         ) VALUES (
             ${contactId}, 
-            ${education.pg_course_name || null}, ${education.pg_college || null}, ${education.pg_university || null}, ${
-                    education.pg_from_date || null
-                }, ${education.pg_to_date || null},
-            ${education.ug_course_name || null}, ${education.ug_college || null}, ${education.ug_university || null}, ${
-                    education.ug_from_date || null
-                }, ${education.ug_to_date || null}
+            ${education.pg_course_name || null}, ${education.pg_college || null}, ${education.pg_university || null}, ${education.pg_from_date || null
+                    }, ${education.pg_to_date || null},
+            ${education.ug_course_name || null}, ${education.ug_college || null}, ${education.ug_university || null}, ${education.ug_from_date || null
+                    }, ${education.ug_to_date || null}
         ) RETURNING *`;
             }
 
@@ -98,9 +109,8 @@ export const CreateContact = async (req, res) => {
                     const [newExp] = await t`INSERT INTO contact_experience (
                 contact_id, job_title, company, department, from_date, to_date
             ) VALUES (
-                ${contactId}, ${exp.job_title}, ${exp.company}, ${exp.department || null}, ${exp.from_date}, ${
-                        exp.to_date
-                    }
+                ${contactId}, ${exp.job_title}, ${exp.company}, ${exp.department || null}, ${exp.from_date}, ${exp.to_date
+                        }
             ) RETURNING *`;
                     createdExperiences.push(newExp);
                 }
@@ -109,11 +119,9 @@ export const CreateContact = async (req, res) => {
             if (events && events.length > 0) {
                 for (const event of events) {
                     const [newEvent] =
-                        await t`INSERT INTO event (contact_id, event_name, event_role, event_date, event_held_organization, event_location, verified) VALUES (${contactId}, ${
-                            event.event_name
-                        }, ${event.event_role}, ${event.event_date}, ${event.event_held_organization}, ${
-                            event.event_location
-                        }, ${event.verified || false}) RETURNING *`;
+                        await t`INSERT INTO event (contact_id, event_name, event_role, event_date, event_held_organization, event_location, verified) VALUES (${contactId}, ${event.event_name
+                            }, ${event.event_role}, ${event.event_date}, ${event.event_held_organization}, ${event.event_location
+                            }, ${event.verified || false}) RETURNING *`;
                     createdEvents.push(newEvent);
                 }
             }
@@ -341,7 +349,7 @@ export const UpdateContactAndEvents = async (req, res) => {
 // UPDATE: A contact's core details
 export const UpdateContact = async (req, res) => {
     const { contact_id } = req.params;
-    const {event_verified,contact_status}=req.query;
+    const { event_verified, contact_status } = req.query;
     const isVerified = event_verified === 'true';
     const {
         // --- Contact Fields ---
@@ -430,12 +438,10 @@ export const UpdateContact = async (req, res) => {
                         ug_course_name, ug_college, ug_university, ug_from_date, ug_to_date
                     ) VALUES (
                         ${contact_id},
-                        ${education.pg_course_name || null}, ${education.pg_college || null}, ${
-                    education.pg_university || null
-                }, ${education.pg_from_date || null}, ${education.pg_to_date || null},
-                        ${education.ug_course_name || null}, ${education.ug_college || null}, ${
-                    education.ug_university || null
-                }, ${education.ug_from_date || null}, ${education.ug_to_date || null}
+                        ${education.pg_course_name || null}, ${education.pg_college || null}, ${education.pg_university || null
+                    }, ${education.pg_from_date || null}, ${education.pg_to_date || null},
+                        ${education.ug_course_name || null}, ${education.ug_college || null}, ${education.ug_university || null
+                    }, ${education.ug_from_date || null}, ${education.ug_to_date || null}
                     )
                     ON CONFLICT (contact_id) DO UPDATE SET
                         pg_course_name = EXCLUDED.pg_course_name,
@@ -463,9 +469,8 @@ export const UpdateContact = async (req, res) => {
                         INSERT INTO contact_experience (
                             contact_id, job_title, company, department, from_date, to_date, company_skills
                         ) VALUES (
-                            ${contact_id}, ${exp.job_title}, ${exp.company}, ${exp.department || null}, ${
-                        exp.from_date
-                    }, ${exp.to_date}, ${exp.company_skills || null}
+                            ${contact_id}, ${exp.job_title}, ${exp.company}, ${exp.department || null}, ${exp.from_date
+                        }, ${exp.to_date}, ${exp.company_skills || null}
                         ) RETURNING *
                     `;
                     updatedExperiences.push(newExp);
@@ -534,7 +539,7 @@ export const DeleteContact = async (req, res) => {
                 FROM event 
                 WHERE contact_id = ${id}
             `;
-            
+
             if (!contact) {
                 throw new Error("Contact not found");
             }
@@ -542,19 +547,19 @@ export const DeleteContact = async (req, res) => {
             // Handle based on user type
             if (userType === 'user') {
                 // Check if user is allowed to delete based on status and verified
-                if ((contact.contact_status === 'pending' || contact.contact_status === 'rejected') 
+                if ((contact.contact_status === 'pending' || contact.contact_status === 'rejected')
                     && contact.verified === false) {
-                    
+
                     // Allow deletion - contact is pending/rejected and not verified
                     await performCompleteDeletion(t, id);
-                    
+
                     return res.status(200).json({
                         message: "Contact and all associated data deleted successfully!",
                         action: "deleted"
                     });
-                    
+
                 } else if (contact.contact_status === 'approved' && contact.verified === true) {
-                    
+
                     // Deny deletion - contact is approved and verified
                     return res.status(403).json({
                         message: "Cannot delete approved and verified contacts. Contact support if needed.",
@@ -563,7 +568,7 @@ export const DeleteContact = async (req, res) => {
                         contact_status: contact.contact_status,
                         verified: contact.verified
                     });
-                    
+
                 } else {
                     // Handle edge cases (e.g., approved but not verified, etc.)
                     return res.status(403).json({
@@ -574,7 +579,7 @@ export const DeleteContact = async (req, res) => {
                         verified: contact.verified
                     });
                 }
-            } 
+            }
             else if (['cata', 'catb', 'catc', 'admin'].includes(userType)) {
                 // Middlemen or Admin - set status as rejected
                 await t`
@@ -588,7 +593,7 @@ export const DeleteContact = async (req, res) => {
                     action: "rejected",
                     previousStatus: contact.contact_status
                 });
-            } 
+            }
             else {
                 throw new Error("Invalid user type");
             }
@@ -596,15 +601,15 @@ export const DeleteContact = async (req, res) => {
 
     } catch (err) {
         console.error(err);
-        
+
         if (err.message === "Contact not found") {
             return res.status(404).json({ message: "Contact not found." });
         } else if (err.message === "Invalid user type") {
             return res.status(400).json({ message: "Invalid user type provided." });
         } else {
-            return res.status(500).json({ 
-                message: "Server Error!", 
-                error: err.message 
+            return res.status(500).json({
+                message: "Server Error!",
+                error: err.message
             });
         }
     }
@@ -634,9 +639,8 @@ export const AddEventToExistingContact = async (req, res) => {
     try {
         const [newEvent] = await db`
             INSERT INTO event (contact_id, event_name, event_role, event_date, event_held_organization, event_location, verified)
-            VALUES (${contactId}, ${eventName}, ${eventRole}, ${eventDate}, ${eventHeldOrganization}, ${eventLocation}, ${
-            verified || false
-        })
+            VALUES (${contactId}, ${eventName}, ${eventRole}, ${eventDate}, ${eventHeldOrganization}, ${eventLocation}, ${verified || false
+            })
             RETURNING *
         `;
         return res.status(201).json({ message: "New event added successfully!", data: newEvent });
@@ -690,7 +694,7 @@ export const SearchContacts = async (req, res) => {
 
 export const GetFilteredContacts = async (req, res) => {
     const queryParams = req.query;
-    
+
     // Convert single values to arrays for consistent handling
     const normalizeParam = (param) => {
         if (!param) return null;
@@ -772,12 +776,12 @@ export const GetFilteredContacts = async (req, res) => {
             const categoryValues = category.map(cat => `'${cat}'`).join(',');
             conditions.push(`c.category IN (${categoryValues})`);
         }
-        
+
         if (gender) {
             const genderValues = gender.map(g => `'${g}'`).join(',');
             conditions.push(`c.gender IN (${genderValues})`);
         }
-        
+
         if (marital_status) {
             const maritalValues = marital_status.map(ms => `'${ms}'`).join(',');
             conditions.push(`c.marital_status IN (${maritalValues})`);
@@ -788,7 +792,7 @@ export const GetFilteredContacts = async (req, res) => {
             const nationalityConditions = nationality.map(nat => `c.nationality ILIKE '%${nat}%'`);
             conditions.push(`(${nationalityConditions.join(' OR ')})`);
         }
-        
+
         if (skills) {
             const skillsConditions = skills.map(skill => `c.skills ILIKE '%${skill}%'`);
             conditions.push(`(${skillsConditions.join(' OR ')})`);
@@ -799,17 +803,17 @@ export const GetFilteredContacts = async (req, res) => {
             const cityConditions = address_city.map(city => `ca.city ILIKE '%${city}%'`);
             conditions.push(`(${cityConditions.join(' OR ')})`);
         }
-        
+
         if (address_state) {
             const stateConditions = address_state.map(state => `ca.state ILIKE '%${state}%'`);
             conditions.push(`(${stateConditions.join(' OR ')})`);
         }
-        
+
         if (address_country) {
             const countryConditions = address_country.map(country => `ca.country ILIKE '%${country}%'`);
             conditions.push(`(${countryConditions.join(' OR ')})`);
         }
-        
+
         if (address_zipcode) conditions.push(`ca.zipcode = '${address_zipcode}'`);
         if (address_street) conditions.push(`ca.street ILIKE '%${address_street}%'`);
 
@@ -818,27 +822,27 @@ export const GetFilteredContacts = async (req, res) => {
             const pgCourseConditions = pg_course_name.map(course => `ce.pg_course_name ILIKE '%${course}%'`);
             conditions.push(`(${pgCourseConditions.join(' OR ')})`);
         }
-        
+
         if (pg_college) {
             const pgCollegeConditions = pg_college.map(college => `ce.pg_college ILIKE '%${college}%'`);
             conditions.push(`(${pgCollegeConditions.join(' OR ')})`);
         }
-        
+
         if (pg_university) {
             const pgUniversityConditions = pg_university.map(uni => `ce.pg_university ILIKE '%${uni}%'`);
             conditions.push(`(${pgUniversityConditions.join(' OR ')})`);
         }
-        
+
         if (ug_course_name) {
             const ugCourseConditions = ug_course_name.map(course => `ce.ug_course_name ILIKE '%${course}%'`);
             conditions.push(`(${ugCourseConditions.join(' OR ')})`);
         }
-        
+
         if (ug_college) {
             const ugCollegeConditions = ug_college.map(college => `ce.ug_college ILIKE '%${college}%'`);
             conditions.push(`(${ugCollegeConditions.join(' OR ')})`);
         }
-        
+
         if (ug_university) {
             const ugUniversityConditions = ug_university.map(uni => `ce.ug_university ILIKE '%${uni}%'`);
             conditions.push(`(${ugUniversityConditions.join(' OR ')})`);
@@ -849,12 +853,12 @@ export const GetFilteredContacts = async (req, res) => {
             const jobTitleConditions = job_title.map(jt => `exp.job_title ILIKE '%${jt}%'`);
             conditions.push(`(${jobTitleConditions.join(' OR ')})`);
         }
-        
+
         if (company) {
             const companyConditions = company.map(comp => `exp.company ILIKE '%${comp}%'`);
             conditions.push(`(${companyConditions.join(' OR ')})`);
         }
-        
+
         if (department) {
             const departmentConditions = department.map(dept => `exp.department ILIKE '%${dept}%'`);
             conditions.push(`(${departmentConditions.join(' OR ')})`);
@@ -865,17 +869,17 @@ export const GetFilteredContacts = async (req, res) => {
             const eventNameConditions = event_name.map(name => `e.event_name ILIKE '%${name}%'`);
             conditions.push(`(${eventNameConditions.join(' OR ')})`);
         }
-        
+
         if (event_role) {
             const eventRoleConditions = event_role.map(role => `e.event_role ILIKE '%${role}%'`);
             conditions.push(`(${eventRoleConditions.join(' OR ')})`);
         }
-        
+
         if (event_organization) {
             const eventOrgConditions = event_organization.map(org => `e.event_held_organization ILIKE '%${org}%'`);
             conditions.push(`(${eventOrgConditions.join(' OR ')})`);
         }
-        
+
         if (event_location) {
             const eventLocationConditions = event_location.map(loc => `e.event_location ILIKE '%${loc}%'`);
             conditions.push(`(${eventLocationConditions.join(' OR ')})`);
@@ -902,7 +906,7 @@ export const GetFilteredContacts = async (req, res) => {
 
         const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
         console.log('WHERE clause:', whereClause);
-        
+
         const offset = (page - 1) * limit;
         const validSortFields = ["name", "email_address", "phone_number", "created_at", "dob"];
         const sortField = validSortFields.includes(sort_by) ? sort_by : "name";
