@@ -1012,7 +1012,7 @@ const MiddleManHome = () => {
                 ))}
               </div>
 
-              {filteredContacts.length === 0 && (
+              {filteredContacts.length === 0 && !loading && (
                 <div className="text-center py-12 col-span-full">
                   <div className="text-gray-400 text-lg mb-2">
                     No contacts found
