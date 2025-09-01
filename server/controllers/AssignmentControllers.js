@@ -23,7 +23,7 @@ export const createAssignment = async (req, res) => {
         // --- Check if the event is already assigned to anyone ---
         const [existingAssignment] = await db`
             SELECT * FROM user_assignments 
-            WHERE event_id = ${event_id}
+            WHERE event_id = ${event_id} AND completed=FALSE
         `;
 
         if (existingAssignment) {
