@@ -474,9 +474,9 @@ function TaskAssignments() {
                   onChange={(e) => setNewTask({...newTask, task_assigned_category: e.target.value})}
                 >
                   <option value="">Select a category</option>
-                  <option value="cata">A</option>
-                  <option value="catb">B</option>
-                  <option value="catc">C</option>
+                  <option value="A">Category A</option>
+                  <option value="B">Category B</option>
+                  <option value="C">Category C</option>
                 </select>
               </div>
 
