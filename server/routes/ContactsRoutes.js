@@ -11,6 +11,7 @@ import {
   GetContactsByCategory,
   GetFilteredContacts,
   GetFilterOptions,
+  GetAllContact,
 } from "../controllers/ContactControllers.js";
 
 import {
@@ -33,6 +34,7 @@ import { GetTasks, CompleteTask,CreateTask } from "../controllers/TaskController
 import { createTask } from "node-cron";
 
 const router = express.Router();
+router.get("/get-all-contact/",GetAllContact)
 router.get("/contacts/filter/", GetFilteredContacts);
 router.get("/contacts/:userId", GetContacts);
 router.get("/get-unverified-contacts/", GetUnVerifiedContacts);

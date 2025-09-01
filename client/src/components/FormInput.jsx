@@ -1,10 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { RotateCcw, UserPlus, Save } from 'lucide-react';
+import { RotateCcw, UserPlus, Save, ArrowLeft } from 'lucide-react';
 import { useAuthStore } from '../store/AuthStore';
+import { useNavigate } from 'react-router-dom';
+import Header from '../components/Header';
 
 function FormInput({ onBack, onSave, initialData = null, isEditMode = false }) {
   const { id } = useAuthStore();
+  const navigate = useNavigate();
   console.log(initialData)
+  
   const [formData, setFormData] = useState({
     name: '',
     phone_number: '',
@@ -19,6 +23,19 @@ function FormInput({ onBack, onSave, initialData = null, isEditMode = false }) {
       event_location: ''
     }]
   });
+
+  // Handle back navigation
+  const handleBack = () => {
+    if (onBack) {
+      onBack();
+    } else {
+      if (window.history.length > 1) {
+        navigate(-1);
+      } else {
+        navigate('/');
+      }
+    }
+  };
 
   useEffect(() => {
     if (isEditMode && initialData) {
@@ -158,16 +175,11 @@ function FormInput({ onBack, onSave, initialData = null, isEditMode = false }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     console.log('Form submitted:', formData);
-    if (isEditMode && onSave) {
-      // Edit mode - call onSave to update existing contact
+    if (onSave) {
       onSave(formData);
-    } else if (onSave) {
-      // Create mode - call onSave to create new contact
-      onSave(formData);
-      if (onBack) onBack();
-    } else if (onBack) {
-      // Fallback - just go back without saving
-      onBack();
+    }
+    if (!isEditMode) {
+      handleBack();
     }
   };
 
@@ -201,6 +213,7 @@ function FormInput({ onBack, onSave, initialData = null, isEditMode = false }) {
         name: '',
         phone_number: '',
         email_address: '',
+        created_by: id,
         events: [{
           event_name: '',
           event_role: '',
@@ -213,104 +226,127 @@ function FormInput({ onBack, onSave, initialData = null, isEditMode = false }) {
   };
 
   return (
-    <div className="flex flex-row mx-auto pt-0 pb-2 bg-[#F0F0F0] min-h-full">
-      <form onSubmit={handleSubmit} className="w-full">
-        <div className="bg-white p-6 rounded-lg bordershadow-sm">
-
-          {/* Header */}
-          <div className="mb-6">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-2">
-              {isEditMode ? 'Edit Contact Information' : 'Contact Information'}
-            </h2>
-            <p className="text-gray-600">
-              {isEditMode
-                ? 'Update the details for this contact. Required fields are marked with an asterisk.'
-                : 'Fill in the details for the new contact. Required fields are marked with an asterisk.'
-              }
-            </p>
+    <div className="h-full flex flex-col bg-[#ffffff]">
+      {/* Header with Back Button */}
+      <div className="w-full bg-white shadow-sm">
+        <div className="flex items-center justify-between">
+          <div className="flex-shrink-0">
+            <button
+              onClick={handleBack}
+              className="px-4 py-2 ml-5 flex items-center gap-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors duration-200 font-medium"
+            >
+              <ArrowLeft size={20} />
+              Back
+            </button>
           </div>
-
-          {/* Side-by-side sections */}
-          <div className="flex flex-col md:flex-row gap-6 mb-6">
-            {/* Basic Info */}
-            <div className="flex-1 bg-white p-4 rounded-lg">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">Basic Information</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {basicInfo.map((item, index) => (
-                  <div key={index} className="space-y-2">
-                    <label htmlFor={item.name} className="block text-sm font-medium text-gray-700">
-                      {item.label}
-                    </label>
-                    <input
-                      type={item.type}
-                      id={item.name}
-                      name={item.name}
-                      value={item.value}
-                      placeholder={item.placeholder}
-                      onKeyPress={item.name === 'phoneNumber' ? handlePhoneKeyPress : undefined}
-                      inputMode={item.inputMode}
-                      onChange={handleInputChange}
-                      required={item.label.includes('*')}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0077b8] focus:border-transparent transition-colors"
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="hidden md:block w-px bg-gray-200 mx-2" />
-
-            {/* Event & Role Info */}
-            <div className="flex-1 bg-white p-4 rounded-lg">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">Event & Role Information</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {eventNRole.map((item, index) => (
-                  <div key={index} className="space-y-2">
-                    <label htmlFor={item.name} className="block text-sm font-medium text-gray-700">
-                      {item.label}
-                    </label>
-                    <input
-                      type={item.type}
-                      id={item.name}
-                      name={item.name}
-                      value={item.value}
-                      placeholder={item.placeholder}
-                      onChange={handleInputChange}
-                      required={item.label.includes('*')}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0077b8] focus:border-transparent transition-colors"
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex flex-col pt-4 sm:flex-row gap-4 justify-end">
-            <button
-              type="button"
-              onClick={handleReset}
-              className="px-6 py-2 flex gap-x-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400 font-medium"
-            >
-              <RotateCcw size={18} className="mt-1" />
-              Reset Form
-            </button>
-            <button
-              type="button"
-              onClick={onBack}
-              className="px-6 py-2 flex gap-x-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400 font-medium"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="px-6 py-2 flex gap-x-1.5 bg-[#0077b8] hover:bg-[#005f8f] text-white rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-[#0077b8] font-medium"
-            >
-              {isEditMode ? <Save size={18} className="mt-0.5" /> : <UserPlus size={18} className="mt-0.5" />}
-              {isEditMode ? 'Update Contact' : 'Save Contact'}
-            </button>
+          <div className="flex-shrink-0">
+            <Header />
           </div>
         </div>
-      </form>
+      </div>
+
+      <hr className="border-0 border-t border-gray-300 opacity-60" />
+
+      {/* Form Content */}
+      <div className="flex-1 flex flex-row mx-auto pt-0 pb-2 bg-[#F0F0F0] min-h-full">
+        <form onSubmit={handleSubmit} className="w-full">
+          <div className="bg-white p-6 rounded-lg bordershadow-sm">
+
+            {/* Header */}
+            <div className="mb-6">
+              <h2 className="text-2xl font-semibold text-gray-800 mb-2">
+                {isEditMode ? 'Edit Contact Information' : 'Contact Information'}
+              </h2>
+              <p className="text-gray-600">
+                {isEditMode
+                  ? 'Update the details for this contact. Required fields are marked with an asterisk.'
+                  : 'Fill in the details for the new contact. Required fields are marked with an asterisk.'
+                }
+              </p>
+            </div>
+
+            {/* Side-by-side sections */}
+            <div className="flex flex-col md:flex-row gap-6 mb-6">
+              {/* Basic Info */}
+              <div className="flex-1 bg-white p-4 rounded-lg">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">Basic Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {basicInfo.map((item, index) => (
+                    <div key={index} className="space-y-2">
+                      <label htmlFor={item.name} className="block text-sm font-medium text-gray-700">
+                        {item.label}
+                      </label>
+                      <input
+                        type={item.type}
+                        id={item.name}
+                        name={item.name}
+                        value={item.value}
+                        placeholder={item.placeholder}
+                        onKeyPress={item.name === 'phone_number' ? handlePhoneKeyPress : undefined}
+                        inputMode={item.inputMode}
+                        onChange={handleInputChange}
+                        required={item.label.includes('*')}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0077b8] focus:border-transparent transition-colors"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="hidden md:block w-px bg-gray-200 mx-2" />
+
+              {/* Event & Role Info */}
+              <div className="flex-1 bg-white p-4 rounded-lg">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">Event & Role Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {eventNRole.map((item, index) => (
+                    <div key={index} className="space-y-2">
+                      <label htmlFor={item.name} className="block text-sm font-medium text-gray-700">
+                        {item.label}
+                      </label>
+                      <input
+                        type={item.type}
+                        id={item.name}
+                        name={item.name}
+                        value={item.value}
+                        placeholder={item.placeholder}
+                        onChange={handleInputChange}
+                        required={item.label.includes('*')}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0077b8] focus:border-transparent transition-colors"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-col pt-4 sm:flex-row gap-4 justify-end">
+              <button
+                type="button"
+                onClick={handleReset}
+                className="px-6 py-2 flex gap-x-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400 font-medium"
+              >
+                <RotateCcw size={18} className="mt-1" />
+                Reset Form
+              </button>
+              <button
+                type="button"
+                onClick={handleBack}
+                className="px-6 py-2 flex gap-x-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400 font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-6 py-2 flex gap-x-1.5 bg-[#0077b8] hover:bg-[#005f8f] text-white rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-[#0077b8] font-medium"
+              >
+                {isEditMode ? <Save size={18} className="mt-0.5" /> : <UserPlus size={18} className="mt-0.5" />}
+                {isEditMode ? 'Update Contact' : 'Save Contact'}
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

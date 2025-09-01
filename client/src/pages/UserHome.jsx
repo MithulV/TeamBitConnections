@@ -1,15 +1,16 @@
 import React, { useState } from "react";
-import CameraInput from "../components/CameraInput";
-import FormInput from "../components/FormInput";
 import Avatar from "../assets/Avatar.png";
 import { Camera, UserPlus, ArrowLeft } from "lucide-react";
 import Header from "../components/Header";
-import axios from "axios";
+import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../store/AuthStore";
 import Alert from "../components/Alert";
+import axios from "axios";
+
 function UserHome() {
-  const { id } = useAuthStore()
-  const [activeView, setActiveView] = useState("default"); // 'default', 'camera', 'form'
+  const { id } = useAuthStore();
+  const navigate = useNavigate();
+  
   const [alert, setAlert] = useState({
     isOpen: false,
     severity: "success",
@@ -30,44 +31,29 @@ function UserHome() {
       isOpen: false,
     }));
   };
-  const handleCameraClick = () => {
-    setActiveView("camera");
-  };
 
-  const handleManualAddClick = () => {
-    setActiveView("form");
-  };
-
-  const handleBackToDefault = () => {
-    setActiveView("default");
-  };
-
-
+  // Define save handler for form
   const handleSaveContact = async (formData) => {
     try {
       console.log(formData);
       const response = await axios.post(`http://localhost:8000/api/create-contact`, formData);
       console.log(response);
-      showAlert(
-        "success", `contact has been successfully added.`
-      );
+      showAlert("success", `Contact has been successfully added.`);
     } catch (error) {
       console.log("Error saving contact:", error);
-      showAlert(
-        "error", `failed to add contact.`
-      );
+      showAlert("error", `Failed to add contact.`);
     }
   };
+
+  // Define save handler for camera
   const handleSavePhoto = async (mode, capturedImage) => {
     try {
       let formData = new FormData();
 
-      if (mode == 'select') {
-        // If it's a file upload
+      if (mode === 'select') {
         formData.append("image", uploadFile);
         formData.append("user_id", id);
       } else if (capturedImage) {
-        // If it's a camera capture (Base64 → Blob)
         const byteString = atob(capturedImage.split(",")[1]);
         const mimeString = capturedImage.split(",")[0].split(":")[1].split(";")[0];
         const ab = new ArrayBuffer(byteString.length);
@@ -76,12 +62,6 @@ function UserHome() {
           ia[i] = byteString.charCodeAt(i);
         }
         const blob = new Blob([ab], { type: mimeString });
-
-        // Tesseract.recognize(blob, "eng", {
-        //   logger: (m) => console.log(m)  // progress
-        // }).then(({ data: { text } }) => {
-        //   console.log("OCR Result:", text);
-        // });
 
         formData.append("image", blob, "photo.png");
         formData.append("user_id", id);
@@ -92,17 +72,21 @@ function UserHome() {
       });
 
       console.log("Upload success:", res.data);
-      handleBackToDefault();
-      showAlert(
-        "success", `contact has been successfully added.`
-      );
+      showAlert("success", `Contact has been successfully added.`);
     } catch (err) {
       console.error("Upload failed:", err);
-      showAlert(
-        "error", `failed to add contact.`
-      );
+      showAlert("error", `Failed to add contact.`);
     }
   };
+
+  const handleCameraClick = () => {
+    navigate("/camera-input", { state: { onSave: handleSavePhoto } });
+  };
+
+  const handleManualAddClick = () => {
+    navigate("/form-input", { state: { onSave: handleSaveContact } });
+  };
+
   return (
     <div className="h-full flex flex-col bg-[#ffffff]">
       <Alert
@@ -113,24 +97,11 @@ function UserHome() {
         position="bottom"
         duration={4000}
       />
-      {/* Full Width Header Section */}
+      
+      {/* Header Section */}
       <div className="w-full bg-white shadow-sm">
         <div className="flex items-center justify-between">
-          {/* Left Section - Back Button */}
-          <div className="flex-shrink-0">
-            {activeView === "default" ? (
-              <div></div>
-            ) : (
-              <button
-                onClick={handleBackToDefault}
-                className="px-4 py-2 ml-5 flex items-center gap-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors duration-200 font-medium"
-              >
-                <ArrowLeft size={20} />
-                Back
-              </button>)}
-          </div>
-
-          {/* Right Section - Header always on the right */}
+          <div className="flex-shrink-0"></div>
           <div className="flex-shrink-0">
             <Header />
           </div>
@@ -139,55 +110,38 @@ function UserHome() {
 
       <hr className="border-0 border-t border-gray-300 opacity-60" />
 
-      {/* Main Content Area - Conditional Rendering */}
+      {/* Main Content */}
       <div className="flex-1 bg-[#F0F0F0]">
-        {activeView === "default" && (
-          <div className="text-center py-12 px-6">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-4">
-              Welcome to your homepage
-            </h2>
-            <p className="text-gray-600 mb-8">
-              Choose an option below to get started
-            </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
-              <div
-                className="p-6 bg-white rounded-lg border-2 border-gray-200 hover:border-[#0077b8] transition-colors cursor-pointer shadow-sm"
-                onClick={handleCameraClick}
-              >
-                <Camera size={40} className="mx-auto mb-4 text-[#0077b8]" />
-                <h3 className="font-semibold mb-2">Scan Card</h3>
-                <p className="text-sm text-gray-600">
-                  Use your camera to quickly scan and add cards
-                </p>
-              </div>
-              <div
-                className="p-6 bg-white rounded-lg border-2 border-gray-200 hover:border-[#0077b8] transition-colors cursor-pointer shadow-sm"
-                onClick={handleManualAddClick}
-              >
-                <UserPlus size={40} className="mx-auto mb-4 text-[#0077b8]" />
-                <h3 className="font-semibold mb-2">Add Manually</h3>
-                <p className="text-sm text-gray-600">
-                  Enter card information manually using the form
-                </p>
-              </div>
+        <div className="text-center py-12 px-6">
+          <h2 className="text-2xl font-semibold text-gray-800 mb-4">
+            Welcome to your homepage
+          </h2>
+          <p className="text-gray-600 mb-8">
+            Choose an option below to get started
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
+            <div
+              className="p-6 bg-white rounded-lg border-2 border-gray-200 hover:border-[#0077b8] transition-colors cursor-pointer shadow-sm"
+              onClick={handleCameraClick}
+            >
+              <Camera size={40} className="mx-auto mb-4 text-[#0077b8]" />
+              <h3 className="font-semibold mb-2">Scan Card</h3>
+              <p className="text-sm text-gray-600">
+                Use your camera to quickly scan and add cards
+              </p>
+            </div>
+            <div
+              className="p-6 bg-white rounded-lg border-2 border-gray-200 hover:border-[#0077b8] transition-colors cursor-pointer shadow-sm"
+              onClick={handleManualAddClick}
+            >
+              <UserPlus size={40} className="mx-auto mb-4 text-[#0077b8]" />
+              <h3 className="font-semibold mb-2">Add Manually</h3>
+              <p className="text-sm text-gray-600">
+                Enter card information manually using the form
+              </p>
             </div>
           </div>
-        )}
-
-        {activeView === "camera" && (
-          <div className="h-full">
-            <CameraInput onBack={handleBackToDefault} onSave={handleSavePhoto} />
-          </div>
-        )}
-
-        {activeView === "form" && (
-          <div className="p-6">
-            <FormInput
-              onBack={handleBackToDefault}
-              onSave={handleSaveContact}
-            />
-          </div>
-        )}
+        </div>
       </div>
     </div>
   );
