@@ -13,7 +13,7 @@ import ContactCard from "../components/MiddleManCard";
 import DetailsInput from "../components/DetailsInput";
 import Header from "../components/Header";
 import { useAuthStore } from "../store/AuthStore";
-import axios from "axios";
+import api from '../utils/axios';
 import Alert from "../components/Alert";
 
 // Helper function to generate initials from a name
@@ -697,10 +697,10 @@ const MiddleManHome = () => {
         const category = rolesDict[role];
 
         const url = category
-          ? `http://localhost:8000/api/get-filter-options?category=${category}`
-          : "http://localhost:8000/api/get-filter-options";
+          ? `/api/get-filter-options?category=${category}`
+          : "/api/get-filter-options";
 
-        const response = await axios.get(url);
+        const response = await api.get(url);
         setFilterOptions(response.data);
       } catch (error) {
         console.error("Failed to fetch filter options:", error);
@@ -745,8 +745,8 @@ const MiddleManHome = () => {
         }
       });
 
-      const response = await axios.get(
-        `http://localhost:8000/api/contacts/filter/?${params.toString()}`
+      const response = await api.get(
+        `/api/contacts/filter/?${params.toString()}`
       );
 
       // Handle the response structure from GetFilteredContacts API
@@ -838,8 +838,8 @@ const MiddleManHome = () => {
     try {
       console.log("Saving data:", updatedData);
 
-      const response = await axios.put(
-        `http://localhost:8000/api/update-contact/${updatedData.contact_id}`,
+      const response = await api.put(
+        `/api/update-contact/${updatedData.contact_id}`,
         updatedData
       );
 
@@ -894,8 +894,8 @@ const MiddleManHome = () => {
         contactToDelete.contact_id
       );
 
-      await axios.delete(
-        `http://localhost:8000/api/delete-contact/${contactToDelete.contact_id}/`
+      await api.delete(
+        `/api/delete-contact/${contactToDelete.contact_id}/`
       );
 
       console.log("Delete successful, updating state");
@@ -1012,7 +1012,7 @@ const MiddleManHome = () => {
                 ))}
               </div>
 
-              {filteredContacts.length === 0 && (
+              {filteredContacts.length === 0 && !loading && (
                 <div className="text-center py-12 col-span-full">
                   <div className="text-gray-400 text-lg mb-2">
                     No contacts found

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../utils/axios";
 import {
   ArrowLeft,
   Zap,
@@ -118,8 +118,8 @@ const VisitingCardDetails = () => {
         setLoading(true);
 
         // Fetch all cards and find the one with matching ID
-        const response = await axios.get(
-          `http://localhost:8000/api/get-unverified-images/`
+        const response = await api.get(
+          `/api/get-unverified-images/`
         );
 
         const card = response.data.data?.find((card) => {
@@ -388,12 +388,12 @@ const VisitingCardDetails = () => {
 
       console.log("Transformed data for API:", transformedData);
 
-      const response = await axios.post(
-        "http://localhost:8000/api/create-contact",
+      const response = await api.post(
+        "/api/create-contact",
         transformedData
       );
-      const response2 = await axios.post(
-        `http://localhost:8000/api/verify-image/${id}`,
+      const response2 = await api.post(
+        `/api/verify-image/${id}`,
         transformedData
       );
 
