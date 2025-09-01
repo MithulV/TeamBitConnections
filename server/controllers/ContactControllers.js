@@ -1,4 +1,5 @@
 import db from "../src/config/db.js";
+import { logContactModification } from "./ModificationHistoryControllers.js";
 
 // CREATE: A contact and their core information (address, education, experiences, events)
 export const CreateContact = async (req, res) => {
@@ -118,6 +119,13 @@ export const CreateContact = async (req, res) => {
                 }
             }
 
+            try {
+                await logContactModification(t, contactId, created_by || null, "CREATE", t);
+                console.log("Contact modification logged successfully");
+            } catch (modError) {
+                console.error("Failed to log contact modification, but continuing:", modError);
+            }
+
             return {
                 contact,
                 address: createdAddress,
@@ -219,13 +227,17 @@ export const GetUnVerifiedContacts = async (req, res) => {
     }
 };
 
+// UPDATE: A contact and their associated events with authorization checks
 export const UpdateContactAndEvents = async (req, res) => {
     const { id } = req.params;
+    const { userType } = req.query;
     const {
         // Contact Fields
         name,
         phone_number,
         email_address,
+        created_by,
+
         // Events Array
         events,
     } = req.body;
@@ -261,60 +273,55 @@ export const UpdateContactAndEvents = async (req, res) => {
     }
 
     try {
-        // --- 2. Use a Transaction ---
-        // The `sql.begin` or `sql.transaction` block automatically handles BEGIN, COMMIT, and ROLLBACK.
         const result = await db.begin(async (t) => {
-            // --- 3. Update the Contact Record ---
-            // The template literal `t` is the transactional version of `sql`
-            const contactResults = await t`
-                UPDATE contact
-                SET
-                    name = ${name},
-                    phone_number = ${phone_number},
-                    email_address = ${email_address}
+            // Get contact with status and verified fields
+            const [contact] = await t`
+                SELECT contact_id, contact_status, verified 
+                FROM event 
                 WHERE contact_id = ${id}
-                RETURNING *
             `;
 
-            // If the query returns no rows, the contact wasn't found.
-            if (contactResults.length === 0) {
-                // Throwing an error here will automatically trigger a ROLLBACK.
-                throw new Error("ContactNotFound");
+            if (!contact) {
+                throw new Error("Contact not found");
             }
-            const updatedContact = contactResults[0];
 
-            // --- 4. Update Each Event Record ---
-            const updatedEvents = [];
-            for (const event of events) {
-                const eventResults = await t`
-                    UPDATE event
-                    SET
-                        event_name = ${event.event_name},
-                        event_role = ${event.event_role},
-                        event_date = ${event.event_date},
-                        event_held_organization = ${event.event_held_organization},
-                        event_location = ${event.event_location}
-                    WHERE
-                        event_id = ${event.event_id}
-                        AND contact_id = ${id} -- Security check: Ensures the event belongs to the contact
-                    RETURNING *
-                `;
-
-                // If an event update returns no rows, the event_id was invalid or didn't belong to the contact.
-                if (eventResults.length === 0) {
-                    throw new Error("EventNotFound");
+            // Handle based on user type
+            if (userType === "user") {
+                // Check if user is allowed to update based on status and verified
+                if (
+                    (contact.contact_status === "pending" || contact.contact_status === "rejected") &&
+                    contact.verified === false
+                ) {
+                    // Allow update - contact is pending/rejected and not verified
+                    return await performContactAndEventsUpdate(
+                        t,
+                        id,
+                        { name, phone_number, email_address },
+                        events,
+                        created_by
+                    );
+                } else if (contact.contact_status === "approved" && contact.verified === true) {
+                    // Deny update - contact is approved and verified
+                    throw new Error("UpdateDenied");
+                } else {
+                    // Handle edge cases (e.g., approved but not verified, etc.)
+                    throw new Error("InsufficientPermissions");
                 }
-                updatedEvents.push(eventResults[0]);
+            } else if (["cata", "catb", "catc", "admin"].includes(userType)) {
+                // Middlemen or Admin - allow update regardless of status
+                return await performContactAndEventsUpdate(
+                    t,
+                    id,
+                    { name, phone_number, email_address },
+                    events,
+                    created_by
+                );
+            } else {
+                throw new Error("Invalid user type");
             }
-
-            // Return the final data structure from the transaction block
-            return {
-                contact: updatedContact,
-                events: updatedEvents,
-            };
         });
 
-        // --- 5. Send Success Response ---
+        // --- Success Response ---
         return res.status(200).json({
             message: "Contact and events updated successfully!",
             data: result,
@@ -322,14 +329,29 @@ export const UpdateContactAndEvents = async (req, res) => {
     } catch (err) {
         console.error("Update Transaction Failed:", err);
 
-        // --- 6. Handle Specific Errors ---
-        if (err.message === "ContactNotFound" || err.message === "EventNotFound") {
+        // --- Handle Specific Errors ---
+        if (err.message === "Contact not found") {
+            return res.status(404).json({ message: "Contact not found." });
+        } else if (err.message === "UpdateDenied") {
+            return res.status(403).json({
+                message: "Cannot update approved and verified contacts.",
+                action: "denied",
+                reason: "Contact is approved and verified",
+            });
+        } else if (err.message === "InsufficientPermissions") {
+            return res.status(403).json({
+                message: "You don't have permission to update this contact as it is approved.",
+                action: "denied",
+                reason: "Insufficient permissions for current contact state",
+            });
+        } else if (err.message === "Invalid user type") {
+            return res.status(400).json({ message: "Invalid user type provided." });
+        } else if (err.message === "ContactNotFound" || err.message === "EventNotFound") {
             return res.status(404).json({
                 message: "Contact or one of the specified events not found for the given contact ID.",
             });
-        }
-        // PostgreSQL unique_violation error code
-        if (err.code === "23505") {
+        } else if (err.code === "23505") {
+            // PostgreSQL unique_violation error code
             return res.status(409).json({ message: "A contact with this email address already exists." });
         }
 
@@ -338,11 +360,69 @@ export const UpdateContactAndEvents = async (req, res) => {
     }
 };
 
+// Helper function for performing contact and events update
+const performContactAndEventsUpdate = async (transaction, contactId, contactData, events, created_by) => {
+    // --- Update the Contact Record ---
+    const contactResults = await transaction`
+        UPDATE contact
+        SET
+            name = ${contactData.name},
+            phone_number = ${contactData.phone_number},
+            email_address = ${contactData.email_address}
+        WHERE contact_id = ${contactId}
+        RETURNING *
+    `;
+
+    // If the query returns no rows, the contact wasn't found.
+    if (contactResults.length === 0) {
+        throw new Error("ContactNotFound");
+    }
+    const updatedContact = contactResults[0];
+
+    // --- Update Each Event Record ---
+    const updatedEvents = [];
+    for (const event of events) {
+        const eventResults = await transaction`
+            UPDATE event
+            SET
+                event_name = ${event.event_name},
+                event_role = ${event.event_role},
+                event_date = ${event.event_date},
+                event_held_organization = ${event.event_held_organization},
+                event_location = ${event.event_location}
+            WHERE
+                event_id = ${event.event_id}
+                AND contact_id = ${contactId} -- Security check: Ensures the event belongs to the contact
+            RETURNING *
+        `;
+
+        // If an event update returns no rows, the event_id was invalid or didn't belong to the contact.
+        if (eventResults.length === 0) {
+            throw new Error("EventNotFound");
+        }
+        updatedEvents.push(eventResults[0]);
+    }
+
+    // Log the modification
+    try {
+        await logContactModification(transaction, contactId, created_by || null, "UPDATE", transaction);
+        console.log("Contact modification logged successfully");
+    } catch (modError) {
+        console.error("Failed to log contact modification, but continuing:", modError);
+    }
+
+    // Return the final data structure
+    return {
+        contact: updatedContact,
+        events: updatedEvents,
+    };
+};
+
 // UPDATE: A contact's core details
 export const UpdateContact = async (req, res) => {
     const { contact_id } = req.params;
-    const {event_verified,contact_status}=req.query;
-    const isVerified = event_verified === 'true';
+    const { event_verified, contact_status, updaterUserId } = req.query;
+    const isVerified = event_verified === "true";
     const {
         // --- Contact Fields ---
         assignment_id,
@@ -474,7 +554,9 @@ export const UpdateContact = async (req, res) => {
 
             // 5. Update Events Array (if provided)
             if (event_id) {
-                console.log(`${event_verified},${contact_status} ${event_name} ${event_role} ${event_held_organization} ${event_location} ${event_id}  ${contact_id}`);
+                console.log(
+                    `${event_verified},${contact_status} ${event_name} ${event_role} ${event_held_organization} ${event_location} ${event_id}  ${contact_id}`
+                );
                 const [updatedEvent] = await t`
                     UPDATE event SET
                         event_name = ${event_name},
@@ -503,6 +585,13 @@ export const UpdateContact = async (req, res) => {
           WHERE id = ${assignment_id}
           RETURNING *
         `;
+            }
+
+            try {
+                await logContactModification(db, contact_id, updaterUserId, "UPDATE", t);
+                console.log("Contact modification logged successfully");
+            } catch (modError) {
+                console.error("Failed to log contact modification, but continuing:", modError);
             }
 
             return {
@@ -534,36 +623,34 @@ export const DeleteContact = async (req, res) => {
                 FROM event 
                 WHERE contact_id = ${id}
             `;
-            
+
             if (!contact) {
                 throw new Error("Contact not found");
             }
 
             // Handle based on user type
-            if (userType === 'user') {
+            if (userType === "user") {
                 // Check if user is allowed to delete based on status and verified
-                if ((contact.contact_status === 'pending' || contact.contact_status === 'rejected') 
-                    && contact.verified === false) {
-                    
+                if (
+                    (contact.contact_status === "pending" || contact.contact_status === "rejected") &&
+                    contact.verified === false
+                ) {
                     // Allow deletion - contact is pending/rejected and not verified
                     await performCompleteDeletion(t, id);
-                    
+
                     return res.status(200).json({
                         message: "Contact and all associated data deleted successfully!",
-                        action: "deleted"
+                        action: "deleted",
                     });
-                    
-                } else if (contact.contact_status === 'approved' && contact.verified === true) {
-                    
+                } else if (contact.contact_status === "approved" && contact.verified === true) {
                     // Deny deletion - contact is approved and verified
                     return res.status(403).json({
                         message: "Cannot delete approved and verified contacts. Contact support if needed.",
                         action: "denied",
                         reason: "Contact is approved and verified",
                         contact_status: contact.contact_status,
-                        verified: contact.verified
+                        verified: contact.verified,
                     });
-                    
                 } else {
                     // Handle edge cases (e.g., approved but not verified, etc.)
                     return res.status(403).json({
@@ -571,11 +658,10 @@ export const DeleteContact = async (req, res) => {
                         action: "denied",
                         reason: "Insufficient permissions for current contact state",
                         contact_status: contact.contact_status,
-                        verified: contact.verified
+                        verified: contact.verified,
                     });
                 }
-            } 
-            else if (['cata', 'catb', 'catc', 'admin'].includes(userType)) {
+            } else if (["cata", "catb", "catc", "admin"].includes(userType)) {
                 // Middlemen or Admin - set status as rejected
                 await t`
                     UPDATE event 
@@ -586,25 +672,23 @@ export const DeleteContact = async (req, res) => {
                 return res.status(200).json({
                     message: "Contact status updated to rejected successfully!",
                     action: "rejected",
-                    previousStatus: contact.contact_status
+                    previousStatus: contact.contact_status,
                 });
-            } 
-            else {
+            } else {
                 throw new Error("Invalid user type");
             }
         });
-
     } catch (err) {
         console.error(err);
-        
+
         if (err.message === "Contact not found") {
             return res.status(404).json({ message: "Contact not found." });
         } else if (err.message === "Invalid user type") {
             return res.status(400).json({ message: "Invalid user type provided." });
         } else {
-            return res.status(500).json({ 
-                message: "Server Error!", 
-                error: err.message 
+            return res.status(500).json({
+                message: "Server Error!",
+                error: err.message,
             });
         }
     }
@@ -620,7 +704,6 @@ const performCompleteDeletion = async (transaction, contactId) => {
     // Finally, delete the parent contact record
     await transaction`DELETE FROM contact WHERE contact_id = ${contactId}`;
 };
-
 
 // ADD EVENT to an existing contact
 export const AddEventToExistingContact = async (req, res) => {
@@ -690,7 +773,7 @@ export const SearchContacts = async (req, res) => {
 
 export const GetFilteredContacts = async (req, res) => {
     const queryParams = req.query;
-    
+
     // Convert single values to arrays for consistent handling
     const normalizeParam = (param) => {
         if (!param) return null;
@@ -769,116 +852,116 @@ export const GetFilteredContacts = async (req, res) => {
 
         // Array-based filters for ENUM fields (exact match)
         if (category) {
-            const categoryValues = category.map(cat => `'${cat}'`).join(',');
+            const categoryValues = category.map((cat) => `'${cat}'`).join(",");
             conditions.push(`c.category IN (${categoryValues})`);
         }
-        
+
         if (gender) {
-            const genderValues = gender.map(g => `'${g}'`).join(',');
+            const genderValues = gender.map((g) => `'${g}'`).join(",");
             conditions.push(`c.gender IN (${genderValues})`);
         }
-        
+
         if (marital_status) {
-            const maritalValues = marital_status.map(ms => `'${ms}'`).join(',');
+            const maritalValues = marital_status.map((ms) => `'${ms}'`).join(",");
             conditions.push(`c.marital_status IN (${maritalValues})`);
         }
 
         // Array-based filters for text fields (partial match with OR)
         if (nationality) {
-            const nationalityConditions = nationality.map(nat => `c.nationality ILIKE '%${nat}%'`);
-            conditions.push(`(${nationalityConditions.join(' OR ')})`);
+            const nationalityConditions = nationality.map((nat) => `c.nationality ILIKE '%${nat}%'`);
+            conditions.push(`(${nationalityConditions.join(" OR ")})`);
         }
-        
+
         if (skills) {
-            const skillsConditions = skills.map(skill => `c.skills ILIKE '%${skill}%'`);
-            conditions.push(`(${skillsConditions.join(' OR ')})`);
+            const skillsConditions = skills.map((skill) => `c.skills ILIKE '%${skill}%'`);
+            conditions.push(`(${skillsConditions.join(" OR ")})`);
         }
 
         // Address filters
         if (address_city) {
-            const cityConditions = address_city.map(city => `ca.city ILIKE '%${city}%'`);
-            conditions.push(`(${cityConditions.join(' OR ')})`);
+            const cityConditions = address_city.map((city) => `ca.city ILIKE '%${city}%'`);
+            conditions.push(`(${cityConditions.join(" OR ")})`);
         }
-        
+
         if (address_state) {
-            const stateConditions = address_state.map(state => `ca.state ILIKE '%${state}%'`);
-            conditions.push(`(${stateConditions.join(' OR ')})`);
+            const stateConditions = address_state.map((state) => `ca.state ILIKE '%${state}%'`);
+            conditions.push(`(${stateConditions.join(" OR ")})`);
         }
-        
+
         if (address_country) {
-            const countryConditions = address_country.map(country => `ca.country ILIKE '%${country}%'`);
-            conditions.push(`(${countryConditions.join(' OR ')})`);
+            const countryConditions = address_country.map((country) => `ca.country ILIKE '%${country}%'`);
+            conditions.push(`(${countryConditions.join(" OR ")})`);
         }
-        
+
         if (address_zipcode) conditions.push(`ca.zipcode = '${address_zipcode}'`);
         if (address_street) conditions.push(`ca.street ILIKE '%${address_street}%'`);
 
         // Education filters
         if (pg_course_name) {
-            const pgCourseConditions = pg_course_name.map(course => `ce.pg_course_name ILIKE '%${course}%'`);
-            conditions.push(`(${pgCourseConditions.join(' OR ')})`);
+            const pgCourseConditions = pg_course_name.map((course) => `ce.pg_course_name ILIKE '%${course}%'`);
+            conditions.push(`(${pgCourseConditions.join(" OR ")})`);
         }
-        
+
         if (pg_college) {
-            const pgCollegeConditions = pg_college.map(college => `ce.pg_college ILIKE '%${college}%'`);
-            conditions.push(`(${pgCollegeConditions.join(' OR ')})`);
+            const pgCollegeConditions = pg_college.map((college) => `ce.pg_college ILIKE '%${college}%'`);
+            conditions.push(`(${pgCollegeConditions.join(" OR ")})`);
         }
-        
+
         if (pg_university) {
-            const pgUniversityConditions = pg_university.map(uni => `ce.pg_university ILIKE '%${uni}%'`);
-            conditions.push(`(${pgUniversityConditions.join(' OR ')})`);
+            const pgUniversityConditions = pg_university.map((uni) => `ce.pg_university ILIKE '%${uni}%'`);
+            conditions.push(`(${pgUniversityConditions.join(" OR ")})`);
         }
-        
+
         if (ug_course_name) {
-            const ugCourseConditions = ug_course_name.map(course => `ce.ug_course_name ILIKE '%${course}%'`);
-            conditions.push(`(${ugCourseConditions.join(' OR ')})`);
+            const ugCourseConditions = ug_course_name.map((course) => `ce.ug_course_name ILIKE '%${course}%'`);
+            conditions.push(`(${ugCourseConditions.join(" OR ")})`);
         }
-        
+
         if (ug_college) {
-            const ugCollegeConditions = ug_college.map(college => `ce.ug_college ILIKE '%${college}%'`);
-            conditions.push(`(${ugCollegeConditions.join(' OR ')})`);
+            const ugCollegeConditions = ug_college.map((college) => `ce.ug_college ILIKE '%${college}%'`);
+            conditions.push(`(${ugCollegeConditions.join(" OR ")})`);
         }
-        
+
         if (ug_university) {
-            const ugUniversityConditions = ug_university.map(uni => `ce.ug_university ILIKE '%${uni}%'`);
-            conditions.push(`(${ugUniversityConditions.join(' OR ')})`);
+            const ugUniversityConditions = ug_university.map((uni) => `ce.ug_university ILIKE '%${uni}%'`);
+            conditions.push(`(${ugUniversityConditions.join(" OR ")})`);
         }
 
         // Experience filters
         if (job_title) {
-            const jobTitleConditions = job_title.map(jt => `exp.job_title ILIKE '%${jt}%'`);
-            conditions.push(`(${jobTitleConditions.join(' OR ')})`);
+            const jobTitleConditions = job_title.map((jt) => `exp.job_title ILIKE '%${jt}%'`);
+            conditions.push(`(${jobTitleConditions.join(" OR ")})`);
         }
-        
+
         if (company) {
-            const companyConditions = company.map(comp => `exp.company ILIKE '%${comp}%'`);
-            conditions.push(`(${companyConditions.join(' OR ')})`);
+            const companyConditions = company.map((comp) => `exp.company ILIKE '%${comp}%'`);
+            conditions.push(`(${companyConditions.join(" OR ")})`);
         }
-        
+
         if (department) {
-            const departmentConditions = department.map(dept => `exp.department ILIKE '%${dept}%'`);
-            conditions.push(`(${departmentConditions.join(' OR ')})`);
+            const departmentConditions = department.map((dept) => `exp.department ILIKE '%${dept}%'`);
+            conditions.push(`(${departmentConditions.join(" OR ")})`);
         }
 
         // Event filters
         if (event_name) {
-            const eventNameConditions = event_name.map(name => `e.event_name ILIKE '%${name}%'`);
-            conditions.push(`(${eventNameConditions.join(' OR ')})`);
+            const eventNameConditions = event_name.map((name) => `e.event_name ILIKE '%${name}%'`);
+            conditions.push(`(${eventNameConditions.join(" OR ")})`);
         }
-        
+
         if (event_role) {
-            const eventRoleConditions = event_role.map(role => `e.event_role ILIKE '%${role}%'`);
-            conditions.push(`(${eventRoleConditions.join(' OR ')})`);
+            const eventRoleConditions = event_role.map((role) => `e.event_role ILIKE '%${role}%'`);
+            conditions.push(`(${eventRoleConditions.join(" OR ")})`);
         }
-        
+
         if (event_organization) {
-            const eventOrgConditions = event_organization.map(org => `e.event_held_organization ILIKE '%${org}%'`);
-            conditions.push(`(${eventOrgConditions.join(' OR ')})`);
+            const eventOrgConditions = event_organization.map((org) => `e.event_held_organization ILIKE '%${org}%'`);
+            conditions.push(`(${eventOrgConditions.join(" OR ")})`);
         }
-        
+
         if (event_location) {
-            const eventLocationConditions = event_location.map(loc => `e.event_location ILIKE '%${loc}%'`);
-            conditions.push(`(${eventLocationConditions.join(' OR ')})`);
+            const eventLocationConditions = event_location.map((loc) => `e.event_location ILIKE '%${loc}%'`);
+            conditions.push(`(${eventLocationConditions.join(" OR ")})`);
         }
 
         // Date filters
@@ -901,8 +984,8 @@ export const GetFilteredContacts = async (req, res) => {
         if (event_year) conditions.push(`EXTRACT(YEAR FROM e.event_date) = ${event_year}`);
 
         const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
-        console.log('WHERE clause:', whereClause);
-        
+        console.log("WHERE clause:", whereClause);
+
         const offset = (page - 1) * limit;
         const validSortFields = ["name", "email_address", "phone_number", "created_at", "dob"];
         const sortField = validSortFields.includes(sort_by) ? sort_by : "name";
@@ -989,7 +1072,6 @@ export const GetFilteredContacts = async (req, res) => {
     }
 };
 
-
 export const GetFilterOptions = async (req, res) => {
     try {
         // Get all filter options with counts (remove destructuring brackets)
@@ -1066,10 +1148,13 @@ export const GetFilterOptions = async (req, res) => {
         `;
 
         const skillCounts = {};
-        skillsData.forEach(row => {
+        skillsData.forEach((row) => {
             if (row.skills) {
-                const skills = row.skills.split(',').map(s => s.trim()).filter(s => s);
-                skills.forEach(skill => {
+                const skills = row.skills
+                    .split(",")
+                    .map((s) => s.trim())
+                    .filter((s) => s);
+                skills.forEach((skill) => {
                     skillCounts[skill] = (skillCounts[skill] || 0) + 1;
                 });
             }
@@ -1091,11 +1176,10 @@ export const GetFilterOptions = async (req, res) => {
             job_titles: jobTitles,
             pg_courses: pgCourses,
             ug_courses: ugCourses,
-            skills
+            skills,
         });
     } catch (err) {
         console.error(err);
         return res.status(500).json({ error: err.message });
     }
 };
-

@@ -327,7 +327,7 @@ function MiddleManRecords() {
       if (updatedData && addingUser) {
         console.log("Saving data:", updatedData);
         const response = await axios.put(
-          `http://localhost:8000/api/update-contact/${updatedData.contact_id}?contact_status=approved&event_verified=true`,
+          `http://localhost:8000/api/update-contact/${updatedData.contact_id}?contact_status=approved&event_verified=true&updaterUserId=${id}`,
           updatedData
         );
         console.log("Update response:", response);
