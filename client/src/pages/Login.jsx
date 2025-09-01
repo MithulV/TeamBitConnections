@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Mail, Lock } from "lucide-react";
-import axios from "axios";
+import api from "../utils/axios";
 import { useAuthStore } from "../store/AuthStore";
 
 const campusImageUrl =
@@ -49,7 +49,7 @@ const LoginPage = () => {
 
   const handleLogin = async () => {
     try {
-      const res = await axios.post("http://localhost:8000/auth/login", {
+      const res = await api.post("/auth/login", {
         email,
         password,
       });
