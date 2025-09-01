@@ -1,4 +1,4 @@
-import axios from 'axios';
+import api from '../utils/axios';
 import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '../store/AuthStore';
 import { ArrowLeft } from 'lucide-react';
@@ -149,7 +149,7 @@ function UserAssignments() {
     const getData = async () => {
         try {
             setLoading(true);
-            const response = await axios.get(`http://localhost:8000/api/get-assignment/${id}`);
+            const response = await api.get(`/api/get-assignment/${id}`);
             console.log("User assignments fetched successfully:", response.data);
             setData(response.data);
         } catch (error) {
@@ -189,8 +189,8 @@ function UserAssignments() {
         try {
             if (updatedData && addingUser) {
                 console.log("Saving data:", updatedData);
-                const response = await axios.put(
-                    `http://localhost:8000/api/update-contact/${updatedData.contact_id}?event_verified=false&contact_status=pending`,
+                const response = await api.put(
+                    `/api/update-contact/${updatedData.contact_id}?event_verified=false&contact_status=pending`,
                     updatedData
                 );
                 console.log("Update response:", response);
@@ -235,7 +235,7 @@ function UserAssignments() {
                 switch (userToDelete.type) {
                     case "assignment":
                         // Call assignment deletion API - this removes the assignment, not the contact
-                        await axios.delete(`http://localhost:8000/api/delete-assignment/${userToDelete.assignment_id}`);
+                        await api.delete(`/api/delete-assignment/${userToDelete.assignment_id}`);
                         setData((prevData) =>
                             prevData.filter(user => user.contact_id !== userToDelete.id)
                         );
@@ -244,7 +244,7 @@ function UserAssignments() {
 
                     case "contact":
                         // If you want to delete the actual contact (not just remove assignment)
-                        await axios.delete(`http://localhost:8000/api/delete-contact/${userToDelete.id}`);
+                        await api.delete(`/api/delete-contact/${userToDelete.id}`);
 
                         setData((prevData) =>
                             prevData.filter(user => user.contact_id !== userToDelete.id)

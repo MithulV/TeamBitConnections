@@ -5,7 +5,7 @@ import Avatar from "../assets/Avatar.png";
 import DetailsInput from "../components/DetailsInput";
 import Header from "../components/Header";
 import { useAuthStore } from "../store/AuthStore";
-import axios from "axios";
+import api from '../utils/axios';
 import { format, parseISO } from "date-fns";
 import { useNavigate } from "react-router-dom";
 
@@ -137,8 +137,8 @@ function MiddleManRecords() {
   const { id, role } = useAuthStore();
 
   const handleSelectContact = () => {
-    axios
-      .get(`http://localhost:8000/api/get-unverified-contacts/`)
+    api
+      .get(`/api/get-unverified-contacts/`)
       .then((response) => {
         console.log("Contacts fetched successfully:", response.data);
         setData(response.data);
@@ -151,8 +151,8 @@ function MiddleManRecords() {
 
   const handleSelectUnverifiedVisitingCards = async () => {
     try {
-      const response = await axios.get(
-        `http://localhost:8000/api/get-unverified-images/`
+      const response = await api.get(
+        `/api/get-unverified-images/`
       );
       console.log("Visiting cards fetched successfully:", response.data);
       setVisitingCard(response.data.data || []);
@@ -165,8 +165,8 @@ function MiddleManRecords() {
   const handleSelectAssignedByUser = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(
-        `http://localhost:8000/api/get-assigned-to/${id}`
+      const response = await api.get(
+        `/api/get-assigned-to/${id}`
       );
       console.log("Assigned by user data fetched successfully:", response.data);
       setAssignedByUserData(response.data);
@@ -245,8 +245,8 @@ function MiddleManRecords() {
       try {
         switch (userToDelete.type) {
           case "contact":
-            await axios.delete(
-              `http://localhost:8000/api/delete-contact/${userToDelete.id}?userType=${role}`
+            await api.delete(
+              `/api/delete-contact/${userToDelete.id}?userType=${role}`
             );
 
             setData((prevData) =>
@@ -259,8 +259,8 @@ function MiddleManRecords() {
             break;
 
           case "assignment":
-            await axios.delete(
-              `http://localhost:8000/api/delete-assignment/${userToDelete.assignment_id}`
+            await api.delete(
+              `/api/delete-assignment/${userToDelete.assignment_id}`
             );
 
             setAssignedByUserData((prevData) =>
@@ -276,8 +276,8 @@ function MiddleManRecords() {
             break;
 
           case "visitingCard":
-            await axios.delete(
-              `http://localhost:8000/api/delete-image/${userToDelete.id}?userType=${role}`
+            await api.delete(
+              `/api/delete-image/${userToDelete.id}?userType=${role}`
             );
 
             setVisitingCard((prevData) =>
@@ -326,8 +326,8 @@ function MiddleManRecords() {
     try {
       if (updatedData && addingUser) {
         console.log("Saving data:", updatedData);
-        const response = await axios.put(
-          `http://localhost:8000/api/update-contact/${updatedData.contact_id}?contact_status=approved&event_verified=true`,
+        const response = await api.put(
+          `/api/update-contact/${updatedData.contact_id}?contact_status=approved&event_verified=true`,
           updatedData
         );
         console.log("Update response:", response);
@@ -359,7 +359,7 @@ function MiddleManRecords() {
 
   const assignToUser = async () => {
     try {
-      const response = await axios.post(`http://localhost:8000/api/assign/`, {
+      const response = await api.post(`/api/assign/`, {
         assigned_by: id,
         assigned_to: addingUser.created_by,
         event_id: addingUser.events[0].event_id,
