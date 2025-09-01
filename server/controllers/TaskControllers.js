@@ -80,21 +80,20 @@ const checkForUpdatedAtOneMonth = async (id) => {
 
 // Create manual task
 export const CreateTask = async (req, res) => {
-  const { task_title, task_description, task_assigned_to, task_deadline, task_assigned_category } = req.body;
-  
-  if (!task_title || !task_assigned_to || !task_deadline || !task_assigned_category) {
-    return res.status(400).json({ 
-      success: false, 
-      error: "Missing required fields" 
-    });
-  }
+    const { task_title, task_description, task_deadline, task_assigned_category } = req.body;
 
-  try {
-    const result = await db`
+    if (!task_title || !task_assigned_to || !task_deadline || !task_assigned_category) {
+        return res.status(400).json({
+            success: false,
+            error: "Missing required fields"
+        });
+    }
+
+    try {
+        const result = await db`
       INSERT INTO tasks (
         task_title, 
         task_description, 
-        task_assigned_to, 
         task_deadline, 
         task_assigned_category, 
         task_type, 
@@ -110,95 +109,151 @@ export const CreateTask = async (req, res) => {
       )
     `;
 
-    return res.status(201).json({
-      success: true,
-      message: "Task created successfully"
-    });
-  } catch (error) {
-    console.error("Error creating task:", error);
-    return res.status(500).json({ 
-      success: false, 
-      error: "Internal server error" 
-    });
-  }
+        return res.status(201).json({
+            success: true,
+            message: "Task created successfully"
+        });
+    } catch (error) {
+        console.error("Error creating task:", error);
+        return res.status(500).json({
+            success: false,
+            error: "Internal server error"
+        });
+    }
 };
 
-// Updated GetTasks - returns pending tasks ordered by deadline ASC
 export const GetTasks = async (req, res) => {
-  const { category } = req.query;
-  const role = req.user?.role || req.headers?.role; // Get role from auth middleware
+    const { category } = req.query;
+    try {
+        let tasks;
+        let totalCount;
+        let completedCount;
+        let assignedTotal;
+        let assignedCompleted;
+        let automatedTotal;
+        let automatedCompleted;
 
-  try {
-    let tasks;
-    let totalCount;
-    let completedCount;
-    let assignedTotal;
-    let assignedCompleted;
-    let automatedTotal;
-    let automatedCompleted;
+        // Admin-specific data with actual records
+        let pendingTasks = [];
+        let completedTasks = [];
+        let totalTasks = [];
+        let manualTasks = [];
+        let automatedTasks = [];
 
-    if (role === 'admin') {
-      // Admin: Get all pending tasks ordered by deadline ASC
-      tasks = await db`
-        SELECT * FROM tasks 
-        WHERE task_completion = FALSE 
-        ORDER BY task_deadline ASC
-      `;
+        if (category === 'admin') {
+            // Admin: Get all tasks with their records
 
-      totalCount = await db`SELECT COUNT(*) as count FROM tasks`;
-      completedCount = await db`SELECT COUNT(*) as count FROM tasks WHERE task_completion = TRUE`;
-      assignedTotal = await db`SELECT COUNT(*) as count FROM tasks WHERE task_type = 'assigned'`;
-      assignedCompleted = await db`SELECT COUNT(*) as count FROM tasks WHERE task_type = 'assigned' AND task_completion = TRUE`;
-      automatedTotal = await db`SELECT COUNT(*) as count FROM tasks WHERE task_type = 'automated'`;
-      automatedCompleted = await db`SELECT COUNT(*) as count FROM tasks WHERE task_type = 'automated' AND task_completion = TRUE`;
+            // Get pending tasks (task_completion = FALSE)
+            pendingTasks = await db`
+      SELECT * FROM tasks 
+      WHERE task_completion = FALSE 
+      ORDER BY task_deadline ASC
+    `;
 
-    } else {
-      // Other roles: Get pending tasks for their category ordered by deadline ASC
-      tasks = await db`
-        SELECT * FROM tasks 
-        WHERE task_completion = FALSE 
-        AND task_assigned_category = ${category}
-        ORDER BY task_deadline ASC
-      `;
+            // Get completed tasks (task_completion = TRUE)
+            completedTasks = await db`
+      SELECT * FROM tasks 
+      WHERE task_completion = TRUE 
+      ORDER BY task_deadline DESC
+    `;
 
-      totalCount = await db`SELECT COUNT(*) as count FROM tasks WHERE task_assigned_category = ${category}`;
-      completedCount = await db`SELECT COUNT(*) as count FROM tasks WHERE task_assigned_category = ${category} AND task_completion = TRUE`;
-      assignedTotal = await db`SELECT COUNT(*) as count FROM tasks WHERE task_assigned_category = ${category} AND task_type = 'assigned'`;
-      assignedCompleted = await db`SELECT COUNT(*) as count FROM tasks WHERE task_assigned_category = ${category} AND task_type = 'assigned' AND task_completion = TRUE`;
-      automatedTotal = await db`SELECT COUNT(*) as count FROM tasks WHERE task_assigned_category = ${category} AND task_type = 'automated'`;
-      automatedCompleted = await db`SELECT COUNT(*) as count FROM tasks WHERE task_assigned_category = ${category} AND task_type = 'automated' AND task_completion = TRUE`;
+            // Get all tasks
+            totalTasks = await db`
+      SELECT * FROM tasks 
+      ORDER BY task_deadline ASC
+    `;
+
+            // Get manual tasks (task_type = 'assigned')
+            manualTasks = await db`
+      SELECT * FROM tasks 
+      WHERE task_type = 'assigned' 
+      ORDER BY task_deadline ASC
+    `;
+
+            // Get automated tasks (task_type = 'automated')
+            automatedTasks = await db`
+      SELECT * FROM tasks 
+      WHERE task_type = 'automated' 
+      ORDER BY task_deadline ASC
+    `;
+
+            // Get counts for stats
+            totalCount = await db`SELECT COUNT(*) as count FROM tasks`;
+            completedCount = await db`SELECT COUNT(*) as count FROM tasks WHERE task_completion = TRUE`;
+            assignedTotal = await db`SELECT COUNT(*) as count FROM tasks WHERE task_type = 'assigned'`;
+            assignedCompleted = await db`SELECT COUNT(*) as count FROM tasks WHERE task_type = 'assigned' AND task_completion = TRUE`;
+            automatedTotal = await db`SELECT COUNT(*) as count FROM tasks WHERE task_type = 'automated'`;
+            automatedCompleted = await db`SELECT COUNT(*) as count FROM tasks WHERE task_type = 'automated' AND task_completion = TRUE`;
+
+            // Set tasks to pending tasks for backward compatibility
+            tasks = pendingTasks;
+
+        } else {
+            // Other roles: Get pending tasks for their category ordered by deadline ASC
+            tasks = await db`
+      SELECT * FROM tasks 
+      WHERE task_completion = FALSE 
+      AND task_assigned_category = ${category}
+      ORDER BY task_deadline ASC
+    `;
+
+            totalCount = await db`SELECT COUNT(*) as count FROM tasks WHERE task_assigned_category = ${category}`;
+            completedCount = await db`SELECT COUNT(*) as count FROM tasks WHERE task_assigned_category = ${category} AND task_completion = TRUE`;
+            assignedTotal = await db`SELECT COUNT(*) as count FROM tasks WHERE task_assigned_category = ${category} AND task_type = 'assigned'`;
+            assignedCompleted = await db`SELECT COUNT(*) as count FROM tasks WHERE task_assigned_category = ${category} AND task_type = 'assigned' AND task_completion = TRUE`;
+            automatedTotal = await db`SELECT COUNT(*) as count FROM tasks WHERE task_assigned_category = ${category} AND task_type = 'automated'`;
+            automatedCompleted = await db`SELECT COUNT(*) as count FROM tasks WHERE task_assigned_category = ${category} AND task_type = 'automated' AND task_completion = TRUE`;
+        }
+
+        const stats = {
+            total: parseInt(totalCount[0].count),
+            completed: parseInt(completedCount[0].count),
+            pending: category === 'admin' ? pendingTasks.length : tasks.length,
+            breakdown: {
+                assigned: {
+                    total: parseInt(assignedTotal[0].count),
+                    completed: parseInt(assignedCompleted[0].count),
+                    pending: category === 'admin'
+                        ? pendingTasks.filter(task => task.task_type === "assigned").length
+                        : tasks.filter(task => task.task_type === "assigned").length,
+                },
+                automated: {
+                    total: parseInt(automatedTotal[0].count),
+                    completed: parseInt(automatedCompleted[0].count),
+                    pending: category === 'admin'
+                        ? pendingTasks.filter(task => task.task_type === "automated").length
+                        : tasks.filter(task => task.task_type === "automated").length,
+                },
+            },
+        };
+
+        // Build response object
+        const response = {
+            success: true,
+            data: tasks, // This will be pending tasks
+            stats: stats,
+        };
+
+        // Add admin-specific records if admin
+        if (category === 'admin') {
+            response.adminData = {
+                pendingTasks: pendingTasks,
+                completedTasks: completedTasks,
+                totalTasks: totalTasks,
+                manualTasks: manualTasks,
+                automatedTasks: automatedTasks
+            };
+        }
+
+        return res.status(200).json(response);
+
+    } catch (error) {
+        console.error("Error fetching tasks:", error);
+        return res.status(500).json({
+            success: false,
+            error: "An internal server error occurred."
+        });
     }
-
-    const stats = {
-      total: parseInt(totalCount[0].count),
-      completed: parseInt(completedCount[0].count),
-      pending: tasks.length,
-      breakdown: {
-        assigned: {
-          total: parseInt(assignedTotal[0].count),
-          completed: parseInt(assignedCompleted[0].count),
-          pending: tasks.filter(task => task.task_type === "assigned").length,
-        },
-        automated: {
-          total: parseInt(automatedTotal[0].count),
-          completed: parseInt(automatedCompleted[0].count),
-          pending: tasks.filter(task => task.task_type === "automated").length,
-        },
-      },
-    };
-
-    return res.status(200).json({
-      success: true,
-      data: tasks,
-      stats: stats,
-    });
-  } catch (error) {
-    console.error("Error fetching tasks:", error);
-    return res.status(500).json({ 
-      success: false, 
-      error: "An internal server error occurred." 
-    });
-  }
 };
 
 export const CompleteTask = async (req, res) => {
