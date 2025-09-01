@@ -4,7 +4,7 @@ import FormInput from "../components/FormInput";
 import Avatar from "../assets/Avatar.png";
 import { Camera, UserPlus, ArrowLeft } from "lucide-react";
 import Header from "../components/Header";
-import axios from "axios";
+import api from '../utils/axios'; 
 import { useAuthStore } from "../store/AuthStore";
 import Alert from "../components/Alert";
 function UserHome() {
@@ -46,7 +46,7 @@ function UserHome() {
   const handleSaveContact = async (formData) => {
     try {
       console.log(formData);
-      const response = await axios.post(`http://localhost:8000/api/create-contact`, formData);
+      const response = await api.post(`/api/create-contact`, formData);
       console.log(response);
       showAlert(
         "success", `contact has been successfully added.`
@@ -87,7 +87,7 @@ function UserHome() {
         formData.append("user_id", id);
       }
 
-      const res = await axios.post("http://localhost:8000/api/upload-contact", formData, {
+      const res = await api.post("/api/upload-contact", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
