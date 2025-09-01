@@ -82,7 +82,7 @@ const checkForUpdatedAtOneMonth = async (id) => {
 export const CreateTask = async (req, res) => {
     const { task_title, task_description, task_deadline, task_assigned_category } = req.body;
 
-    if (!task_title || !task_assigned_to || !task_deadline || !task_assigned_category) {
+    if (!task_title || !task_deadline || !task_assigned_category) {
         return res.status(400).json({
             success: false,
             error: "Missing required fields"
@@ -101,7 +101,6 @@ export const CreateTask = async (req, res) => {
       ) VALUES (
         ${task_title}, 
         ${task_description}, 
-        ${task_assigned_to}, 
         ${task_deadline}, 
         ${task_assigned_category}, 
         'assigned', 
