@@ -158,8 +158,6 @@ function DetailsInput({
     event_held_organization: "",
     event_location: "",
     linkedin_url: "",
-    event_verified: true,
-
     // Logger for notes
     logger: "",
   });
@@ -242,8 +240,6 @@ function DetailsInput({
         event_date: formatDate(firstEvent.event_date),
         event_held_organization: firstEvent.event_held_organization || "",
         event_location: firstEvent.event_location || "",
-        event_verified: true,
-
         // --- Experience History (from 'experiences' array) ---
         experience:
           Array.isArray(initialData.experiences) &&
@@ -268,7 +264,7 @@ function DetailsInput({
               ],
 
         // --- Logger ---
-        logger: "",
+        logger: initialData.logger,
       }));
     }
   }, [isAddMode, isEditMode, initialData]);
@@ -919,7 +915,6 @@ function DetailsInput({
       contact_id: formData.contact_id,
       assignment_id: formData.assignment_id || null,
       event_verified: formData.event_verified || false,
-
       // Single Objects
       ...(address && { address }),
       ...(education && { education }),
@@ -1013,7 +1008,6 @@ function DetailsInput({
         event_location: "",
         linkedin_url: "",
         logger: "",
-        event_verified: true,
       });
       return;
     }

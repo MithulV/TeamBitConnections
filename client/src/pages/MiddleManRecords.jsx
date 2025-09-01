@@ -15,7 +15,7 @@ const DeleteConfirmationModal = ({
   onCancel,
   itemName = "this user",
   deleteType = "contact",
-  isDeleting = false, // Add isDeleting prop
+  isDeleting = false,
 }) => {
   if (!isOpen) return null;
 
@@ -37,7 +37,7 @@ const DeleteConfirmationModal = ({
       {/* Backdrop with blur effect */}
       <div
         className="absolute inset-0 bg-black/60 bg-opacity-50 backdrop-blur-sm transition-all duration-300"
-        onClick={!isDeleting ? onCancel : undefined} // Prevent closing during deletion
+        onClick={!isDeleting ? onCancel : undefined}
       ></div>
 
       {/* Modal */}
@@ -119,7 +119,7 @@ const DeleteConfirmationModal = ({
 function MiddleManRecords() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [userToDelete, setUserToDelete] = useState(null);
-  const [isDeleting, setIsDeleting] = useState(false); 
+  const [isDeleting, setIsDeleting] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [addingUser, setAddingUser] = useState(null);
   const [activeView, setActiveView] = useState("formData");
@@ -134,7 +134,7 @@ function MiddleManRecords() {
   const [visitingCard, setVisitingCard] = useState([]);
   const [assignedByUserData, setAssignedByUserData] = useState([]);
 
-  const { id } = useAuthStore();
+  const { id, role } = useAuthStore();
 
   const handleSelectContact = () => {
     axios
@@ -207,22 +207,24 @@ function MiddleManRecords() {
   const handleDeleteClick = (contact_id) => {
     const user = data.find((user) => user.contact_id === contact_id);
     if (user) {
-      setUserToDelete({ 
-        id: contact_id, 
+      setUserToDelete({
+        id: contact_id,
         name: user?.name || "this user",
-        type: "contact" 
+        type: "contact",
       });
       setShowDeleteModal(true);
     }
   };
 
   const handleAssignmentDelete = (assignment_id) => {
-    const user = assignedByUserData.find((user) => user.assignment_id === assignment_id);
+    const user = assignedByUserData.find(
+      (user) => user.assignment_id === assignment_id
+    );
     if (user) {
       setUserToDelete({
         assignment_id: assignment_id,
         name: user?.name || "this user",
-        type: "assignment"
+        type: "assignment",
       });
       setShowDeleteModal(true);
     }
@@ -232,40 +234,54 @@ function MiddleManRecords() {
     setUserToDelete({
       id: card_id,
       name: card_name,
-      type: "visitingCard"
+      type: "visitingCard",
     });
     setShowDeleteModal(true);
   };
 
-  // Updated confirmDelete function with loading state
   const confirmDelete = async () => {
     if (userToDelete) {
-      setIsDeleting(true); // Start loading
+      setIsDeleting(true);
       try {
         switch (userToDelete.type) {
           case "contact":
-            await axios.delete(`http://localhost:8000/api/delete-contact/${userToDelete.id}?userType=${role}`);
-            
+            await axios.delete(
+              `http://localhost:8000/api/delete-contact/${userToDelete.id}?userType=${role}`
+            );
+
             setData((prevData) =>
               prevData.filter((item) => item.contact_id !== userToDelete.id)
             );
-            showAlert("success", `${userToDelete.name} has been successfully deleted.`);
+            showAlert(
+              "success",
+              `${userToDelete.name} has been successfully deleted.`
+            );
             break;
 
           case "assignment":
-            await axios.delete(`http://localhost:8000/api/delete-assignment/${userToDelete.assignment_id}`);
-            
-            setAssignedByUserData((prevData) =>
-              prevData.filter(p => p.assignment_id !== userToDelete.assignment_id)
+            await axios.delete(
+              `http://localhost:8000/api/delete-assignment/${userToDelete.assignment_id}`
             );
-            showAlert("success", `Assignment for ${userToDelete.name} has been successfully deleted.`);
+
+            setAssignedByUserData((prevData) =>
+              prevData.filter(
+                (p) => p.assignment_id !== userToDelete.assignment_id
+              )
+            );
+            handleSelectContact();
+            showAlert(
+              "success",
+              `Assignment for ${userToDelete.name} has been successfully deleted.`
+            );
             break;
 
           case "visitingCard":
-            await axios.delete(`http://localhost:8000/api/delete-image/${userToDelete.id}?userType=${role}`);
-            
+            await axios.delete(
+              `http://localhost:8000/api/delete-image/${userToDelete.id}?userType=${role}`
+            );
+
             setVisitingCard((prevData) =>
-              prevData.filter(card => card.id !== userToDelete.id)
+              prevData.filter((card) => card.id !== userToDelete.id)
             );
             showAlert("success", "Visiting card has been successfully deleted.");
             break;
@@ -281,13 +297,13 @@ function MiddleManRecords() {
         showAlert("error", "Failed to delete. Please try again.");
         console.log("Error deleting:", error);
       } finally {
-        setIsDeleting(false); // Stop loading
+        setIsDeleting(false);
       }
     }
   };
 
   const cancelDelete = () => {
-    if (isDeleting) return; // Prevent closing during deletion
+    if (isDeleting) return;
     setShowDeleteModal(false);
     setUserToDelete(null);
   };
@@ -311,7 +327,7 @@ function MiddleManRecords() {
       if (updatedData && addingUser) {
         console.log("Saving data:", updatedData);
         const response = await axios.put(
-          `http://localhost:8000/api/update-contact/${updatedData.contact_id}`,
+          `http://localhost:8000/api/update-contact/${updatedData.contact_id}?contact_status=approved&event_verified=true`,
           updatedData
         );
         console.log("Update response:", response);
@@ -350,6 +366,9 @@ function MiddleManRecords() {
       });
       console.log(response.data);
       console.log(id, addingUser.created_by, addingUser.events[0].event_id);
+      setData((prevData) =>
+        prevData.filter((data) => data.contact_id !== addingUser.contact_id)
+      );
       showAlert("success", "Successfully assigned to user");
       handleAddCancel();
     } catch (err) {
@@ -437,8 +456,13 @@ function MiddleManRecords() {
                         parseISO(participant.created_at),
                         "MMMM dd, yyyy"
                       )}
-                      org={participant.events?.[0]?.event_held_organization || "N/A"}
-                      location={participant.events?.[0]?.event_location || "N/A"}
+                      org={
+                        participant.events?.[0]?.event_held_organization ||
+                        "N/A"
+                      }
+                      location={
+                        participant.events?.[0]?.event_location || "N/A"
+                      }
                       profileImage={participant.profileImage || Avatar}
                       onDelete={() => handleDeleteClick(participant.contact_id)}
                       onType={() => onAdd(participant.contact_id)}
@@ -448,13 +472,29 @@ function MiddleManRecords() {
                   ))}
 
                   {data.length === 0 && (
-                    <div className="col-span-full text-center py-12">
-                      <div className="text-gray-400 text-lg mb-2">
+                    <div className="col-span-full text-center py-16">
+                      <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mb-4">
+                        <svg
+                          className="w-8 h-8 text-gray-400"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"
+                          />
+                        </svg>
+                      </div>
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">
                         No unverified contacts found
-                      </div>
-                      <div className="text-gray-500">
-                        All contacts have been verified.
-                      </div>
+                      </h3>
+                      <p className="text-gray-500 mb-6 max-w-md mx-auto">
+                        All contacts have been verified or there are no pending
+                        submissions to review.
+                      </p>
                     </div>
                   )}
                 </div>
@@ -518,7 +558,10 @@ function MiddleManRecords() {
                                     className="p-2 bg-white rounded-full shadow-lg hover:bg-gray-50 transition-colors duration-200"
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      handleVisitingCardDelete(card.id, `Visiting Card ${card.id}`);
+                                      handleVisitingCardDelete(
+                                        card.id,
+                                        `Visiting Card ${card.id}`
+                                      );
                                     }}
                                   >
                                     <svg
@@ -598,7 +641,9 @@ function MiddleManRecords() {
                       <div className="flex items-center">
                         <div className="w-3 h-3 bg-green-400 rounded-full mr-2"></div>
                         <span className="text-sm text-gray-600">
-                          {assignedByUserData.length} User{assignedByUserData.length !== 1 ? 's' : ''} Assigned by You still not completed their update
+                          {assignedByUserData.length} User
+                          {assignedByUserData.length !== 1 ? "s" : ""} Assigned
+                          by You still not completed their update
                         </span>
                       </div>
                       <button
@@ -647,15 +692,26 @@ function MiddleManRecords() {
                             parseISO(participant.created_at),
                             "MMMM dd, yyyy"
                           )}
-                          org={participant.events?.[0]?.event_held_organization || "N/A"}
-                          location={participant.events?.[0]?.event_location || "N/A"}
+                          org={
+                            participant.events?.[0]?.event_held_organization ||
+                            "N/A"
+                          }
+                          location={
+                            participant.events?.[0]?.event_location || "N/A"
+                          }
                           profileImage={participant.profileImage || Avatar}
-                          onDelete={() => handleDeleteAssignedUser(participant.assignment_id)}
+                          onDelete={() =>
+                            handleDeleteAssignedUser(participant.assignment_id)
+                          }
                           editOrAdd={undefined}
-                          assignedOn={participant.assigned_on ? format(
-                            parseISO(participant.assigned_on),
-                            "MMMM dd, yyyy"
-                          ) : "N/A"}
+                          assignedOn={
+                            participant.assigned_on
+                              ? format(
+                                  parseISO(participant.assigned_on),
+                                  "MMMM dd, yyyy"
+                                )
+                              : "N/A"
+                          }
                         />
                       ))}
                     </div>
@@ -680,7 +736,8 @@ function MiddleManRecords() {
                         No users assigned by you
                       </h3>
                       <p className="text-gray-500 mb-6 max-w-md mx-auto">
-                        You haven't assigned any users yet. Start assigning users to see them here.
+                        You haven't assigned any users yet. Start assigning
+                        users to see them here.
                       </p>
                       <button
                         onClick={handleSelectAssignedByUser}
@@ -721,7 +778,7 @@ function MiddleManRecords() {
                 onCancel={cancelDelete}
                 itemName={userToDelete?.name}
                 deleteType={userToDelete?.type}
-                isDeleting={isDeleting} // Pass isDeleting state
+                isDeleting={isDeleting}
               />
             </>
           )}

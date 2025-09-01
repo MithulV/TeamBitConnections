@@ -29,7 +29,8 @@ import {
   DeleteImage,
   VerifyImages,
 } from "../controllers/PhotoControllers.js";
-import { GetTasks, CompleteTask } from "../controllers/TaskControllers.js";
+import { GetTasks, CompleteTask,CreateTask } from "../controllers/TaskControllers.js";
+import { createTask } from "node-cron";
 
 const router = express.Router();
 router.get("/contacts/filter/", GetFilteredContacts);
@@ -58,4 +59,5 @@ router.delete("/delete-assignment/:assignmentId", revokeAssignment);
 router.get("/get-tasks/", GetTasks);
 router.put("/complete-task/:id", CompleteTask);
 router.get("/get-filter-options", GetFilterOptions);
+router.post("/create-task",CreateTask);
 export default router;

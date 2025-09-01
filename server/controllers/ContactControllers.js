@@ -374,47 +374,48 @@ export const UpdateContactAndEvents = async (req, res) => {
 
 // UPDATE: A contact's core details
 export const UpdateContact = async (req, res) => {
-  const { contact_id } = req.params;
-  const {
-    // --- Contact Fields ---
-    assignment_id,
-    name,
-    phone_number,
-    email_address,
-    dob,
-    gender,
-    nationality,
-    marital_status,
-    category,
-    secondary_email,
-    secondary_phone_number,
-    emergency_contact_name,
-    emergency_contact_relationship,
-    emergency_contact_phone_number,
-    skills,
-    logger,
-    linkedin_url,
 
-    // --- SINGLE OBJECTS ---
-    address,
-    education,
+    const { contact_id } = req.params;
+    const {event_verified,contact_status}=req.query;
+    const isVerified = event_verified === 'true';
+    const {
+        // --- Contact Fields ---
+        assignment_id,
+        name,
+        phone_number,
+        email_address,
+        dob,
+        gender,
+        nationality,
+        marital_status,
+        category,
+        secondary_email,
+        secondary_phone_number,
+        emergency_contact_name,
+        emergency_contact_relationship,
+        emergency_contact_phone_number,
+        skills,
+        logger,
+        linkedin_url,
 
-    // --- EVENTS ---
-    event_id,
-    event_name,
-    event_role,
-    event_date,
-    event_held_organization,
-    event_location,
-    event_verified,
+        // --- SINGLE OBJECTS ---
+        address,
+        education,
 
-    // --- ARRAYS of OBJECTS ---
-    experiences,
-  } = req.body;
-  try {
-    const result = await db.begin(async (t) => {
-      // 1. Update the main contact record
-      const [updatedContact] = await t`
+        // --- EVENTS ---
+        event_id,
+        event_name,
+        event_role,
+        event_date,
+        event_held_organization,
+        event_location,
+        // --- ARRAYS of OBJECTS ---
+        experiences,
+    } = req.body;
+    try {
+        const result = await db.begin(async (t) => {
+            // 1. Update the main contact record
+            const [updatedContact] = await t`
                 UPDATE contact SET
                     name = ${name || null},
                     phone_number = ${phone_number || null},
@@ -513,18 +514,18 @@ export const UpdateContact = async (req, res) => {
           updatedExperiences.push(newExp);
         }
       }
-
-      // 5. Update Events Array (if provided)
-      if (event_id) {
-        console.log("asdkjasdhsadfjkasdkldjlfkdj;l");
-        const [updatedEvent] = await t`
+            // 5. Update Events Array (if provided)
+            if (event_id) {
+                console.log(`${event_verified},${contact_status} ${event_name} ${event_role} ${event_held_organization} ${event_location} ${event_id}  ${contact_id}`);
+                const [updatedEvent] = await t`
                     UPDATE event SET
                         event_name = ${event_name},
                         event_role = ${event_role},
                         event_date = ${event_date},
                         event_held_organization = ${event_held_organization},
                         event_location = ${event_location},
-                        verified = ${event_verified} -- Assuming verification happens on update
+                        verified = ${isVerified},
+                        contact_status=${contact_status}
                     WHERE
                         event_id = ${event_id}
                         AND contact_id = ${contact_id} -- Security check
@@ -627,7 +628,7 @@ export const DeleteContact = async (req, res) => {
         // Middlemen or Admin - set status as rejected
         await t`
                     UPDATE event 
-                    SET contact_status = 'rejected'
+                    SET contact_status = 'rejected',verified=${true}
                     WHERE contact_id = ${id}
                 `;
 
