@@ -1,14 +1,10 @@
 import React, { useState } from "react";
-import Avatar from "../assets/Avatar.png";
-import { Camera, UserPlus, ArrowLeft } from "lucide-react";
+import { Camera, UserPlus } from "lucide-react";
 import Header from "../components/Header";
 import { useNavigate } from "react-router-dom";
-import { useAuthStore } from "../store/AuthStore";
 import Alert from "../components/Alert";
-import axios from "axios";
 
 function UserHome() {
-  const { id } = useAuthStore();
   const navigate = useNavigate();
   
   const [alert, setAlert] = useState({
@@ -32,59 +28,12 @@ function UserHome() {
     }));
   };
 
-  // Define save handler for form
-  const handleSaveContact = async (formData) => {
-    try {
-      console.log(formData);
-      const response = await axios.post(`http://localhost:8000/api/create-contact`, formData);
-      console.log(response);
-      showAlert("success", `Contact has been successfully added.`);
-    } catch (error) {
-      console.log("Error saving contact:", error);
-      showAlert("error", `Failed to add contact.`);
-    }
-  };
-
-  // Define save handler for camera
-  const handleSavePhoto = async (mode, capturedImage) => {
-    try {
-      let formData = new FormData();
-
-      if (mode === 'select') {
-        formData.append("image", uploadFile);
-        formData.append("user_id", id);
-      } else if (capturedImage) {
-        const byteString = atob(capturedImage.split(",")[1]);
-        const mimeString = capturedImage.split(",")[0].split(":")[1].split(";")[0];
-        const ab = new ArrayBuffer(byteString.length);
-        const ia = new Uint8Array(ab);
-        for (let i = 0; i < byteString.length; i++) {
-          ia[i] = byteString.charCodeAt(i);
-        }
-        const blob = new Blob([ab], { type: mimeString });
-
-        formData.append("image", blob, "photo.png");
-        formData.append("user_id", id);
-      }
-
-      const res = await axios.post("http://localhost:8000/api/upload-contact", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-
-      console.log("Upload success:", res.data);
-      showAlert("success", `Contact has been successfully added.`);
-    } catch (err) {
-      console.error("Upload failed:", err);
-      showAlert("error", `Failed to add contact.`);
-    }
-  };
-
   const handleCameraClick = () => {
-    navigate("/camera-input", { state: { onSave: handleSavePhoto } });
+    navigate("/camera-input");
   };
 
   const handleManualAddClick = () => {
-    navigate("/form-input", { state: { onSave: handleSaveContact } });
+    navigate("/form-input");
   };
 
   return (

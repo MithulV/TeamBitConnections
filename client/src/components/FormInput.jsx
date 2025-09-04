@@ -1,14 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { RotateCcw, UserPlus, Save, ArrowLeft } from 'lucide-react';
 import { useAuthStore } from '../store/AuthStore';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom'; // **NEW: Added useLocation**
 import Header from '../components/Header';
+import Alert from '../components/Alert';
+import axios from 'axios';
 
-function FormInput({ onBack, onSave, initialData = null, isEditMode = false }) {
+function FormInput() { // **UPDATED: Removed props, now gets data from navigation**
   const { id } = useAuthStore();
   const navigate = useNavigate();
-  console.log(initialData)
+  const location = useLocation(); // **NEW: Hook to get navigation state**
   
+  // **NEW: Extract contact data and edit mode from navigation state**
+  const { contact: initialData = null, isEditMode = false } = location.state || {};
+
+  const [alert, setAlert] = useState({
+    isOpen: false,
+    severity: "success",
+    message: "",
+  });
+
   const [formData, setFormData] = useState({
     name: '',
     phone_number: '',
@@ -24,22 +35,51 @@ function FormInput({ onBack, onSave, initialData = null, isEditMode = false }) {
     }]
   });
 
-  // Handle back navigation
-  const handleBack = () => {
-    if (onBack) {
-      onBack();
-    } else {
-      if (window.history.length > 1) {
-        navigate(-1);
+  const showAlert = (severity, message) => {
+    setAlert({
+      isOpen: true,
+      severity,
+      message,
+    });
+  };
+
+  const closeAlert = () => {
+    setAlert((prev) => ({
+      ...prev,
+      isOpen: false,
+    }));
+  };
+
+  const handleSaveContact = async (formData) => {
+    try {
+      console.log(formData);
+      let response;
+
+      if (isEditMode) {
+        response = await axios.put(`http://localhost:8000/api/update-contacts-and-events/${initialData.id}`, formData);
+        showAlert("success", `Contact has been successfully updated.`);
       } else {
-        navigate('/');
+        response = await axios.post(`http://localhost:8000/api/create-contact`, formData);
+        showAlert("success", `Contact has been successfully added.`);
       }
+
+      console.log(response);
+
+      setTimeout(() => {
+        handleBack();
+      }, 2000);
+    } catch (error) {
+      console.log("Error saving contact:", error);
+      showAlert("error", `Failed to ${isEditMode ? 'update' : 'add'} contact.`);
     }
+  };
+
+  const handleBack = () => {
+    navigate(-1); // **UPDATED: Always navigate back instead of conditional logic**
   };
 
   useEffect(() => {
     if (isEditMode && initialData) {
-      // Pre-fill form with existing data
       setFormData({
         name: initialData.name || '',
         phone_number: initialData.phoneNumber || '',
@@ -62,7 +102,6 @@ function FormInput({ onBack, onSave, initialData = null, isEditMode = false }) {
         }]
       });
     } else {
-      // Set today's date for new entries
       const today = new Date().toISOString().split('T')[0];
       setFormData(prev => ({
         ...prev,
@@ -73,69 +112,6 @@ function FormInput({ onBack, onSave, initialData = null, isEditMode = false }) {
       }));
     }
   }, [isEditMode, initialData]);
-
-  const basicInfo = [
-    {
-      label: "Name*",
-      type: "text",
-      name: "name",
-      placeholder: "Enter full name",
-      value: formData.name
-    },
-    {
-      label: "Phone Number*",
-      type: "tel",
-      name: "phone_number",
-      placeholder: "Enter phone number",
-      value: formData.phone_number,
-      inputMode: "numeric"
-    },
-    {
-      label: "Email Address*",
-      type: "email",
-      name: "email_address",
-      placeholder: "Enter email address",
-      value: formData.email_address
-    },
-  ];
-
-  const eventNRole = [
-    {
-      label: "Event Name*",
-      type: "text",
-      name: "event_name",
-      placeholder: "Enter event name",
-      value: formData.events[0].event_name
-    },
-    {
-      label: "Event Role*",
-      type: "text",
-      name: "event_role",
-      placeholder: "Enter your role",
-      value: formData.events[0].event_role
-    },
-    {
-      label: "Event Date*",
-      type: "date",
-      name: "event_date",
-      placeholder: "",
-      value: formData.events[0].event_date
-    },
-    {
-      label: "Event held Organization*",
-      type: "text",
-      name: "event_held_organization",
-      placeholder: "Enter organization name",
-      value: formData.events[0].event_held_organization
-    },
-    {
-      label: "Event Location*",
-      type: "text",
-      name: "event_location",
-      placeholder: "Enter event location",
-      value: formData.events[0].event_location
-    }
-  ];
 
   const handlePhoneKeyPress = (e) => {
     const char = String.fromCharCode(e.which);
@@ -175,21 +151,16 @@ function FormInput({ onBack, onSave, initialData = null, isEditMode = false }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     console.log('Form submitted:', formData);
-    if (onSave) {
-      onSave(formData);
-    }
-    if (!isEditMode) {
-      handleBack();
-    }
+    handleSaveContact(formData);
   };
 
   const handleReset = () => {
     if (isEditMode && initialData) {
-      // Reset to original data when editing
       setFormData({
         name: initialData.name || '',
         phone_number: initialData.phoneNumber || '',
         email_address: initialData.emailAddress || '',
+        created_by: id,
         events: initialData.events && initialData.events.length > 0 ? initialData.events.map(event => ({
           event_id: event.eventId || '',
           event_name: event.eventName || '',
@@ -207,7 +178,6 @@ function FormInput({ onBack, onSave, initialData = null, isEditMode = false }) {
         }]
       });
     } else {
-      // Reset to empty form with today's date when creating new
       const today = new Date().toISOString().split('T')[0];
       setFormData({
         name: '',
@@ -226,37 +196,42 @@ function FormInput({ onBack, onSave, initialData = null, isEditMode = false }) {
   };
 
   return (
-    <div className="h-full flex flex-col bg-[#ffffff]">
-      {/* Header with Back Button */}
-      <div className="w-full bg-white shadow-sm">
-        <div className="flex items-center justify-between">
-          <div className="flex-shrink-0">
-            <button
-              onClick={handleBack}
-              className="px-4 py-2 ml-5 flex items-center gap-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors duration-200 font-medium"
-            >
-              <ArrowLeft size={20} />
-              Back
-            </button>
-          </div>
-          <div className="flex-shrink-0">
+    <div className="h-screen flex overflow-hidden bg-gray-100">
+      <Alert
+        isOpen={alert.isOpen}
+        severity={alert.severity}
+        message={alert.message}
+        onClose={closeAlert}
+        position="bottom"
+        duration={4000}
+      />
+
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Header with Back Button */}
+        <div className="flex-shrink-0 bg-white border-b border-gray-200">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <button
+                onClick={handleBack}
+                className="px-4 py-2 ml-5 flex items-center gap-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors duration-200 font-medium"
+              >
+                <ArrowLeft size={20} />
+                Back
+              </button>
+            </div>
             <Header />
           </div>
         </div>
-      </div>
 
-      <hr className="border-0 border-t border-gray-300 opacity-60" />
-
-      {/* Form Content */}
-      <div className="flex-1 flex flex-row mx-auto pt-0 pb-2 bg-[#F0F0F0] min-h-full">
-        <form onSubmit={handleSubmit} className="w-full">
-          <div className="bg-white p-6 rounded-lg bordershadow-sm">
-
-            {/* Header */}
-            <div className="mb-6">
-              <h2 className="text-2xl font-semibold text-gray-800 mb-2">
+        {/* Form Content */}
+        <div className="flex-1 overflow-hidden bg-white">
+          <div className="h-full flex flex-col p-8">
+            {/* Form Header */}
+            <div className="flex-shrink-0 mb-8">
+              <h1 className="text-3xl font-semibold text-gray-900 mb-3">
                 {isEditMode ? 'Edit Contact Information' : 'Contact Information'}
-              </h2>
+              </h1>
               <p className="text-gray-600">
                 {isEditMode
                   ? 'Update the details for this contact. Required fields are marked with an asterisk.'
@@ -265,87 +240,192 @@ function FormInput({ onBack, onSave, initialData = null, isEditMode = false }) {
               </p>
             </div>
 
-            {/* Side-by-side sections */}
-            <div className="flex flex-col md:flex-row gap-6 mb-6">
-              {/* Basic Info */}
-              <div className="flex-1 bg-white p-4 rounded-lg">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4">Basic Information</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {basicInfo.map((item, index) => (
-                    <div key={index} className="space-y-2">
-                      <label htmlFor={item.name} className="block text-sm font-medium text-gray-700">
-                        {item.label}
+            {/* Form */}
+            <form onSubmit={handleSubmit} className="flex-1 flex flex-col">
+              {/* Main Layout: Basic Info | Divider | Event Info */}
+              <div className="flex-1 flex gap-8">
+
+                {/* Left Section - Basic Information */}
+                <div className="flex-1">
+                  <h3 className="text-xl font-semibold text-gray-900 mb-6">Basic Information</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    {/* Name Field */}
+                    <div>
+                      <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+                        Name*
                       </label>
                       <input
-                        type={item.type}
-                        id={item.name}
-                        name={item.name}
-                        value={item.value}
-                        placeholder={item.placeholder}
-                        onKeyPress={item.name === 'phone_number' ? handlePhoneKeyPress : undefined}
-                        inputMode={item.inputMode}
+                        type="text"
+                        id="name"
+                        name="name"
+                        value={formData.name}
+                        placeholder="Enter full name"
                         onChange={handleInputChange}
-                        required={item.label.includes('*')}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0077b8] focus:border-transparent transition-colors"
+                        required
+                        className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                     </div>
-                  ))}
-                </div>
-              </div>
-              <div className="hidden md:block w-px bg-gray-200 mx-2" />
 
-              {/* Event & Role Info */}
-              <div className="flex-1 bg-white p-4 rounded-lg">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4">Event & Role Information</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {eventNRole.map((item, index) => (
-                    <div key={index} className="space-y-2">
-                      <label htmlFor={item.name} className="block text-sm font-medium text-gray-700">
-                        {item.label}
+                    {/* Phone Number Field */}
+                    <div>
+                      <label htmlFor="phone_number" className="block text-sm font-medium text-gray-700 mb-2">
+                        Phone Number*
                       </label>
                       <input
-                        type={item.type}
-                        id={item.name}
-                        name={item.name}
-                        value={item.value}
-                        placeholder={item.placeholder}
+                        type="tel"
+                        id="phone_number"
+                        name="phone_number"
+                        value={formData.phone_number}
+                        placeholder="Enter phone number"
+                        onKeyPress={handlePhoneKeyPress}
+                        inputMode="numeric"
                         onChange={handleInputChange}
-                        required={item.label.includes('*')}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0077b8] focus:border-transparent transition-colors"
+                        required
+                        className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                     </div>
-                  ))}
+
+                    {/* Email Field - Spans both columns */}
+                    <div className="col-span-2">
+                      <label htmlFor="email_address" className="block text-sm font-medium text-gray-700 mb-2">
+                        Email Address*
+                      </label>
+                      <input
+                        type="email"
+                        id="email_address"
+                        name="email_address"
+                        value={formData.email_address}
+                        placeholder="Enter email address"
+                        onChange={handleInputChange}
+                        required
+                        className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Vertical Divider */}
+                <div className="w-px bg-gray-200"></div>
+
+                {/* Right Section - Event & Role Information */}
+                <div className="flex-1">
+                  <h3 className="text-xl font-semibold text-gray-900 mb-6">Event & Role Information</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    {/* Event Name */}
+                    <div>
+                      <label htmlFor="event_name" className="block text-sm font-medium text-gray-700 mb-2">
+                        Event Name*
+                      </label>
+                      <input
+                        type="text"
+                        id="event_name"
+                        name="event_name"
+                        value={formData.events[0].event_name}
+                        placeholder="Enter event name"
+                        onChange={handleInputChange}
+                        required
+                        className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+
+                    {/* Event Role */}
+                    <div>
+                      <label htmlFor="event_role" className="block text-sm font-medium text-gray-700 mb-2">
+                        Event Role*
+                      </label>
+                      <input
+                        type="text"
+                        id="event_role"
+                        name="event_role"
+                        value={formData.events[0].event_role}
+                        placeholder="Enter your role"
+                        onChange={handleInputChange}
+                        required
+                        className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+
+                    {/* Event Date */}
+                    <div>
+                      <label htmlFor="event_date" className="block text-sm font-medium text-gray-700 mb-2">
+                        Event Date*
+                      </label>
+                      <input
+                        type="date"
+                        id="event_date"
+                        name="event_date"
+                        value={formData.events[0].event_date}
+                        onChange={handleInputChange}
+                        required
+                        className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+
+                    {/* Event Organization */}
+                    <div>
+                      <label htmlFor="event_held_organization" className="block text-sm font-medium text-gray-700 mb-2">
+                        Event held Organization*
+                      </label>
+                      <input
+                        type="text"
+                        id="event_held_organization"
+                        name="event_held_organization"
+                        value={formData.events[0].event_held_organization}
+                        placeholder="Enter organization name"
+                        onChange={handleInputChange}
+                        required
+                        className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+
+                    {/* Event Location - Spans both columns */}
+                    <div className="col-span-2">
+                      <label htmlFor="event_location" className="block text-sm font-medium text-gray-700 mb-2">
+                        Event Location*
+                      </label>
+                      <input
+                        type="text"
+                        id="event_location"
+                        name="event_location"
+                        value={formData.events[0].event_location}
+                        placeholder="Enter event location"
+                        onChange={handleInputChange}
+                        required
+                        className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Action Buttons */}
-            <div className="flex flex-col pt-4 sm:flex-row gap-4 justify-end">
-              <button
-                type="button"
-                onClick={handleReset}
-                className="px-6 py-2 flex gap-x-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400 font-medium"
-              >
-                <RotateCcw size={18} className="mt-1" />
-                Reset Form
-              </button>
-              <button
-                type="button"
-                onClick={handleBack}
-                className="px-6 py-2 flex gap-x-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400 font-medium"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="px-6 py-2 flex gap-x-1.5 bg-[#0077b8] hover:bg-[#005f8f] text-white rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-[#0077b8] font-medium"
-              >
-                {isEditMode ? <Save size={18} className="mt-0.5" /> : <UserPlus size={18} className="mt-0.5" />}
-                {isEditMode ? 'Update Contact' : 'Save Contact'}
-              </button>
-            </div>
+              {/* Action Buttons - Fixed at Bottom */}
+              <div className="flex-shrink-0 flex justify-end gap-3 pt-8 border-t border-gray-200 mt-8">
+                <button
+                  type="button"
+                  onClick={handleReset}
+                  className="inline-flex items-center gap-2 px-6 py-3 border border-gray-300 bg-white text-gray-700 font-medium rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <RotateCcw size={16} />
+                  Reset Form
+                </button>
+                <button
+                  type="button"
+                  onClick={handleBack}
+                  className="px-6 py-3 border border-gray-300 bg-white text-gray-700 font-medium rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  {isEditMode ? <Save size={16} /> : <UserPlus size={16} />}
+                  {isEditMode ? 'Update Contact' : 'Save Contact'}
+                </button>
+              </div>
+            </form>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   );
