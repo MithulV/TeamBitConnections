@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import api from "../utils/axios";
 import {
   Users,
   UserCheck,
@@ -97,7 +97,7 @@ const RecentActivityItem = ({ activity }) => (
 );
 
 function Admin() {
-  const navigate=useNavigate();
+  const navigate = useNavigate();
   const [stats, setStats] = useState({
     totalContacts: 0,
     verifiedContacts: 0,
@@ -146,18 +146,12 @@ function Admin() {
         categoryBResponse,
         categoryCResponse,
       ] = await Promise.all([
-        axios.get(`http://localhost:8000/api/contacts/${id}`),
-        axios.get("http://localhost:8000/api/get-unverified-contacts/"),
-        axios.get("http://localhost:8000/api/get-unverified-images/"),
-        axios.get(
-          "http://localhost:8000/api/get-contacts-by-category/?category=A"
-        ),
-        axios.get(
-          "http://localhost:8000/api/get-contacts-by-category/?category=B"
-        ),
-        axios.get(
-          "http://localhost:8000/api/get-contacts-by-category/?category=C"
-        ),
+        api.get(`/api/contacts/${id}`),
+        api.get("/api/get-unverified-contacts/"),
+        api.get("/api/get-unverified-images/"),
+        api.get("/api/get-contacts-by-category/?category=A"),
+        api.get("/api/get-contacts-by-category/?category=B"),
+        api.get("/api/get-contacts-by-category/?category=C"),
       ]);
 
       const contacts = contactsResponse.data;
@@ -520,4 +514,3 @@ function Admin() {
 }
 
 export default Admin;
-

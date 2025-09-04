@@ -52,7 +52,7 @@ const MiddleManCard = ({ contact, onDelete, onEdit }) => {
             >
               {(
                 <img
-                  src="https://xsgames.co/randomusers/assets/avatars/male/68.jpg"
+                  src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png"
                   className="w-12 h-12 rounded-full object-cover"
                 />
               ) || getInitials(contact.name)}

@@ -4,7 +4,7 @@ import FormInput from "../components/FormInput";
 import Alert from "../components/Alert";
 import BasicDetailCard from "../components/BasicDetailCard";
 import Header from "../components/Header";
-import axios from "axios";
+import api from '../utils/axios';
 import { ArrowLeft, Trash2 } from "lucide-react";
 import { parseISO, format } from "date-fns";
 import { useAuthStore } from "../store/AuthStore";
@@ -159,8 +159,8 @@ function UserEntries() {
 
         if (userToDelete.type === "image") {
           // Delete image
-          const response = await axios.delete(
-            `http://localhost:8000/api/delete-image/${userToDelete.id}?userType=${role}`
+          const response = await api.delete(
+            `/api/delete-image/${userToDelete.id}?userType=${role}`
           );
 
           // ✅ Update state locally instead of API call
@@ -175,8 +175,8 @@ function UserEntries() {
           );
         } else {
           // Delete contact
-          const response = await axios.delete(
-            `http://localhost:8000/api/delete-contact/${userToDelete.id}?userType=${role}`
+          const response = await api.delete(
+            `/api/delete-contact/${userToDelete.id}?userType=${role}`
           );
 
           // Handle different response actions
@@ -289,12 +289,11 @@ function UserEntries() {
   };
 
   const handleEditComplete = async (updatedData) => {
-    if (updatedData && editingUser) {
-      try {
-        console.log(updatedData);
+    try {
+      if (updatedData && editingUser) {
+        const response = await api.put(
+          `/api/update-contacts-and-events/${editingUser.id}`,
 
-        const response = await axios.put(
-          `http://localhost:8000/api/update-contacts-and-events/${editingUser.id}?userType=${role}`,
           updatedData
         );
         console.log(response);
@@ -357,8 +356,8 @@ function UserEntries() {
 
   const handleSelectContact = async () => {
     try {
-      const response = await axios.get(
-        `http://localhost:8000/api/contacts/${id}`
+      const response = await api.get(
+        `/api/contacts/${id}`
       );
       console.log("Contacts fetched successfully:", response.data);
       setProfileData(response.data);
@@ -369,8 +368,8 @@ function UserEntries() {
 
   const handleSelectImage = async () => {
     try {
-      const response = await axios.get(
-        `http://localhost:8000/api/get-contact-images/${id}`
+      const response = await api.get(
+        `/api/get-contact-images/${id}`
       );
       console.log("Contact images fetched successfully:", response.data);
       setImageData(response.data);
