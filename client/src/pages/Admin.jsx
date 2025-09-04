@@ -45,9 +45,8 @@ const StatCard = ({ title, value, icon: Icon, color, trend, trendValue }) => (
               <TrendingDown className="w-4 h-4 text-red-500" />
             )}
             <span
-              className={`text-sm ml-1 ${
-                trend === "up" ? "text-green-600" : "text-red-600"
-              }`}
+              className={`text-sm ml-1 ${trend === "up" ? "text-green-600" : "text-red-600"
+                }`}
             >
               {trendValue}%
             </span>
@@ -131,7 +130,9 @@ function Admin() {
   const closeAlert = () => {
     setAlert((prev) => ({ ...prev, isOpen: false }));
   };
-
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
   // Fetch dashboard data
   const fetchDashboardData = async () => {
     try {
@@ -139,6 +140,7 @@ function Admin() {
 
       // Fetch various data in parallel
       const [
+        recentcontact,
         contactsResponse,
         unverifiedContactsResponse,
         unverifiedImagesResponse,
@@ -146,14 +148,34 @@ function Admin() {
         categoryBResponse,
         categoryCResponse,
       ] = await Promise.all([
-        api.get(`/api/contacts/${id}`),
-        api.get("/api/get-unverified-contacts/"),
-        api.get("/api/get-unverified-images/"),
-        api.get("/api/get-contacts-by-category/?category=A"),
-        api.get("/api/get-contacts-by-category/?category=B"),
-        api.get("/api/get-contacts-by-category/?category=C"),
+        axios.get(`http://localhost:8000/api/get-all-contact/?limit=5`),
+        axios.get(`http://localhost:8000/api/contacts/${id}`),
+        axios.get("http://localhost:8000/api/get-unverified-contacts/"),
+        axios.get("http://localhost:8000/api/get-unverified-images/"),
+        axios.get(
+          "http://localhost:8000/api/get-contacts-by-category/?category=A"
+        ),
+        axios.get(
+          "http://localhost:8000/api/get-contacts-by-category/?category=B"
+        ),
+        axios.get(
+          "http://localhost:8000/api/get-contacts-by-category/?category=C"
+        ),
       ]);
-
+      const formattedContacts = recentcontact?.data?.data?.map((item) => ({
+        ...item,
+        role: item.experiences?.[0]?.job_title || "N/A",
+        company: item.experiences?.[0]?.company || "N/A",
+        location:
+          `${item.address?.city || ""}, ${item.address?.state || ""
+            }`.trim() === ","
+            ? "N/A"
+            : `${item.address?.city || ""}, ${item.address?.state || ""}`,
+        skills: item.skills
+          ? item.skills.split(",").map((skill) => skill.trim())
+          : [],
+      }));
+      setRecentContacts(formattedContacts);
       const contacts = contactsResponse.data;
       const unverifiedContacts = unverifiedContactsResponse.data;
       const unverifiedImages = unverifiedImagesResponse.data;
@@ -179,9 +201,6 @@ function Admin() {
         B: categoryBResponse.data.length,
         C: categoryCResponse.data.length,
       });
-
-      // Set recent data
-      setRecentContacts(contacts.slice(0, 5));
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
       showAlert("error", "Failed to fetch dashboard data");
@@ -189,10 +208,6 @@ function Admin() {
       setLoading(false);
     }
   };
-
-  useEffect(() => {
-    fetchDashboardData();
-  }, [id]);
 
   const quickActions = [
     {
@@ -366,13 +381,12 @@ function Admin() {
                         <div
                           className="bg-red-600 h-2 rounded-full"
                           style={{
-                            width: `${
-                              (categoryData.A /
-                                (categoryData.A +
-                                  categoryData.B +
-                                  categoryData.C)) *
+                            width: `${(categoryData.A /
+                              (categoryData.A +
+                                categoryData.B +
+                                categoryData.C)) *
                               100
-                            }%`,
+                              }%`,
                           }}
                         ></div>
                       </div>
@@ -390,13 +404,12 @@ function Admin() {
                         <div
                           className="bg-yellow-600 h-2 rounded-full"
                           style={{
-                            width: `${
-                              (categoryData.B /
-                                (categoryData.A +
-                                  categoryData.B +
-                                  categoryData.C)) *
+                            width: `${(categoryData.B /
+                              (categoryData.A +
+                                categoryData.B +
+                                categoryData.C)) *
                               100
-                            }%`,
+                              }%`,
                           }}
                         ></div>
                       </div>
@@ -414,13 +427,12 @@ function Admin() {
                         <div
                           className="bg-green-600 h-2 rounded-full"
                           style={{
-                            width: `${
-                              (categoryData.C /
-                                (categoryData.A +
-                                  categoryData.B +
-                                  categoryData.C)) *
+                            width: `${(categoryData.C /
+                              (categoryData.A +
+                                categoryData.B +
+                                categoryData.C)) *
                               100
-                            }%`,
+                              }%`,
                           }}
                         ></div>
                       </div>
@@ -438,41 +450,61 @@ function Admin() {
                   <h2 className="text-lg font-semibold text-gray-900">
                     Recent Contacts
                   </h2>
-                  <button className="text-sm text-blue-600 hover:text-blue-700">
-                    View All
-                  </button>
                 </div>
-                <div className="space-y-3">
-                  {recentContacts.map((contact, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg"
-                    >
-                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                        <Users className="w-5 h-5 text-blue-600" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-medium text-gray-900">
-                          {contact.name}
-                        </p>
-                        <p className="text-sm text-gray-600">
-                          {contact.email_address}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm text-gray-500">
-                          {format(parseISO(contact.created_at), "MMM dd")}
-                        </p>
-                        <span
-                          className={`inline-block w-2 h-2 rounded-full ${
-                            contact.verified ? "bg-green-500" : "bg-orange-500"
-                          }`}
-                        ></span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+
+                {recentContacts.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Users className="w-12 h-12 text-gray-300 mx-auto mb-2" />
+                    <p className="text-gray-500">No recent contacts</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {recentContacts.map((contact, index) => {
+                      // Add these console logs to debug
+                      console.log("Contact object:", contact);
+                      console.log("Contact name:", contact.name);
+                      console.log("Contact email:", contact.email_address);
+
+                      return (
+                        <div
+                          key={contact.contact_id || index}
+                          className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors duration-200"
+                          onClick={() => navigate(`/profile/${contact.contact_id}`, { state: contact })}
+                        >
+                          <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                            <Users className="w-5 h-5 text-blue-600" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-gray-900 truncate">
+                              {contact.name || 'No Name'}
+                            </p>
+                            <p className="text-sm text-gray-600 truncate">
+                              {contact.email_address || contact.email || 'No Email'}
+                            </p>
+                          </div>
+                          <div className="text-right flex-shrink-0">
+                            <p className="text-sm text-gray-500">
+                              {contact.created_at ? format(parseISO(contact.created_at), "MMM dd") : 'No Date'}
+                            </p>
+                            <div className="flex justify-end mt-1">
+                              <span
+                                className={`inline-block w-2 h-2 rounded-full ${contact.contact_status === 'approved' && contact.verified
+                                  ? "bg-green-500"
+                                  : contact.contact_status === 'rejected'
+                                    ? "bg-red-500"
+                                    : "bg-orange-500"
+                                  }`}
+                              ></span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
               </div>
+
             </div>
           </div>
 
