@@ -220,7 +220,7 @@ export default function BasicDetailCard({
           {editOrAdd && (
             <Tooltip label={editOrAdd}>
               <button
-                onClick={handleClick} // **UPDATED: Use handleClick instead of handleEdit**
+                onClick={handleClick}
                 className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
               >
                 {icons[editOrAdd] || null}

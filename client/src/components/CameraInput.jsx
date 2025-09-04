@@ -320,7 +320,6 @@ function CameraInput() {
                     playsInline
                     muted
                     className="w-full h-auto max-h-96 object-cover"
-                    style={{ transform: facingMode === 'user' ? 'scaleX(-1)' : 'none' }}
                   />
                   
                   {/* Camera Switch Button - Overlay */}
