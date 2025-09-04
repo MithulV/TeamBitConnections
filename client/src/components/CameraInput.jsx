@@ -3,7 +3,7 @@ import Webcam from 'react-webcam';
 import Tesseract from "tesseract.js";
 
 import { Camera, RotateCcw, X, Upload, ImagePlus } from 'lucide-react';
-import axios from 'axios';
+import api from '../utils/axios';
 import { useAuthStore } from '../store/AuthStore';
 
 const CameraCapture = ({ onCapture, onBack,onSave }) => {

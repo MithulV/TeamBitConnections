@@ -107,7 +107,6 @@ function Applayout() {
                     </Route>
 
                     {/* Fallback route to redirect to home if logged in, or login if not */}
-                    <Route path="/filteroptions" element={<FilterPanel />} />
                     <Route path="*" element={<Navigate to="/" />} />
                 </Routes>
             </main>
