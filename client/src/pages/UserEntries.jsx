@@ -204,7 +204,7 @@ function UserEntries() {
             showAlert(
               "success",
               response.data.message ||
-                `${userToDelete.name} has been processed successfully.`
+              `${userToDelete.name} has been processed successfully.`
             );
           }
 
@@ -223,7 +223,7 @@ function UserEntries() {
           showAlert(
             "error",
             error.response.data.message ||
-              "You don't have permission to delete this contact."
+            "You don't have permission to delete this contact."
           );
         } else if (error.response?.status === 404) {
           // Contact not found
@@ -260,23 +260,23 @@ function UserEntries() {
           events:
             participant.events?.length > 0
               ? participant.events.map((event) => ({
-                  eventId: event.event_id,
-                  eventName: event.event_name || "",
-                  eventRole: event.event_role || "",
-                  eventDate: event.event_date || "",
-                  eventHeldOrganization: event.event_held_organization || "",
-                  eventLocation: event.event_location || "",
-                }))
+                eventId: event.event_id,
+                eventName: event.event_name || "",
+                eventRole: event.event_role || "",
+                eventDate: event.event_date || "",
+                eventHeldOrganization: event.event_held_organization || "",
+                eventLocation: event.event_location || "",
+              }))
               : [
-                  {
-                    eventId: "",
-                    eventName: "",
-                    eventRole: "",
-                    eventDate: "",
-                    eventHeldOrganization: "",
-                    eventLocation: "",
-                  },
-                ],
+                {
+                  eventId: "",
+                  eventName: "",
+                  eventRole: "",
+                  eventDate: "",
+                  eventHeldOrganization: "",
+                  eventLocation: "",
+                },
+              ],
         };
 
         setEditingUser(userToEdit);
@@ -293,32 +293,59 @@ function UserEntries() {
       if (updatedData && editingUser) {
         const response = await api.put(
           `/api/update-contacts-and-events/${editingUser.id}`,
+
           updatedData
         );
         console.log(response);
-        showAlert(
-          "success",
-          `${
-            updatedData.name || editingUser.name
-          } has been successfully updated.`
-        );
 
-        // Update the contact with matching contact_id
+        // Handle successful update - always update state locally
         setProfileData((prevData) =>
-          prevData.map((p) =>
-            p.contact_id === editingUser.id ? { ...p, ...updatedData } : p
+          prevData.map((contact) =>
+            contact.contact_id === editingUser.id
+              ? { ...contact, ...updatedData }
+              : contact
           )
         );
-      }
 
-      // Close the edit form
-      setIsEditing(false);
-      setEditingUser(null);
-    } catch (error) {
-      console.log("Error updating user", error);
-      showAlert("error", "Failed to update user. Please try again.");
+        showAlert(
+          "success",
+          response.data.message ||
+          `${editingUser.name} has been updated successfully.`
+        );
+
+        // ✅ Success: Close edit modal and reset state
+        setIsEditing(false);
+        setEditingUser(null);
+      } catch (error) {
+        // ✅ Handle different error responses - close modal and reset state on failure
+        console.log("Error updating user", editingUser.id, error);
+
+        if (error.response?.status === 403) {
+          // Permission denied
+          showAlert(
+            "error",
+            error.response.data.message ||
+            "You don't have permission to update this contact."
+          );
+        } else if (error.response?.status === 404) {
+          // Contact not found
+          showAlert("error", "Contact or event not found.");
+        } else if (error.response?.status === 409) {
+          // Unique constraint violation (duplicate email)
+          showAlert("error", "A contact with this email address already exists.");
+        } else {
+          // General error
+          showAlert("error", "Failed to update contact. Please try again.");
+        }
+
+        // ✅ Failure: Close modal and reset state
+        setIsEditing(false);
+        setEditingUser(null);
+      } finally {
+      }
     }
   };
+
 
   const handleEditCancel = () => {
     setIsEditing(false);
@@ -403,21 +430,19 @@ function UserEntries() {
             <div className="flex gap-4 mb-6">
               <button
                 onClick={() => setActiveView("formDetails")}
-                className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
-                  activeView === "formDetails"
-                    ? "bg-blue-600 text-white shadow-md"
-                    : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
-                }`}
+                className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${activeView === "formDetails"
+                  ? "bg-blue-600 text-white shadow-md"
+                  : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
+                  }`}
               >
                 Form Details
               </button>
               <button
                 onClick={() => setActiveView("visitingCards")}
-                className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
-                  activeView === "visitingCards"
-                    ? "bg-blue-600 text-white shadow-md"
-                    : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
-                }`}
+                className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${activeView === "visitingCards"
+                  ? "bg-blue-600 text-white shadow-md"
+                  : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
+                  }`}
               >
                 Visiting Cards
               </button>

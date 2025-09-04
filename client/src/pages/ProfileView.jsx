@@ -127,7 +127,6 @@ function ProfileView() {
                 time: new Date(contact.created_at).toLocaleTimeString(),
                 title: 'Contact Added',
                 description: `Contact was added to the system by user ${contact.created_by}`,
-                status: 'completed'
             }
         ],
         notes: contact.logger || 'No notes available',

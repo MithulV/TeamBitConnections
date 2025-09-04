@@ -15,6 +15,7 @@ import DetailsInput from '../components/DetailsInput';
 import VisitingCardDetails from '../pages/VisitingCardDetails';
 import UserAssignments from '../pages/UserAssignments';
 import TaskAssignments from '../pages/TaskAssignments';
+import FilterPanel from '../pages/FilterPanel';
 // A helper component to render the correct home page based on role
 const RoleBasedHome = () => {
     const { role } = useAuthStore();
