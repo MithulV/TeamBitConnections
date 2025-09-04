@@ -1,10 +1,19 @@
-import React, { useState, useEffect } from "react";
-import { Search, ChevronDown, Trash2, X, Grid3X3 } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
+import {
+  Search,
+  Trash2,
+  X,
+  Filter,
+  MapPinned,
+  ShieldCheckIcon,
+  University,
+  FileCheckIcon,
+} from "lucide-react";
 import ContactCard from "../components/MiddleManCard";
 import DetailsInput from "../components/DetailsInput";
 import Header from "../components/Header";
 import { useAuthStore } from "../store/AuthStore";
-import axios from "axios";
+import api from '../utils/axios';
 import Alert from "../components/Alert";
 
 // Helper function to generate initials from a name
@@ -145,35 +154,513 @@ const DeleteConfirmationModal = ({
   );
 };
 
+// Searchable Multi-Select Component
+const SearchableMultiSelect = ({
+  options = [],
+  selectedValues = [],
+  onSelectionChange,
+  placeholder = "Search and select...",
+  label,
+  color = "blue",
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const dropdownRef = useRef(null);
+
+  // Filter options based on search term
+  const filteredOptions = options.filter((option) =>
+    option.value.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // Handle selection
+  const handleToggleOption = (value) => {
+    const newSelection = selectedValues.includes(value)
+      ? selectedValues.filter((v) => v !== value)
+      : [...selectedValues, value];
+    onSelectionChange(newSelection);
+  };
+
+  // Handle click outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const colorClasses = {
+    blue: {
+      dropdown: "border-blue-200 focus:border-blue-500 focus:ring-blue-500",
+      tag: "bg-blue-100 text-blue-800",
+      button: "text-blue-600 hover:text-blue-800",
+      checkbox: "text-blue-600 focus:ring-blue-500",
+    },
+    green: {
+      dropdown: "border-green-200 focus:border-green-500 focus:ring-green-500",
+      tag: "bg-green-100 text-green-800",
+      button: "text-green-600 hover:text-green-800",
+      checkbox: "text-green-600 focus:ring-green-500",
+    },
+    purple: {
+      dropdown:
+        "border-purple-200 focus:border-purple-500 focus:ring-purple-500",
+      tag: "bg-purple-100 text-purple-800",
+      button: "text-purple-600 hover:text-purple-800",
+      checkbox: "text-purple-600 focus:ring-purple-500",
+    },
+    orange: {
+      dropdown:
+        "border-orange-200 focus:border-orange-500 focus:ring-orange-500",
+      tag: "bg-orange-100 text-orange-800",
+      button: "text-orange-600 hover:text-orange-800",
+      checkbox: "text-orange-600 focus:ring-orange-500",
+    },
+  };
+
+  const colors = colorClasses[color] || colorClasses.blue;
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <label className="block text-sm font-medium text-gray-700 mb-2">
+        {label}
+      </label>
+
+      {/* Dropdown Button */}
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className={`w-full px-3 py-2 text-left bg-white border ${colors.dropdown} rounded-md shadow-sm focus:outline-none focus:ring-1 transition-colors`}
+      >
+        <span className="block truncate text-sm">
+          {selectedValues.length > 0
+            ? `${selectedValues.length} selected`
+            : placeholder}
+        </span>
+        <span className="absolute inset-y-0 right-0 flex items-center pr-2 pt-7 pointer-events-none">
+          {isOpen ? <X size={16} /> : <Search size={16} />}
+        </span>
+      </button>
+
+      {/* Dropdown Menu */}
+      {isOpen && (
+        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+          {/* Search Input */}
+          <div className="p-2 border-b border-gray-200">
+            <div className="relative">
+              <Search
+                size={16}
+                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+              />
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder={`Search ${label.toLowerCase()}...`}
+                className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+          </div>
+
+          {/* Options List */}
+          <div className="py-1">
+            {filteredOptions.length > 0 ? (
+              filteredOptions.map((option) => (
+                <label
+                  key={option.value}
+                  className="flex items-center justify-between px-3 py-2 hover:bg-gray-50 cursor-pointer transition-colors"
+                >
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={selectedValues.includes(option.value)}
+                      onChange={() => handleToggleOption(option.value)}
+                      className={`mr-3 rounded border-gray-300 ${colors.checkbox}`}
+                    />
+                    <span className="text-sm text-gray-700 truncate">
+                      {option.value}
+                    </span>
+                  </div>
+                  <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full ml-2">
+                    {option.count}
+                  </span>
+                </label>
+              ))
+            ) : (
+              <div className="px-3 py-2 text-sm text-gray-500 text-center">
+                No options found
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Enhanced Filter Modal Component
+const FilterModal = ({
+  filterOptions,
+  activeFilters,
+  setActiveFilters,
+  contacts,
+  setIsFilterModalOpen,
+  getActiveFilterCount,
+  clearFilters,
+  toggleFilter,
+}) => {
+  const handleClose = () => setIsFilterModalOpen(false);
+
+  const handleFilterChange = (filterType, selectedValues) => {
+    setActiveFilters((prev) => ({
+      ...prev,
+      [filterType]: selectedValues,
+    }));
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 bg-black bg-opacity-60 backdrop-blur-sm"
+        onClick={handleClose}
+      />
+
+      {/* Modal Content */}
+      <div className="relative z-10 w-full max-w-7xl bg-white rounded-2xl shadow-2xl max-h-[95vh] overflow-hidden">
+        {/* Enhanced Modal Header */}
+        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-opacity-20 rounded-lg backdrop-blur-sm">
+                <Filter size={24} />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold">Advanced Filters</h2>
+                <p className="text-blue-100 text-sm">
+                  {getActiveFilterCount() > 0
+                    ? `${getActiveFilterCount()} active filters • ${
+                        contacts.length
+                      } contacts found`
+                    : `Filter from ${
+                        filterOptions.skills?.length || 0
+                      }+ skills, ${
+                        filterOptions.companies?.length || 0
+                      }+ companies, and more`}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              {getActiveFilterCount() > 0 && (
+                <button
+                  onClick={clearFilters}
+                  className="px-4 py-2 text-sm font-medium text-black bg-white bg-opacity-20 rounded-lg hover:bg-opacity-30 transition-all duration-200 backdrop-blur-sm"
+                >
+                  Clear All
+                </button>
+              )}
+              <button
+                onClick={handleClose}
+                className="p-2 hover:bg-white hover:text-black hover:bg-opacity-20 rounded-lg transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Filter Content */}
+        <div className="overflow-y-auto max-h-[calc(95vh-180px)]">
+          <div className="p-6 space-y-8">
+            {/* Quick Filter Tags */}
+            {getActiveFilterCount() > 0 && (
+              <div className="bg-gray-50 rounded-xl p-4">
+                <h3 className="text-sm font-medium text-gray-700 mb-3">
+                  Active Filters ({getActiveFilterCount()})
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {Object.entries(activeFilters).map(([filterType, values]) =>
+                    values.map((value) => (
+                      <span
+                        key={`${filterType}-${value}`}
+                        className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                      >
+                        {value}
+                        <button
+                          onClick={() => toggleFilter(filterType, value)}
+                          className="ml-1 inline-flex items-center justify-center w-4 h-4 rounded-full hover:bg-blue-200"
+                        >
+                          <X size={10} />
+                        </button>
+                      </span>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Basic Information */}
+            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-100">
+              <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-3">
+                <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
+                  <FileCheckIcon size={16} className="text-white" />
+                </div>
+                Basic Information
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {filterOptions.genders?.length > 0 && (
+                  <SearchableMultiSelect
+                    options={filterOptions.genders}
+                    selectedValues={activeFilters.gender || []}
+                    onSelectionChange={(values) =>
+                      handleFilterChange("gender", values)
+                    }
+                    placeholder="Select genders..."
+                    label="Gender"
+                    color="blue"
+                  />
+                )}
+                {filterOptions.nationalities?.length > 0 && (
+                  <SearchableMultiSelect
+                    options={filterOptions.nationalities}
+                    selectedValues={activeFilters.nationality || []}
+                    onSelectionChange={(values) =>
+                      handleFilterChange("nationality", values)
+                    }
+                    placeholder="Select nationalities..."
+                    label="Nationality"
+                    color="blue"
+                  />
+                )}
+                {filterOptions.marital_statuses?.length > 0 && (
+                  <SearchableMultiSelect
+                    options={filterOptions.marital_statuses}
+                    selectedValues={activeFilters.marital_status || []}
+                    onSelectionChange={(values) =>
+                      handleFilterChange("marital_status", values)
+                    }
+                    placeholder="Select marital status..."
+                    label="Marital Status"
+                    color="blue"
+                  />
+                )}
+              </div>
+            </div>
+
+            {/* Location Information */}
+            <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-6 border border-green-100">
+              <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-3">
+                <div className="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center">
+                  <MapPinned size={16} className="text-white" />
+                </div>
+                Location
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {filterOptions.countries?.length > 0 && (
+                  <SearchableMultiSelect
+                    options={filterOptions.countries}
+                    selectedValues={activeFilters.address_country || []}
+                    onSelectionChange={(values) =>
+                      handleFilterChange("address_country", values)
+                    }
+                    placeholder="Search countries..."
+                    label="Country"
+                    color="green"
+                  />
+                )}
+                {filterOptions.states?.length > 0 && (
+                  <SearchableMultiSelect
+                    options={filterOptions.states}
+                    selectedValues={activeFilters.address_state || []}
+                    onSelectionChange={(values) =>
+                      handleFilterChange("address_state", values)
+                    }
+                    placeholder="Search states..."
+                    label="State"
+                    color="green"
+                  />
+                )}
+                {filterOptions.cities?.length > 0 && (
+                  <SearchableMultiSelect
+                    options={filterOptions.cities}
+                    selectedValues={activeFilters.address_city || []}
+                    onSelectionChange={(values) =>
+                      handleFilterChange("address_city", values)
+                    }
+                    placeholder="Search cities..."
+                    label="City"
+                    color="green"
+                  />
+                )}
+              </div>
+            </div>
+
+            {/* Professional Information */}
+            <div className="bg-gradient-to-br from-purple-50 to-violet-50 rounded-xl p-6 border border-purple-100">
+              <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-3">
+                <div className="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center">
+                  <ShieldCheckIcon size={16} className="text-white" />
+                </div>
+                Professional Information
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filterOptions.companies?.length > 0 && (
+                  <SearchableMultiSelect
+                    options={filterOptions.companies}
+                    selectedValues={activeFilters.company || []}
+                    onSelectionChange={(values) =>
+                      handleFilterChange("company", values)
+                    }
+                    placeholder="Search companies..."
+                    label="Company"
+                    color="purple"
+                  />
+                )}
+                {filterOptions.job_titles?.length > 0 && (
+                  <SearchableMultiSelect
+                    options={filterOptions.job_titles}
+                    selectedValues={activeFilters.job_title || []}
+                    onSelectionChange={(values) =>
+                      handleFilterChange("job_title", values)
+                    }
+                    placeholder="Search job titles..."
+                    label="Job Title"
+                    color="purple"
+                  />
+                )}
+                {filterOptions.skills?.length > 0 && (
+                  <SearchableMultiSelect
+                    options={filterOptions.skills}
+                    selectedValues={activeFilters.skills || []}
+                    onSelectionChange={(values) =>
+                      handleFilterChange("skills", values)
+                    }
+                    placeholder="Search skills..."
+                    label="Skills"
+                    color="purple"
+                  />
+                )}
+              </div>
+            </div>
+
+            {/* Education Information */}
+            <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-xl p-6 border border-orange-100">
+              <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-3">
+                <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
+                  <University size={16} className="text-white" />
+                </div>
+                Education
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {filterOptions.pg_courses?.length > 0 && (
+                  <SearchableMultiSelect
+                    options={filterOptions.pg_courses}
+                    selectedValues={activeFilters.pg_course_name || []}
+                    onSelectionChange={(values) =>
+                      handleFilterChange("pg_course_name", values)
+                    }
+                    placeholder="Search postgraduate courses..."
+                    label="Postgraduate Courses"
+                    color="orange"
+                  />
+                )}
+                {filterOptions.ug_courses?.length > 0 && (
+                  <SearchableMultiSelect
+                    options={filterOptions.ug_courses}
+                    selectedValues={activeFilters.ug_course_name || []}
+                    onSelectionChange={(values) =>
+                      handleFilterChange("ug_course_name", values)
+                    }
+                    placeholder="Search undergraduate courses..."
+                    label="Undergraduate Courses"
+                    color="orange"
+                  />
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Enhanced Modal Footer */}
+        <div className="bg-gray-50 border-t border-gray-200 p-6">
+          <div className="flex items-center justify-between">
+            <div className="text-sm text-gray-600">
+              <div className="flex items-center gap-4">
+                <span className="font-medium text-lg">{contacts.length}</span>
+                <span>contact{contacts.length !== 1 ? "s" : ""} found</span>
+                {getActiveFilterCount() > 0 && (
+                  <span className="text-blue-600 font-medium">
+                    • {getActiveFilterCount()} filter
+                    {getActiveFilterCount() > 1 ? "s" : ""} applied
+                  </span>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleClose}
+                className="px-6 py-2.5 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+              >
+                Close
+              </button>
+              <button
+                onClick={handleClose}
+                className="px-8 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 font-medium shadow-lg"
+              >
+                Apply Filters ({contacts.length})
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const MiddleManHome = () => {
   const [contacts, setContacts] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [isEditing, setIsEditing] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
-  const [isGridModalOpen, setIsGridModalOpen] = useState(false);
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  // Filter states
-  const [activeFilters, setActiveFilters] = useState({
+  // Filter options from API
+  const [filterOptions, setFilterOptions] = useState({
+    genders: [],
+    categories: [],
+    nationalities: [],
+    marital_statuses: [],
+    countries: [],
+    states: [],
+    cities: [],
+    companies: [],
+    job_titles: [],
+    pg_courses: [],
+    ug_courses: [],
     skills: [],
+  });
+
+  // Active filter states - expanded to match API capabilities
+  const [activeFilters, setActiveFilters] = useState({
+    category: [],
     gender: [],
     nationality: [],
     marital_status: [],
-    age: [],
-    city: [],
-    state: [],
-    country: [],
-    pg_course_name: [],
-    pg_college: [],
-    pg_university: [],
-    ug_course_name: [],
-    ug_college: [],
-    ug_university: [],
-    job_title: [],
+    skills: [],
+    address_country: [],
+    address_state: [],
+    address_city: [],
     company: [],
-    department: [],
-    event_name: [],
+    job_title: [],
+    pg_university: [],
+    ug_university: [],
+    pg_course_name: [],
+    ug_course_name: [],
   });
-  const [expandedSections, setExpandedSections] = useState({});
 
   // Delete modal states with loading
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -202,67 +689,144 @@ const MiddleManHome = () => {
     }));
   };
 
-  // Fetch contacts
+  // Fetch filter options with category filtering
   useEffect(() => {
-    const getCategoryContacts = async () => {
-      if (!role) return;
-
-      const rolesDict = { cata: "A", catb: "B", catc: "C" };
-      const category = rolesDict[role];
-
-      if (!category) {
-        console.error("Invalid role for fetching contacts:", role);
-        showAlert("error", "Invalid role for fetching contacts");
-        return;
-      }
-
+    const fetchFilterOptions = async () => {
       try {
-        const response = await axios.get(
-          `http://localhost:8000/api/get-contacts-by-category/?category=${category}`
-        );
+        const rolesDict = { cata: "A", catb: "B", catc: "C" };
+        const category = rolesDict[role];
 
-        const formattedContacts = response.data.map((item) => ({
-          ...item,
-          role: item.experiences?.[0]?.job_title || "N/A",
-          company: item.experiences?.[0]?.company || "N/A",
-          location:
-            `${item.address?.city || ""}, ${
-              item.address?.state || ""
-            }`.trim() === ","
-              ? "N/A"
-              : `${item.address?.city || ""}, ${item.address?.state || ""}`,
-          skills: item.skills
-            ? item.skills.split(",").map((skill) => skill.trim())
-            : [],
-          initials: getInitials(item.name),
-          avatarColor: getAvatarColor(item.contact_id),
-        }));
+        const url = category
+          ? `/api/get-filter-options?category=${category}`
+          : "/api/get-filter-options";
 
-        setContacts(formattedContacts);
+        const response = await api.get(url);
+        setFilterOptions(response.data);
       } catch (error) {
-        console.error("Failed to fetch contacts:", error);
-        showAlert("error", "Failed to fetch contacts. Please try again.");
+        console.error("Failed to fetch filter options:", error);
       }
     };
 
-    getCategoryContacts();
-  }, [role]);
+    if (role) {
+      fetchFilterOptions();
+    }
+  }, [role]); // Add role as dependency to refetch when role changes
 
-  // Filter logic - only search term filtering
-  const filteredContacts = contacts.filter((contact) => {
-    const searchTermLower = searchTerm.toLowerCase();
-    const skillsString = Array.isArray(contact.skills)
-      ? contact.skills.join(" ").toLowerCase()
-      : "";
+  // Fetch contacts using filtered API
+  const fetchContacts = async () => {
+    if (!role) return;
 
-    const matchesSearch =
-      contact.name?.toLowerCase().includes(searchTermLower) ||
-      contact.company?.toLowerCase().includes(searchTermLower) ||
-      contact.role?.toLowerCase().includes(searchTermLower) ||
-      skillsString.includes(searchTermLower);
+    const rolesDict = { cata: "A", catb: "B", catc: "C" };
+    const category = rolesDict[role];
 
-    return matchesSearch;
-  });
+    if (!category) {
+      console.error("Invalid role for fetching contacts:", role);
+      showAlert("error", "Invalid role for fetching contacts");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Build query parameters
+      const params = new URLSearchParams();
+
+      // Add category filter based on user role
+      params.append("category", category);
+
+      // Add search term if exists
+      if (searchTerm.trim()) {
+        params.append("name", searchTerm);
+      }
+
+      // Add active filters
+      Object.entries(activeFilters).forEach(([key, values]) => {
+        if (values.length > 0) {
+          values.forEach((value) => params.append(key, value));
+        }
+      });
+
+      const response = await api.get(
+        `/api/contacts/filter/?${params.toString()}`
+      );
+
+      // Handle the response structure from GetFilteredContacts API
+      const contactsData = response.data.data?.contacts || [];
+
+      const formattedContacts = contactsData.map((item) => ({
+        ...item,
+        role: item.experiences?.[0]?.job_title || "N/A",
+        company: item.experiences?.[0]?.company || "N/A",
+        location:
+          `${item.city || ""}, ${item.state || ""}`.trim() === ","
+            ? "N/A"
+            : `${item.city || ""}, ${item.state || ""}`,
+        skills: item.skills
+          ? item.skills.split(",").map((skill) => skill.trim())
+          : [],
+        initials: getInitials(item.name),
+        avatarColor: getAvatarColor(item.contact_id),
+      }));
+
+      setContacts(formattedContacts);
+    } catch (error) {
+      console.error("Failed to fetch contacts:", error);
+      showAlert("error", "Failed to fetch contacts. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch contacts when role, search term, or filters change
+  useEffect(() => {
+    fetchContacts();
+  }, [role, searchTerm, activeFilters]);
+
+  // Since filtering is now handled by API, we just use contacts directly
+  const filteredContacts = contacts;
+
+  // Filter handlers
+  const toggleFilter = (filterType, value) => {
+    setActiveFilters((prev) => ({
+      ...prev,
+      [filterType]: prev[filterType].includes(value)
+        ? prev[filterType].filter((item) => item !== value)
+        : [...prev[filterType], value],
+    }));
+  };
+
+  const clearFilters = () => {
+    setActiveFilters({
+      category: [],
+      gender: [],
+      nationality: [],
+      marital_status: [],
+      skills: [],
+      address_country: [],
+      address_state: [],
+      address_city: [],
+      company: [],
+      job_title: [],
+      pg_university: [],
+      ug_university: [],
+      pg_course_name: [],
+      ug_course_name: [],
+    });
+  };
+
+  const getActiveFilterCount = () => {
+    return Object.values(activeFilters).reduce(
+      (total, filterArray) => total + filterArray.length,
+      0
+    );
+  };
+
+  // Debounced search to avoid too many API calls
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      fetchContacts();
+    }, 500);
+    return () => clearTimeout(timeoutId);
+  }, [searchTerm]);
 
   // Edit handlers
   const handleEditClick = (user) => {
@@ -274,8 +838,8 @@ const MiddleManHome = () => {
     try {
       console.log("Saving data:", updatedData);
 
-      const response = await axios.put(
-        `http://localhost:8000/api/update-contact/${updatedData.contact_id}`,
+      const response = await api.put(
+        `/api/update-contact/${updatedData.contact_id}`,
         updatedData
       );
 
@@ -330,8 +894,8 @@ const MiddleManHome = () => {
         contactToDelete.contact_id
       );
 
-      await axios.delete(
-        `http://localhost:8000/api/delete-contact/${contactToDelete.contact_id}/`
+      await api.delete(
+        `/api/delete-contact/${contactToDelete.contact_id}/`
       );
 
       console.log("Delete successful, updating state");
@@ -390,7 +954,7 @@ const MiddleManHome = () => {
             </div>
           ) : (
             <>
-              {/* Search and Filters */}
+              {/* Search and Filter Controls */}
               <div className="flex flex-col md:flex-row gap-4 items-center mb-6">
                 <div className="flex-1 w-full relative">
                   <Search
@@ -405,15 +969,36 @@ const MiddleManHome = () => {
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
                 </div>
-                {/* Grid Icon Button */}
+
+                {/* Filter Button */}
                 <button
-                  onClick={() => setIsGridModalOpen(true)}
-                  className="p-3 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
-                  title="Open Grid View"
+                  onClick={() => setIsFilterModalOpen(true)}
+                  className={`flex items-center gap-2 px-4 py-3 border rounded-lg transition-colors ${
+                    getActiveFilterCount() > 0
+                      ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700"
+                      : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                  }`}
+                  title="Open Filters"
                 >
-                  <Grid3X3 size={20} className="text-gray-600" />
+                  <Filter size={20} />
+                  Filters
+                  {getActiveFilterCount() > 0 && (
+                    <span className="bg-white text-blue-600 text-xs px-2 py-1 rounded-full font-medium">
+                      {getActiveFilterCount()}
+                    </span>
+                  )}
                 </button>
               </div>
+
+              {/* Loading indicator */}
+              {loading && (
+                <div className="flex justify-center items-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                  <span className="ml-2 text-gray-600">
+                    Loading contacts...
+                  </span>
+                </div>
+              )}
 
               {/* Contact Cards Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -427,7 +1012,7 @@ const MiddleManHome = () => {
                 ))}
               </div>
 
-              {filteredContacts.length === 0 && (
+              {filteredContacts.length === 0 && !loading && (
                 <div className="text-center py-12 col-span-full">
                   <div className="text-gray-400 text-lg mb-2">
                     No contacts found
@@ -442,548 +1027,6 @@ const MiddleManHome = () => {
         </div>
       </div>
 
-      {/* Right Side Grid Modal */}
-      {isGridModalOpen && (
-        <div className="fixed inset-0 z-50 flex justify-end">
-          {/* Backdrop */}
-          <div
-            className="absolute inset-0 bg-transparent"
-            onClick={() => setIsGridModalOpen(false)}
-          />
-
-          {/* Modal Content - Right Side */}
-          <div className="relative z-10 mt-16 mr-4 w-80 bg-white rounded-lg shadow-2xl border border-gray-200 transform transition-transform duration-300 ease-in-out max-h-[80vh] overflow-y-auto">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between p-4 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-900">Filters</h2>
-              <button
-                onClick={() => setIsGridModalOpen(false)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <X size={20} className="text-gray-500" />
-              </button>
-            </div>
-
-            {/* Modal Body - Filter Content */}
-            <div className="p-4 space-y-4">
-              {/* Skills Filter */}
-              <div className="border-b border-gray-200 pb-3">
-                <button
-                  onClick={() =>
-                    setExpandedSections((prev) => ({
-                      ...prev,
-                      skills: !prev.skills,
-                    }))
-                  }
-                  className="flex items-center justify-between w-full text-left"
-                >
-                  <span className="font-medium text-gray-900">Skills</span>
-                  <ChevronDown
-                    className={`w-4 h-4 transform transition-transform ${
-                      expandedSections.skills ? "rotate-180" : ""
-                    }`}
-                  />
-                </button>
-                {expandedSections.skills && (
-                  <div className="mt-2 space-y-2 max-h-32 overflow-y-auto">
-                    {[
-                      "JavaScript",
-                      "React",
-                      "Node.js",
-                      "Python",
-                      "Java",
-                      "C++",
-                      "SQL",
-                      "MongoDB",
-                    ].map((skill) => (
-                      <label
-                        key={skill}
-                        className="flex items-center space-x-2"
-                      >
-                        <input
-                          type="checkbox"
-                          className="text-blue-600 focus:ring-blue-500 rounded"
-                          checked={activeFilters.skills.includes(skill)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setActiveFilters((prev) => ({
-                                ...prev,
-                                skills: [...prev.skills, skill],
-                              }));
-                            } else {
-                              setActiveFilters((prev) => ({
-                                ...prev,
-                                skills: prev.skills.filter((s) => s !== skill),
-                              }));
-                            }
-                          }}
-                        />
-                        <span className="text-sm text-gray-600">{skill}</span>
-                      </label>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Basic Info Filters */}
-              <div className="border-b border-gray-200 pb-3">
-                <button
-                  onClick={() =>
-                    setExpandedSections((prev) => ({
-                      ...prev,
-                      basicInfo: !prev.basicInfo,
-                    }))
-                  }
-                  className="flex items-center justify-between w-full text-left"
-                >
-                  <span className="font-medium text-gray-900">
-                    Basic Information
-                  </span>
-                  <ChevronDown
-                    className={`w-4 h-4 transform transition-transform ${
-                      expandedSections.basicInfo ? "rotate-180" : ""
-                    }`}
-                  />
-                </button>
-                {expandedSections.basicInfo && (
-                  <div className="mt-2 space-y-3">
-                    {/* Gender */}
-                    <div>
-                      <span className="text-sm font-medium text-gray-700">
-                        Gender
-                      </span>
-                      <div className="mt-1 space-y-1">
-                        {["Male", "Female", "Other"].map((gender) => (
-                          <label
-                            key={gender}
-                            className="flex items-center space-x-2"
-                          >
-                            <input
-                              type="checkbox"
-                              className="text-blue-600 focus:ring-blue-500 rounded"
-                              checked={activeFilters.gender.includes(gender)}
-                              onChange={(e) => {
-                                if (e.target.checked) {
-                                  setActiveFilters((prev) => ({
-                                    ...prev,
-                                    gender: [...prev.gender, gender],
-                                  }));
-                                } else {
-                                  setActiveFilters((prev) => ({
-                                    ...prev,
-                                    gender: prev.gender.filter(
-                                      (g) => g !== gender
-                                    ),
-                                  }));
-                                }
-                              }}
-                            />
-                            <span className="text-sm text-gray-600">
-                              {gender}
-                            </span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Marital Status */}
-                    <div>
-                      <span className="text-sm font-medium text-gray-700">
-                        Marital Status
-                      </span>
-                      <div className="mt-1 space-y-1">
-                        {["Single", "Married", "Divorced", "Widowed"].map(
-                          (status) => (
-                            <label
-                              key={status}
-                              className="flex items-center space-x-2"
-                            >
-                              <input
-                                type="checkbox"
-                                className="text-blue-600 focus:ring-blue-500 rounded"
-                                checked={activeFilters.marital_status.includes(
-                                  status
-                                )}
-                                onChange={(e) => {
-                                  if (e.target.checked) {
-                                    setActiveFilters((prev) => ({
-                                      ...prev,
-                                      marital_status: [
-                                        ...prev.marital_status,
-                                        status,
-                                      ],
-                                    }));
-                                  } else {
-                                    setActiveFilters((prev) => ({
-                                      ...prev,
-                                      marital_status:
-                                        prev.marital_status.filter(
-                                          (s) => s !== status
-                                        ),
-                                    }));
-                                  }
-                                }}
-                              />
-                              <span className="text-sm text-gray-600">
-                                {status}
-                              </span>
-                            </label>
-                          )
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Location Filters */}
-              <div className="border-b border-gray-200 pb-3">
-                <button
-                  onClick={() =>
-                    setExpandedSections((prev) => ({
-                      ...prev,
-                      location: !prev.location,
-                    }))
-                  }
-                  className="flex items-center justify-between w-full text-left"
-                >
-                  <span className="font-medium text-gray-900">Location</span>
-                  <ChevronDown
-                    className={`w-4 h-4 transform transition-transform ${
-                      expandedSections.location ? "rotate-180" : ""
-                    }`}
-                  />
-                </button>
-                {expandedSections.location && (
-                  <div className="mt-2 space-y-3">
-                    {/* Country */}
-                    <div>
-                      <span className="text-sm font-medium text-gray-700">
-                        Country
-                      </span>
-                      <div className="mt-1 space-y-1 max-h-24 overflow-y-auto">
-                        {[
-                          "USA",
-                          "Canada",
-                          "UK",
-                          "Australia",
-                          "Germany",
-                          "France",
-                          "India",
-                          "Japan",
-                        ].map((country) => (
-                          <label
-                            key={country}
-                            className="flex items-center space-x-2"
-                          >
-                            <input
-                              type="checkbox"
-                              className="text-blue-600 focus:ring-blue-500 rounded"
-                              checked={activeFilters.country.includes(country)}
-                              onChange={(e) => {
-                                if (e.target.checked) {
-                                  setActiveFilters((prev) => ({
-                                    ...prev,
-                                    country: [...prev.country, country],
-                                  }));
-                                } else {
-                                  setActiveFilters((prev) => ({
-                                    ...prev,
-                                    country: prev.country.filter(
-                                      (c) => c !== country
-                                    ),
-                                  }));
-                                }
-                              }}
-                            />
-                            <span className="text-sm text-gray-600">
-                              {country}
-                            </span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Education Filters */}
-              <div className="border-b border-gray-200 pb-3">
-                <button
-                  onClick={() =>
-                    setExpandedSections((prev) => ({
-                      ...prev,
-                      education: !prev.education,
-                    }))
-                  }
-                  className="flex items-center justify-between w-full text-left"
-                >
-                  <span className="font-medium text-gray-900">Education</span>
-                  <ChevronDown
-                    className={`w-4 h-4 transform transition-transform ${
-                      expandedSections.education ? "rotate-180" : ""
-                    }`}
-                  />
-                </button>
-                {expandedSections.education && (
-                  <div className="mt-2 space-y-3">
-                    {/* PG Courses */}
-                    <div>
-                      <span className="text-sm font-medium text-gray-700">
-                        PG Courses
-                      </span>
-                      <div className="mt-1 space-y-1 max-h-24 overflow-y-auto">
-                        {["MBA", "MS", "PhD", "M.Tech", "MA", "M.Com"].map(
-                          (course) => (
-                            <label
-                              key={course}
-                              className="flex items-center space-x-2"
-                            >
-                              <input
-                                type="checkbox"
-                                className="text-blue-600 focus:ring-blue-500 rounded"
-                                checked={activeFilters.pg_course_name.includes(
-                                  course
-                                )}
-                                onChange={(e) => {
-                                  if (e.target.checked) {
-                                    setActiveFilters((prev) => ({
-                                      ...prev,
-                                      pg_course_name: [
-                                        ...prev.pg_course_name,
-                                        course,
-                                      ],
-                                    }));
-                                  } else {
-                                    setActiveFilters((prev) => ({
-                                      ...prev,
-                                      pg_course_name:
-                                        prev.pg_course_name.filter(
-                                          (c) => c !== course
-                                        ),
-                                    }));
-                                  }
-                                }}
-                              />
-                              <span className="text-sm text-gray-600">
-                                {course}
-                              </span>
-                            </label>
-                          )
-                        )}
-                      </div>
-                    </div>
-
-                    {/* UG Courses */}
-                    <div>
-                      <span className="text-sm font-medium text-gray-700">
-                        UG Courses
-                      </span>
-                      <div className="mt-1 space-y-1 max-h-24 overflow-y-auto">
-                        {["B.Tech", "B.E", "BCA", "B.Com", "BA", "B.Sc"].map(
-                          (course) => (
-                            <label
-                              key={course}
-                              className="flex items-center space-x-2"
-                            >
-                              <input
-                                type="checkbox"
-                                className="text-blue-600 focus:ring-blue-500 rounded"
-                                checked={activeFilters.ug_course_name.includes(
-                                  course
-                                )}
-                                onChange={(e) => {
-                                  if (e.target.checked) {
-                                    setActiveFilters((prev) => ({
-                                      ...prev,
-                                      ug_course_name: [
-                                        ...prev.ug_course_name,
-                                        course,
-                                      ],
-                                    }));
-                                  } else {
-                                    setActiveFilters((prev) => ({
-                                      ...prev,
-                                      ug_course_name:
-                                        prev.ug_course_name.filter(
-                                          (c) => c !== course
-                                        ),
-                                    }));
-                                  }
-                                }}
-                              />
-                              <span className="text-sm text-gray-600">
-                                {course}
-                              </span>
-                            </label>
-                          )
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Work Experience Filters */}
-              <div className="border-b border-gray-200 pb-3">
-                <button
-                  onClick={() =>
-                    setExpandedSections((prev) => ({
-                      ...prev,
-                      work: !prev.work,
-                    }))
-                  }
-                  className="flex items-center justify-between w-full text-left"
-                >
-                  <span className="font-medium text-gray-900">
-                    Work Experience
-                  </span>
-                  <ChevronDown
-                    className={`w-4 h-4 transform transition-transform ${
-                      expandedSections.work ? "rotate-180" : ""
-                    }`}
-                  />
-                </button>
-                {expandedSections.work && (
-                  <div className="mt-2 space-y-3">
-                    {/* Job Titles */}
-                    <div>
-                      <span className="text-sm font-medium text-gray-700">
-                        Job Title
-                      </span>
-                      <div className="mt-1 space-y-1 max-h-24 overflow-y-auto">
-                        {[
-                          "Software Engineer",
-                          "Product Manager",
-                          "Designer",
-                          "Data Scientist",
-                          "Marketing Manager",
-                          "Sales Executive",
-                        ].map((title) => (
-                          <label
-                            key={title}
-                            className="flex items-center space-x-2"
-                          >
-                            <input
-                              type="checkbox"
-                              className="text-blue-600 focus:ring-blue-500 rounded"
-                              checked={activeFilters.job_title.includes(title)}
-                              onChange={(e) => {
-                                if (e.target.checked) {
-                                  setActiveFilters((prev) => ({
-                                    ...prev,
-                                    job_title: [...prev.job_title, title],
-                                  }));
-                                } else {
-                                  setActiveFilters((prev) => ({
-                                    ...prev,
-                                    job_title: prev.job_title.filter(
-                                      (t) => t !== title
-                                    ),
-                                  }));
-                                }
-                              }}
-                            />
-                            <span className="text-sm text-gray-600">
-                              {title}
-                            </span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Companies */}
-                    <div>
-                      <span className="text-sm font-medium text-gray-700">
-                        Company
-                      </span>
-                      <div className="mt-1 space-y-1 max-h-24 overflow-y-auto">
-                        {[
-                          "Google",
-                          "Microsoft",
-                          "Amazon",
-                          "Apple",
-                          "Meta",
-                          "Netflix",
-                          "Tesla",
-                          "IBM",
-                        ].map((company) => (
-                          <label
-                            key={company}
-                            className="flex items-center space-x-2"
-                          >
-                            <input
-                              type="checkbox"
-                              className="text-blue-600 focus:ring-blue-500 rounded"
-                              checked={activeFilters.company.includes(company)}
-                              onChange={(e) => {
-                                if (e.target.checked) {
-                                  setActiveFilters((prev) => ({
-                                    ...prev,
-                                    company: [...prev.company, company],
-                                  }));
-                                } else {
-                                  setActiveFilters((prev) => ({
-                                    ...prev,
-                                    company: prev.company.filter(
-                                      (c) => c !== company
-                                    ),
-                                  }));
-                                }
-                              }}
-                            />
-                            <span className="text-sm text-gray-600">
-                              {company}
-                            </span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Filter Actions */}
-              <div className="pt-2 space-y-2">
-                <button
-                  onClick={() => {
-                    setActiveFilters({
-                      skills: [],
-                      gender: [],
-                      nationality: [],
-                      marital_status: [],
-                      age: [],
-                      city: [],
-                      state: [],
-                      country: [],
-                      pg_course_name: [],
-                      pg_college: [],
-                      pg_university: [],
-                      ug_course_name: [],
-                      ug_college: [],
-                      ug_university: [],
-                      job_title: [],
-                      company: [],
-                      department: [],
-                      event_name: [],
-                    });
-                  }}
-                  className="w-full px-3 py-2 text-sm text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-                >
-                  Clear All Filters
-                </button>
-                <button
-                  onClick={() => setIsGridModalOpen(false)}
-                  className="w-full px-3 py-2 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  Apply Filters
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Delete Confirmation Modal with Loading State */}
       <DeleteConfirmationModal
         isOpen={showDeleteModal}
@@ -992,6 +1035,20 @@ const MiddleManHome = () => {
         itemName={contactToDelete?.name || "this contact"}
         isDeleting={isDeleting} // Pass isDeleting state
       />
+
+      {/* Filter Modal */}
+      {isFilterModalOpen && (
+        <FilterModal
+          filterOptions={filterOptions}
+          activeFilters={activeFilters}
+          setActiveFilters={setActiveFilters}
+          contacts={contacts}
+          setIsFilterModalOpen={setIsFilterModalOpen}
+          getActiveFilterCount={getActiveFilterCount}
+          clearFilters={clearFilters}
+          toggleFilter={toggleFilter}
+        />
+      )}
     </div>
   );
 };

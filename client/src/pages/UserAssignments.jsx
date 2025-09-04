@@ -1,4 +1,4 @@
-import axios from 'axios';
+import api from '../utils/axios';
 import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '../store/AuthStore';
 import { useNavigate } from 'react-router-dom';
@@ -142,7 +142,7 @@ function UserAssignments() {
     const getData = async () => {
         try {
             setLoading(true);
-            const response = await axios.get(`http://localhost:8000/api/get-assignment/${id}`);
+            const response = await api.get(`/api/get-assignment/${id}`);
             console.log("User assignments fetched successfully:", response.data);
             setData(response.data);
         } catch (error) {
@@ -201,7 +201,6 @@ function UserAssignments() {
             console.log("Error loading user for add", error);
         }
     };
-
     const handleDeleteClick = (contact_id) => {
         const user = data.find((user) => user.contact_id === contact_id);
         if (user) {
