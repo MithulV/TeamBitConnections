@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import Header from "../components/Header";
 import { useAuthStore } from "../store/AuthStore";
-import axios from "axios";
+import api from '../utils/axios';
 
 const TasksPage = () => {
   const [tasks, setTasks] = useState([]);
@@ -50,8 +50,8 @@ const TasksPage = () => {
         console.log("Mapped category:", category);
 
         if (category) {
-          const response = await axios.get(
-            `http://localhost:8000/api/get-tasks/?category=${category}`
+          const response = await api.get(
+            `/api/get-tasks/?category=${category}`
           );
 
           setTasks(response.data.data || []);
@@ -85,8 +85,8 @@ const TasksPage = () => {
       // Find the task being completed to know its type
       const taskToComplete = tasks.find((task) => task.id === taskId);
 
-      const response = await axios.put(
-        `http://localhost:8000/api/complete-task/${taskId}`
+      const response = await api.put(
+        `/api/complete-task/${taskId}`
       );
 
       if (response.data.success) {

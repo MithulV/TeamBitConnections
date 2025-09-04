@@ -81,6 +81,7 @@ ChartJS.register(
 const countryCodeMap = {
   'India': 'in',
   'United States': 'us',
+  'USA': 'us',
   'United Kingdom': 'gb',
   'Canada': 'ca',
   'Australia': 'au',
@@ -89,7 +90,6 @@ const countryCodeMap = {
   'Japan': 'jp',
   'China': 'cn',
   'Brazil': 'br',
-  'USA': 'us',
 };
 
 // ✅ SEQUENTIAL BATCH PROCESSING HELPER
@@ -241,7 +241,14 @@ const QuickActionCard = ({ title, description, icon: Icon, onClick, color }) => 
 );
 
 function Admin() {
+  console.log("🚀 Admin component rendering"); // ✅ Debug log
+  
   const navigate = useNavigate();
+  const { id, role } = useAuthStore();
+  
+  console.log("👤 User data:", { id, role }); // ✅ Debug log
+  
+  // ✅ Initialize all state variables as arrays to prevent filter errors
   const [stats, setStats] = useState({
     totalContacts: 0,
     verifiedContacts: 0,
@@ -253,8 +260,8 @@ function Admin() {
     activeAssignments: 0,
   });
 
-  const [contacts, setContacts] = useState([]);
-  const [recentContacts, setRecentContacts] = useState([]);
+  const [contacts, setContacts] = useState([]); // ✅ Initialize as empty array
+  const [recentContacts, setRecentContacts] = useState([]); // ✅ Initialize as empty array
   const [categoryData, setCategoryData] = useState({ A: 0, B: 0, C: 0 });
   const [loading, setLoading] = useState(true);
   
@@ -267,8 +274,6 @@ function Admin() {
     severity: "success",
     message: "",
   });
-
-  const { id, role } = useAuthStore();
 
   const showAlert = (severity, message) => {
     setAlert({ isOpen: true, severity, message });
@@ -313,7 +318,10 @@ function Admin() {
     };
 
     const processChartData = useMemo(() => {
-      const filteredContacts = contacts.filter(contact => {
+      // ✅ Ensure contacts is an array before filtering
+      const contactsArray = Array.isArray(contacts) ? contacts : [];
+      
+      const filteredContacts = contactsArray.filter(contact => {
         const createdDate = contact.created_at ? parseISO(contact.created_at) : null;
         return createdDate && 
                isAfter(createdDate, startOfDay(startDate)) && 
@@ -633,13 +641,16 @@ function Admin() {
 
     // ✅ FIXED useEffect with enhanced batch processing
     useEffect(() => {
-      if (!contacts || contacts.length === 0) {
+      // ✅ Ensure contacts is an array before processing
+      const contactsArray = Array.isArray(contacts) ? contacts : [];
+      
+      if (contactsArray.length === 0) {
         console.log("❌ No contacts to process");
         return;
       }
 
       // Create unique hash for contacts to detect changes
-      const currentHash = contacts.map(c => `${c.contact_id}-${c.city}-${c.state}`).join('|');
+      const currentHash = contactsArray.map(c => `${c.contact_id}-${c.city}-${c.state}`).join('|');
       
       if (isProcessingRef.current || contactsHashRef.current === currentHash) {
         console.log("❌ Already processing or same contacts, skipping");
@@ -647,11 +658,11 @@ function Admin() {
       }
 
       console.log("🚀 Starting ENHANCED SEQUENTIAL BATCH geocoding");
-      console.log(`📊 Total contacts: ${contacts.length}`);
+      console.log(`📊 Total contacts: ${contactsArray.length}`);
       
       // Filter contacts with valid addresses
-      const contactsToProcess = contacts.filter(c => c.city && c.state);
-      const skippedContacts = contacts.filter(c => !c.city || !c.state);
+      const contactsToProcess = contactsArray.filter(c => c.city && c.state);
+      const skippedContacts = contactsArray.filter(c => !c.city || !c.state);
       
       console.log(`📍 Contacts with valid addresses (city + state): ${contactsToProcess.length}`);
       console.log(`⚠️ Contacts skipped (missing city/state): ${skippedContacts.length}`);
@@ -861,10 +872,6 @@ function Admin() {
     );
   };
 
-  useEffect(() => {
-    fetchDashboardData();
-  }, []);
-
   const exportCsv = (contacts) => {
     const headers = [
       "Added By", "Created At", "Name", "Phone Number",
@@ -938,7 +945,7 @@ function Admin() {
       setLoading(true);
 
       const response = await axios.get(`http://localhost:8000/api/get-all-contact/`);
-      const contacts = response.data.data;
+      const contacts = response.data.data || response.data || [];
 
       const csvContent = exportCsv(contacts);
 
@@ -956,76 +963,90 @@ function Admin() {
     }
   };
 
-  const fetchDashboardData = async () => {
-    try {
-      setLoading(true);
+  // ✅ FIXED fetchDashboardData with proper array handling and debug logs
+const fetchDashboardData = async () => {
+  if (!id) return;
 
-      const [
-        recentcontact,
-        contactsResponse,
-        unverifiedContactsResponse,
-        unverifiedImagesResponse,
-        categoryAResponse,
-        categoryBResponse,
-        categoryCResponse,
-        allContactsResponse,
-      ] = await Promise.all([
-        axios.get(`http://localhost:8000/api/get-all-contact/?limit=5`),
-        axios.get(`http://localhost:8000/api/contacts/${id}`),
-        axios.get("http://localhost:8000/api/get-unverified-contacts/"),
-        axios.get("http://localhost:8000/api/get-unverified-images/"),
-        axios.get("http://localhost:8000/api/get-contacts-by-category/?category=A"),
-        axios.get("http://localhost:8000/api/get-contacts-by-category/?category=B"),
-        axios.get("http://localhost:8000/api/get-contacts-by-category/?category=C"),
-        axios.get("http://localhost:8000/api/get-all-contact/"),
-      ]);
+  try {
+    setLoading(true);
 
-      setContacts(allContactsResponse.data.data || allContactsResponse.data);
+    const [
+      recentcontact,
+      contactsResponse, 
+      unverifiedContactsResponse,
+      unverifiedImagesResponse,
+      categoryAResponse,
+      categoryBResponse,
+      categoryCResponse,
+      allContactsResponse,
+    ] = await Promise.all([
+      axios.get(`http://localhost:8000/api/get-all-contact/?limit=5`),
+      axios.get(`http://localhost:8000/api/contacts/${id}`),
+      axios.get("http://localhost:8000/api/get-unverified-contacts/"),
+      axios.get("http://localhost:8000/api/get-unverified-images/"),
+      axios.get("http://localhost:8000/api/get-contacts-by-category/?category=A"),
+      axios.get("http://localhost:8000/api/get-contacts-by-category/?category=B"),
+      axios.get("http://localhost:8000/api/get-contacts-by-category/?category=C"),
+      axios.get("http://localhost:8000/api/get-all-contact/"),
+    ]);
 
-      const formattedContacts = recentcontact?.data?.data?.map((item) => ({
-        ...item,
-        role: item.experiences?.[0]?.job_title || "N/A",
-        company: item.experiences?.[0]?.company || "N/A",
-        location:
-          `${item.address?.city || ""}, ${item.address?.state || ""}`.trim() === ","
-            ? "N/A"
-            : `${item.address?.city || ""}, ${item.address?.state || ""}`,
-        skills: item.skills
-          ? item.skills.split(",").map((skill) => skill.trim())
-          : [],
-      }));
-      setRecentContacts(formattedContacts);
+    // ✅ Use each API for its purpose
+    const allContacts = allContactsResponse.data?.data || [];
+    const recentContactsData = recentcontact.data?.data || [];
+    const unverifiedContacts = unverifiedContactsResponse.data?.data || [];
+    const unverifiedImages = unverifiedImagesResponse.data?.data || [];
+    console.log(allContacts,recentContacts,unverifiedContacts,unverifiedImages);
+    setContacts(allContacts);
+    setRecentContacts(recentContactsData.map(item => ({
+      ...item,
+      role: item.experiences?.[0]?.job_title || "N/A",
+      company: item.experiences?.[0]?.company || "N/A",
+      location: `${item.address?.city || ""}, ${item.address?.state || ""}`.trim() === "," 
+        ? "N/A" 
+        : `${item.address?.city || ""}, ${item.address?.state || ""}`,
+      skills: item.skills ? item.skills.split(",").map(s => s.trim()) : [],
+    })));
 
-      const contacts = contactsResponse.data;
-      const unverifiedContacts = unverifiedContactsResponse.data;
-      const unverifiedImages = unverifiedImagesResponse.data;
+    // ✅ Simple stats from dedicated APIs
+    setStats({
+      totalContacts: allContacts.length,
+      verifiedContacts: allContacts.filter(c => c.verified || c.contact_status === 'approved').length,
+      unverifiedContacts: allContacts.filter(c=>!c.verified || c.contact_status==='pending').length,
+      totalEvents: allContacts.reduce((acc, c) => acc + (c.event_name ? c.event_name.split(';').length : 0), 0),
+      totalImages: unverifiedImages.length,
+      completedTasks: 0,
+      pendingTasks: 0,
+      activeAssignments: 0,
+    });
 
-      setStats({
-        totalContacts: contacts.length,
-        verifiedContacts: contacts.filter((c) => c.verified).length,
-        unverifiedContacts: unverifiedContacts.length,
-        totalEvents: contacts.reduce(
-          (acc, contact) => acc + (contact.events?.length || 0),
-          0
-        ),
-        completedTasks: 0,
-        pendingTasks: 0,
-        totalImages: unverifiedImages.length,
-        activeAssignments: 0,
-      });
+    setCategoryData({
+      A: categoryAResponse.data?.data.length || 0,
+      B: categoryBResponse.data?.data.length || 0,
+      C: categoryCResponse.data?.data.length || 0,
+    });
+    
+  } catch (error) {
+    console.error("Error fetching dashboard data:", error);
+    showAlert("error", "Failed to fetch dashboard data");
+  } finally {
+    setLoading(false);
+  }
+};
 
-      setCategoryData({
-        A: categoryAResponse.data.length,
-        B: categoryBResponse.data.length,
-        C: categoryCResponse.data.length,
-      });
-    } catch (error) {
-      console.error("Error fetching dashboard data:", error);
-      showAlert("error", "Failed to fetch dashboard data");
-    } finally {
-      setLoading(false);
+
+
+  // ✅ useEffect with proper debugging
+  useEffect(() => {
+    console.log("🔄 useEffect running, checking user ID..."); // ✅ Debug log
+    console.log("👤 ID available:", !!id, "Value:", id); // ✅ Debug log
+    
+    if (id) {
+      console.log("✅ User ID found, calling fetchDashboardData"); // ✅ Debug log
+      fetchDashboardData();
+    } else {
+      console.log("⚠️ No user ID yet, waiting..."); // ✅ Debug log
     }
-  };
+  }, [id]); // ✅ Add id as dependency
 
   const csvInputRef = useRef(null);
 

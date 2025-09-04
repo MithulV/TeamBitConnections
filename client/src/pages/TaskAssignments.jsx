@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '../store/AuthStore';
 import Alert from '../components/Alert';
 import Header from '../components/Header';
-import axios from 'axios';
+import api from '../utils/axios';
 import { format, parseISO } from 'date-fns';
 import { 
   LayoutDashboard, 
@@ -66,7 +66,7 @@ function TaskAssignments() {
   const getTasks = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`http://localhost:8000/api/get-tasks?category=${role}`);
+      const response = await api.get(`/api/get-tasks?category=${role}`);
       setData(response.data.data);
       setStats(response.data.stats);
       
@@ -106,8 +106,8 @@ function TaskAssignments() {
     }
 
     try {
-      await axios.post('http://localhost:8000/api/create-task', newTask);
-      
+      await api.post('/api/create-task', newTask);
+
       setNewTask({
         task_title: '',
         task_description: '',

@@ -47,10 +47,7 @@ router.get("/get-contact-images/:userId", GetPicturesByUserId);
 router.put("/update-contact/:contact_id", UpdateContact);
 router.post("/create-contact-by-admin",UpdateContact);
 router.delete("/delete-contact/:id", DeleteContact);
-router.post(
-  "/add-event-existing-contact/:contactId",
-  AddEventToExistingContact
-);
+router.post("/add-event-existing-contact/:contactId",AddEventToExistingContact);
 router.put("/update-contacts-and-events/:id", UpdateContactAndEvents);
 router.delete("/delete-image/:id", DeleteImage);
 router.post("/verify-image/:id", VerifyImages);
