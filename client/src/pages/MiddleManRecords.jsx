@@ -326,8 +326,10 @@ function MiddleManRecords() {
     try {
       if (updatedData && addingUser) {
         console.log("Saving data:", updatedData);
+
         const response = await api.put(
           `/api/update-contact/${updatedData.contact_id}?contact_status=approved&event_verified=true`,
+
           updatedData
         );
         console.log("Update response:", response);

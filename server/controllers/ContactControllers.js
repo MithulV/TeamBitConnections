@@ -1,4 +1,5 @@
 import db from "../src/config/db.js";
+import { logContactModification } from "./ModificationHistoryControllers.js";
 
 // CREATE: A contact and their core information (address, education, experiences, events)
 export const CreateContact = async (req, res) => {
@@ -113,7 +114,43 @@ export const CreateContact = async (req, res) => {
             exp.department || null
           }, ${exp.from_date}, ${exp.to_date}
             ) RETURNING *`;
-          createdExperiences.push(newExp);
+                    createdExperiences.push(newExp);
+                }
+            }
+            // 5. Insert Events Array (if provided)
+            if (events && events.length > 0) {
+                for (const event of events) {
+                    const [newEvent] =
+                        await t`INSERT INTO event (contact_id, event_name, event_role, event_date, event_held_organization, event_location, verified) VALUES (${contactId}, ${
+                            event.event_name
+                        }, ${event.event_role}, ${event.event_date}, ${event.event_held_organization}, ${
+                            event.event_location
+                        }, ${event.verified || false}) RETURNING *`;
+                    createdEvents.push(newEvent);
+                }
+            }
+
+            try {
+                await logContactModification(t, contactId, created_by || null, "CREATE", t);
+                console.log("Contact modification logged successfully");
+            } catch (modError) {
+                console.error("Failed to log contact modification, but continuing:", modError);
+            }
+
+            return {
+                contact,
+                address: createdAddress,
+                education: createdEducation,
+                experiences: createdExperiences,
+                events: createdEvents,
+            };
+        });
+
+        return res.status(201).json({ message: "Contact created successfully!", data: result });
+    } catch (err) {
+        console.error(err);
+        if (err.code === "23505") {
+            return res.status(409).json({ message: "A contact with this email already exists." });
         }
       }
       // 5. Insert Events Array (if provided)
@@ -242,96 +279,131 @@ export const GetUnVerifiedContacts = async (req, res) => {
   }
 };
 
+// UPDATE: A contact and their associated events with authorization checks
 export const UpdateContactAndEvents = async (req, res) => {
-  const { id } = req.params;
-  const {
-    // Contact Fields
-    name,
-    phone_number,
-    email_address,
-    // Events Array
-    events,
-  } = req.body;
+    const { id } = req.params;
+    const { userType } = req.query;
+    const {
+        // Contact Fields
+        name,
+        phone_number,
+        email_address,
+        created_by,
 
-  // --- 1. Strict Validation ---
-  if (!id) {
-    return res
-      .status(400)
-      .json({ message: "Contact ID is required in the URL." });
-  }
-  if (!name || !phone_number || !email_address) {
-    return res.status(400).json({
-      message:
-        "Required fields are missing (name, phone_number, email_address).",
-    });
-  }
-  if (!events || !Array.isArray(events) || events.length === 0) {
-    return res
-      .status(400)
-      .json({ message: "The 'events' field must be a non-empty array." });
-  }
+        // Events Array
+        events,
+    } = req.body;
 
-  // Validate each object in the events array
-  for (const event of events) {
-    if (
-      event.event_id === undefined ||
-      event.event_name === undefined ||
-      event.event_role === undefined ||
-      event.event_date === undefined ||
-      event.event_held_organization === undefined ||
-      event.event_location === undefined
-    ) {
-      return res.status(400).json({
-        message:
-          "Each event object must contain all required fields (event_id, event_name, etc.).",
-        invalid_event: event,
-      });
+    // --- 1. Strict Validation ---
+    if (!id) {
+        return res.status(400).json({ message: "Contact ID is required in the URL." });
     }
-  }
+    if (!name || !phone_number || !email_address) {
+        return res.status(400).json({
+            message: "Required fields are missing (name, phone_number, email_address).",
+        });
+    }
+    if (!events || !Array.isArray(events) || events.length === 0) {
+        return res.status(400).json({ message: "The 'events' field must be a non-empty array." });
+    }
 
-  try {
-    // --- 2. Use a Transaction ---
-    // The `sql.begin` or `sql.transaction` block automatically handles BEGIN, COMMIT, and ROLLBACK.
-    const result = await db.begin(async (t) => {
-      // --- 3. Update the Contact Record ---
-      // The template literal `t` is the transactional version of `sql`
-      const contactResults = await t`
-                UPDATE contact
-                SET
-                    name = ${name},
-                    phone_number = ${phone_number},
-                    email_address = ${email_address}
+    // Validate each object in the events array
+    for (const event of events) {
+        if (
+            event.event_id === undefined ||
+            event.event_name === undefined ||
+            event.event_role === undefined ||
+            event.event_date === undefined ||
+            event.event_held_organization === undefined ||
+            event.event_location === undefined
+        ) {
+            return res.status(400).json({
+                message: "Each event object must contain all required fields (event_id, event_name, etc.).",
+                invalid_event: event,
+            });
+        }
+    }
+
+    try {
+        const result = await db.begin(async (t) => {
+            // Get contact with status and verified fields
+            const [contact] = await t`
+                SELECT contact_id, contact_status, verified 
+                FROM event 
                 WHERE contact_id = ${id}
-                RETURNING *
             `;
+            if (!contact) {
+                throw new Error("Contact not found");
+            }
 
-      // If the query returns no rows, the contact wasn't found.
-      if (contactResults.length === 0) {
-        // Throwing an error here will automatically trigger a ROLLBACK.
-        throw new Error("ContactNotFound");
-      }
-      const updatedContact = contactResults[0];
+            // Handle based on user type
+            if (userType === "user") {
+                // Check if user is allowed to update based on status and verified
+                if (
+                    (contact.contact_status === "pending" || contact.contact_status === "rejected") &&
+                    contact.verified === false
+                ) {
+                    // Allow update - contact is pending/rejected and not verified
+                    return await performContactAndEventsUpdate(
+                        t,
+                        id,
+                        { name, phone_number, email_address },
+                        events,
+                        created_by
+                    );
+                } else if (contact.contact_status === "approved" && contact.verified === true) {
+                    // Deny update - contact is approved and verified
+                    throw new Error("UpdateDenied");
+                } else {
+                    // Handle edge cases (e.g., approved but not verified, etc.)
+                    throw new Error("InsufficientPermissions");
+                }
+            } else if (["cata", "catb", "catc", "admin"].includes(userType)) {
+                // Middlemen or Admin - allow update regardless of status
+                return await performContactAndEventsUpdate(
+                    t,
+                    id,
+                    { name, phone_number, email_address },
+                    events,
+                    created_by
+                );
+            } else {
+                throw new Error("Invalid user type");
+            }
+        });
 
-      // --- 4. Update Each Event Record ---
-      const updatedEvents = [];
-      for (const event of events) {
-        const eventResults = await t`
-                    UPDATE event
-                    SET
-                        event_name = ${event.event_name},
-                        event_role = ${event.event_role},
-                        event_date = ${event.event_date},
-                        event_held_organization = ${event.event_held_organization},
-                        event_location = ${event.event_location}
-                    WHERE
-                        event_id = ${event.event_id}
-                        AND contact_id = ${id} -- Security check: Ensures the event belongs to the contact
-                    RETURNING *
-                `;
+        // --- Success Response ---
+        return res.status(200).json({
+            message: "Contact and events updated successfully!",
+            data: result,
+        });
+    } catch (err) {
+        console.error("Update Transaction Failed:", err);
 
-        // If an event update returns no rows, the event_id was invalid or didn't belong to the contact.
-        if (eventResults.length === 0) {
-          throw new Error("EventNotFound");
+        // --- Handle Specific Errors ---
+        if (err.message === "Contact not found") {
+            return res.status(404).json({ message: "Contact not found." });
+        } else if (err.message === "UpdateDenied") {
+            return res.status(403).json({
+                message: "Cannot update approved and verified contacts.",
+                action: "denied",
+                reason: "Contact is approved and verified",
+            });
+        } else if (err.message === "InsufficientPermissions") {
+            return res.status(403).json({
+                message: "You don't have permission to update this contact as it is approved.",
+                action: "denied",
+                reason: "Insufficient permissions for current contact state",
+            });
+        } else if (err.message === "Invalid user type") {
+            return res.status(400).json({ message: "Invalid user type provided." });
+        } else if (err.message === "ContactNotFound" || err.message === "EventNotFound") {
+            return res.status(404).json({
+                message: "Contact or one of the specified events not found for the given contact ID.",
+            });
+        } else if (err.code === "23505") {
+            // PostgreSQL unique_violation error code
+            return res.status(409).json({ message: "A contact with this email address already exists." });
         }
         updatedEvents.push(eventResults[0]);
       }
@@ -372,12 +444,70 @@ export const UpdateContactAndEvents = async (req, res) => {
   }
 };
 
+// Helper function for performing contact and events update
+const performContactAndEventsUpdate = async (transaction, contactId, contactData, events, created_by) => {
+    // --- Update the Contact Record ---
+    const contactResults = await transaction`
+        UPDATE contact
+        SET
+            name = ${contactData.name},
+            phone_number = ${contactData.phone_number},
+            email_address = ${contactData.email_address}
+        WHERE contact_id = ${contactId}
+        RETURNING *
+    `;
+
+    // If the query returns no rows, the contact wasn't found.
+    if (contactResults.length === 0) {
+        throw new Error("ContactNotFound");
+    }
+    const updatedContact = contactResults[0];
+
+    // --- Update Each Event Record ---
+    const updatedEvents = [];
+    for (const event of events) {
+        const eventResults = await transaction`
+            UPDATE event
+            SET
+                event_name = ${event.event_name},
+                event_role = ${event.event_role},
+                event_date = ${event.event_date},
+                event_held_organization = ${event.event_held_organization},
+                event_location = ${event.event_location}
+            WHERE
+                event_id = ${event.event_id}
+                AND contact_id = ${contactId} -- Security check: Ensures the event belongs to the contact
+            RETURNING *
+        `;
+
+        // If an event update returns no rows, the event_id was invalid or didn't belong to the contact.
+        if (eventResults.length === 0) {
+            throw new Error("EventNotFound");
+        }
+        updatedEvents.push(eventResults[0]);
+    }
+
+    // Log the modification
+    try {
+        await logContactModification(transaction, contactId, created_by || null, "UPDATE", transaction);
+        console.log("Contact modification logged successfully");
+    } catch (modError) {
+        console.error("Failed to log contact modification, but continuing:", modError);
+    }
+
+    // Return the final data structure
+    return {
+        contact: updatedContact,
+        events: updatedEvents,
+    };
+};
+
 // UPDATE: A contact's core details
 export const UpdateContact = async (req, res) => {
 
     const { contact_id } = req.params;
-    const {event_verified,contact_status}=req.query;
-    const isVerified = event_verified === 'true';
+    const { event_verified, contact_status, updaterUserId } = req.query;
+    const isVerified = event_verified === "true";
     const {
         // --- Contact Fields ---
         assignment_id,
@@ -516,7 +646,9 @@ export const UpdateContact = async (req, res) => {
       }
             // 5. Update Events Array (if provided)
             if (event_id) {
-                console.log(`${event_verified},${contact_status} ${event_name} ${event_role} ${event_held_organization} ${event_location} ${event_id}  ${contact_id}`);
+                console.log(
+                    `${event_verified},${contact_status} ${event_name} ${event_role} ${event_held_organization} ${event_location} ${event_id}  ${contact_id}`
+                );
                 const [updatedEvent] = await t`
                     UPDATE event SET
                         event_name = ${event_name},
@@ -545,26 +677,29 @@ export const UpdateContact = async (req, res) => {
           WHERE id = ${assignment_id}
           RETURNING *
         `;
-      }
+            }
 
-      return {
-        contact: updatedContact,
-        address: updatedAddress,
-        education: updatedEducation,
-        experiences: updatedExperiences,
-        events: updatedEvents,
-      };
-    });
+            try {
+                await logContactModification(db, contact_id, updaterUserId, "UPDATE", t);
+                console.log("Contact modification logged successfully");
+            } catch (modError) {
+                console.error("Failed to log contact modification, but continuing:", modError);
+            }
 
-    return res
-      .status(200)
-      .json({ message: "Contact updated successfully!", data: result });
-  } catch (err) {
-    console.error(err);
-    return res
-      .status(500)
-      .json({ message: "Server Error!", error: err.message });
-  }
+            return {
+                contact: updatedContact,
+                address: updatedAddress,
+                education: updatedEducation,
+                experiences: updatedExperiences,
+                events: updatedEvents,
+            };
+        });
+
+        return res.status(200).json({ message: "Contact updated successfully!", data: result });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ message: "Server Error!", error: err.message });
+    }
 };
 
 // DELETE: A contact and ALL of their associated data (except photos)
@@ -581,78 +716,73 @@ export const DeleteContact = async (req, res) => {
                 WHERE contact_id = ${id}
             `;
 
-      if (!contact) {
-        throw new Error("Contact not found");
-      }
+            if (!contact) {
+                throw new Error("Contact not found");
+            }
 
-      // Handle based on user type
-      if (userType === "user") {
-        // Check if user is allowed to delete based on status and verified
-        if (
-          (contact.contact_status === "pending" ||
-            contact.contact_status === "rejected") &&
-          contact.verified === false
-        ) {
-          // Allow deletion - contact is pending/rejected and not verified
-          await performCompleteDeletion(t, id);
+            // Handle based on user type
+            if (userType === "user") {
+                // Check if user is allowed to delete based on status and verified
+                if (
+                    (contact.contact_status === "pending" || contact.contact_status === "rejected") &&
+                    contact.verified === false
+                ) {
+                    // Allow deletion - contact is pending/rejected and not verified
+                    await performCompleteDeletion(t, id);
 
-          return res.status(200).json({
-            message: "Contact and all associated data deleted successfully!",
-            action: "deleted",
-          });
-        } else if (
-          contact.contact_status === "approved" &&
-          contact.verified === true
-        ) {
-          // Deny deletion - contact is approved and verified
-          return res.status(403).json({
-            message:
-              "Cannot delete approved and verified contacts. Contact support if needed.",
-            action: "denied",
-            reason: "Contact is approved and verified",
-            contact_status: contact.contact_status,
-            verified: contact.verified,
-          });
-        } else {
-          // Handle edge cases (e.g., approved but not verified, etc.)
-          return res.status(403).json({
-            message:
-              "You don't have permission to delete this contact as it is approved.",
-            action: "denied",
-            reason: "Insufficient permissions for current contact state",
-            contact_status: contact.contact_status,
-            verified: contact.verified,
-          });
-        }
-      } else if (["cata", "catb", "catc", "admin"].includes(userType)) {
-        // Middlemen or Admin - set status as rejected
-        await t`
+                    return res.status(200).json({
+                        message: "Contact and all associated data deleted successfully!",
+                        action: "deleted",
+                    });
+                } else if (contact.contact_status === "approved" && contact.verified === true) {
+                    // Deny deletion - contact is approved and verified
+                    return res.status(403).json({
+                        message: "Cannot delete approved and verified contacts. Contact support if needed.",
+                        action: "denied",
+                        reason: "Contact is approved and verified",
+                        contact_status: contact.contact_status,
+                        verified: contact.verified,
+                    });
+                } else {
+                    // Handle edge cases (e.g., approved but not verified, etc.)
+                    return res.status(403).json({
+                        message: "You don't have permission to delete this contact as it is approved.",
+                        action: "denied",
+                        reason: "Insufficient permissions for current contact state",
+                        contact_status: contact.contact_status,
+                        verified: contact.verified,
+                    });
+                }
+            } else if (["cata", "catb", "catc", "admin"].includes(userType)) {
+                // Middlemen or Admin - set status as rejected
+                await t`
                     UPDATE event 
                     SET contact_status = 'rejected',verified=${true}
                     WHERE contact_id = ${id}
                 `;
 
-        return res.status(200).json({
-          message: "Contact status updated to rejected successfully!",
-          action: "rejected",
-          previousStatus: contact.contact_status,
+                return res.status(200).json({
+                    message: "Contact status updated to rejected successfully!",
+                    action: "rejected",
+                    previousStatus: contact.contact_status,
+                });
+            } else {
+                throw new Error("Invalid user type");
+            }
         });
-      } else {
-        throw new Error("Invalid user type");
-      }
-    });
-  } catch (err) {
-    console.error(err);
+    } catch (err) {
+        console.error(err);
 
-    if (err.message === "Contact not found") {
-      return res.status(404).json({ message: "Contact not found." });
-    } else if (err.message === "Invalid user type") {
-      return res.status(400).json({ message: "Invalid user type provided." });
-    } else {
-      return res.status(500).json({
-        message: "Server Error!",
-        error: err.message,
-      });
+        if (err.message === "Contact not found") {
+            return res.status(404).json({ message: "Contact not found." });
+        } else if (err.message === "Invalid user type") {
+            return res.status(400).json({ message: "Invalid user type provided." });
+        } else {
+            return res.status(500).json({
+                message: "Server Error!",
+                error: err.message,
+            });
+        }
     }
   }
 };
