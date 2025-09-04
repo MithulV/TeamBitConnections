@@ -32,7 +32,7 @@ import {
 } from "../controllers/PhotoControllers.js";
 import { GetTasks, CompleteTask,CreateTask } from "../controllers/TaskControllers.js";
 import { createTask } from "node-cron";
-
+import verifyToken from '../middlewares/AuthMiddleware.js'
 const router = express.Router();
 router.get("/get-all-contact/",GetAllContact)
 router.get("/contacts/filter/", GetFilteredContacts);
@@ -46,10 +46,7 @@ router.post("/upload-contact/", upload.single("image"), UploadImage);
 router.get("/get-contact-images/:userId", GetPicturesByUserId);
 router.put("/update-contact/:contact_id", UpdateContact);
 router.delete("/delete-contact/:id", DeleteContact);
-router.post(
-  "/add-event-existing-contact/:contactId",
-  AddEventToExistingContact
-);
+router.post("/add-event-existing-contact/:contactId",AddEventToExistingContact);
 router.put("/update-contacts-and-events/:id", UpdateContactAndEvents);
 router.delete("/delete-image/:id", DeleteImage);
 router.post("/verify-image/:id", VerifyImages);

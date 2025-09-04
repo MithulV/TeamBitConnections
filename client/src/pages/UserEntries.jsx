@@ -4,7 +4,7 @@ import Avatar from "../assets/Avatar.png";
 import Alert from "../components/Alert";
 import BasicDetailCard from "../components/BasicDetailCard";
 import Header from "../components/Header";
-import axios from "axios";
+import api from '../utils/axios';
 import { ArrowLeft, Trash2 } from "lucide-react";
 import { parseISO, format } from "date-fns";
 import { useAuthStore } from "../store/AuthStore";
@@ -194,7 +194,7 @@ function UserEntries() {
             showAlert(
               "success",
               response.data.message ||
-                `${userToDelete.name} has been processed successfully.`
+              `${userToDelete.name} has been processed successfully.`
             );
           }
         }
@@ -208,7 +208,7 @@ function UserEntries() {
           showAlert(
             "error",
             error.response.data.message ||
-              "You don't have permission to delete this contact."
+            "You don't have permission to delete this contact."
           );
         } else if (error.response?.status === 404) {
           showAlert("error", "Contact not found.");
@@ -252,15 +252,15 @@ function UserEntries() {
                   eventLocation: event.event_location || "",
                 }))
               : [
-                  {
-                    eventId: "",
-                    eventName: "",
-                    eventRole: "",
-                    eventDate: "",
-                    eventHeldOrganization: "",
-                    eventLocation: "",
-                  },
-                ],
+                {
+                  eventId: "",
+                  eventName: "",
+                  eventRole: "",
+                  eventDate: "",
+                  eventHeldOrganization: "",
+                  eventLocation: "",
+                },
+              ],
         };
 
         console.log("Prepared user data for edit:", userToEdit);
@@ -278,13 +278,12 @@ function UserEntries() {
       console.log("Error editing user", error);
     }
   };
-
   const { id, role } = useAuthStore();
 
   const handleSelectContact = async () => {
     try {
-      const response = await axios.get(
-        `http://localhost:8000/api/contacts/${id}`
+      const response = await api.get(
+        `/api/contacts/${id}`
       );
       console.log("Contacts fetched successfully:", response.data);
       setProfileData(response.data);
@@ -295,8 +294,8 @@ function UserEntries() {
 
   const handleSelectImage = async () => {
     try {
-      const response = await axios.get(
-        `http://localhost:8000/api/get-contact-images/${id}`
+      const response = await api.get(
+        `/api/get-contact-images/${id}`
       );
       console.log("Contact images fetched successfully:", response.data);
       setImageData(response.data);
@@ -346,21 +345,19 @@ function UserEntries() {
             <div className="flex gap-4 mb-6">
               <button
                 onClick={() => setActiveView("formDetails")}
-                className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
-                  activeView === "formDetails"
-                    ? "bg-blue-600 text-white shadow-md"
-                    : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
-                }`}
+                className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${activeView === "formDetails"
+                  ? "bg-blue-600 text-white shadow-md"
+                  : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
+                  }`}
               >
                 Form Details
               </button>
               <button
                 onClick={() => setActiveView("visitingCards")}
-                className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
-                  activeView === "visitingCards"
-                    ? "bg-blue-600 text-white shadow-md"
-                    : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
-                }`}
+                className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${activeView === "visitingCards"
+                  ? "bg-blue-600 text-white shadow-md"
+                  : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
+                  }`}
               >
                 Visiting Cards
               </button>

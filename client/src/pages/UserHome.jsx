@@ -35,7 +35,6 @@ function UserHome() {
   const handleManualAddClick = () => {
     navigate("/form-input");
   };
-
   return (
     <div className="h-full flex flex-col bg-[#ffffff]">
       <Alert
