@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import axios from "axios";
 import {
   Users,
@@ -28,8 +28,172 @@ import {
 import Header from "../components/Header";
 import Alert from "../components/Alert";
 import { useAuthStore } from "../store/AuthStore";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, subDays, subMonths, isAfter, startOfDay, endOfDay } from "date-fns";
 import { useNavigate } from "react-router-dom";
+import { saveAs } from 'file-saver';
+import { Line } from 'react-chartjs-2';
+import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from 'react-leaflet';
+import DatePicker from 'react-datepicker';
+import "react-datepicker/dist/react-datepicker.css";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler,
+} from 'chart.js';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+
+// ✅ PROPERLY FIX LEAFLET MARKER ICONS
+import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
+import markerIcon from 'leaflet/dist/images/marker-icon.png';
+import markerShadow from 'leaflet/dist/images/marker-shadow.png';
+
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: markerIcon2x,
+  iconUrl: markerIcon,
+  shadowUrl: markerShadow,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41],
+});
+
+// Register Chart.js components INCLUDING FILLER
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+);
+
+// ✅ COUNTRY CODE MAPPING FOR BETTER GEOCODING
+const countryCodeMap = {
+  'India': 'in',
+  'United States': 'us',
+  'United Kingdom': 'gb',
+  'Canada': 'ca',
+  'Australia': 'au',
+  'Germany': 'de',
+  'France': 'fr',
+  'Japan': 'jp',
+  'China': 'cn',
+  'Brazil': 'br',
+  'USA': 'us',
+};
+
+// ✅ SEQUENTIAL BATCH PROCESSING HELPER
+const processInSequentialBatches = async (array, batchSize, asyncCallback, onBatchComplete) => {
+  const allResults = [];
+  const totalBatches = Math.ceil(array.length / batchSize);
+  
+  for (let i = 0; i < array.length; i += batchSize) {
+    const batch = array.slice(i, i + batchSize);
+    const batchNumber = Math.floor(i / batchSize) + 1;
+    
+    console.log(`🔄 Processing batch ${batchNumber}/${totalBatches} (${batch.length} items)`);
+    
+    // Process batch in parallel, but batches sequentially
+    const batchResults = await Promise.all(batch.map(asyncCallback));
+    
+    allResults.push(...batchResults);
+    
+    // Call batch completion callback for instant rendering
+    if (onBatchComplete) {
+      onBatchComplete(batchResults, batchNumber, totalBatches);
+    }
+    
+    console.log(`✅ Batch ${batchNumber}/${totalBatches} completed`);
+    
+    // Rate limiting between batches
+    if (batchNumber < totalBatches) {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+  }
+  
+  return allResults;
+};
+
+// ✅ ENHANCED FITBOUNDS COMPONENT WITH BETTER ERROR HANDLING
+const FitBoundsComponent = ({ positions }) => {
+  const map = useMap();
+  const hasFittedRef = useRef(false);
+  const positionsRef = useRef(null);
+
+  useEffect(() => {
+    if (!map || !positions || positions.length === 0) {
+      console.log("FitBounds: No map or positions");
+      return;
+    }
+
+    // Check if positions actually changed
+    const positionsKey = positions.map(p => `${p[0]},${p[1]}`).sort().join('|');
+    if (positionsRef.current === positionsKey) {
+      console.log("FitBounds: Same positions, skipping");
+      return;
+    }
+
+    try {
+      console.log(`🗺️ FitBounds: Processing ${positions.length} positions:`, positions);
+      
+      const bounds = L.latLngBounds(positions);
+      if (!bounds.isValid()) {
+        console.warn('FitBounds: Invalid bounds');
+        return;
+      }
+
+      console.log('🗺️ Bounds:', bounds.getSouthWest(), bounds.getNorthEast());
+
+      const executeFitBounds = () => {
+        try {
+          if (map && map._container && map._size) {
+            // Add padding and set reasonable zoom constraints
+            map.fitBounds(bounds, { 
+              padding: [50, 50],
+              maxZoom: 10  // Don't zoom too close for global view
+            });
+            
+            positionsRef.current = positionsKey;
+            console.log('✅ FitBounds executed successfully for', positions.length, 'markers');
+            
+            // Log current map center and zoom for debugging
+            setTimeout(() => {
+              console.log('🗺️ Map center:', map.getCenter());
+              console.log('🗺️ Map zoom:', map.getZoom());
+              console.log('🗺️ Map bounds:', map.getBounds());
+            }, 500);
+          }
+        } catch (error) {
+          console.warn('FitBounds execution failed:', error);
+        }
+      };
+
+      if (map._loaded) {
+        setTimeout(executeFitBounds, 300);
+      } else {
+        map.once('load', executeFitBounds);
+      }
+
+      return () => {
+        map.off('load', executeFitBounds);
+      };
+    } catch (error) {
+      console.error('FitBounds setup error:', error);
+    }
+  }, [map, positions]);
+
+  return null;
+};
 
 const StatCard = ({ title, value, icon: Icon, color, trend, trendValue }) => (
   <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
@@ -45,8 +209,7 @@ const StatCard = ({ title, value, icon: Icon, color, trend, trendValue }) => (
               <TrendingDown className="w-4 h-4 text-red-500" />
             )}
             <span
-              className={`text-sm ml-1 ${trend === "up" ? "text-green-600" : "text-red-600"
-                }`}
+              className={`text-sm ml-1 ${trend === "up" ? "text-green-600" : "text-red-600"}`}
             >
               {trendValue}%
             </span>
@@ -60,13 +223,7 @@ const StatCard = ({ title, value, icon: Icon, color, trend, trendValue }) => (
   </div>
 );
 
-const QuickActionCard = ({
-  title,
-  description,
-  icon: Icon,
-  onClick,
-  color,
-}) => (
+const QuickActionCard = ({ title, description, icon: Icon, onClick, color }) => (
   <div
     className="bg-white rounded-lg p-4 shadow-sm border border-gray-200 hover:shadow-md transition-all cursor-pointer hover:border-blue-300"
     onClick={onClick}
@@ -79,18 +236,6 @@ const QuickActionCard = ({
         <h3 className="font-medium text-gray-900">{title}</h3>
         <p className="text-sm text-gray-600">{description}</p>
       </div>
-    </div>
-  </div>
-);
-
-const RecentActivityItem = ({ activity }) => (
-  <div className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg">
-    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-    <div className="flex-1">
-      <p className="text-sm text-gray-900">{activity.description}</p>
-      <p className="text-xs text-gray-500">
-        {format(parseISO(activity.timestamp), "MMM dd, yyyy HH:mm")}
-      </p>
     </div>
   </div>
 );
@@ -108,12 +253,14 @@ function Admin() {
     activeAssignments: 0,
   });
 
+  const [contacts, setContacts] = useState([]);
   const [recentContacts, setRecentContacts] = useState([]);
-  const [recentImages, setRecentImages] = useState([]);
-  const [assignments, setAssignments] = useState([]);
   const [categoryData, setCategoryData] = useState({ A: 0, B: 0, C: 0 });
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("overview");
+  
+  const [startDate, setStartDate] = useState(subDays(new Date(), 30));
+  const [endDate, setEndDate] = useState(new Date());
+  const [dateRangeType, setDateRangeType] = useState('custom');
 
   const [alert, setAlert] = useState({
     isOpen: false,
@@ -121,7 +268,7 @@ function Admin() {
     message: "",
   });
 
-  const { id } = useAuthStore();
+  const { id, role } = useAuthStore();
 
   const showAlert = (severity, message) => {
     setAlert({ isOpen: true, severity, message });
@@ -130,15 +277,689 @@ function Admin() {
   const closeAlert = () => {
     setAlert((prev) => ({ ...prev, isOpen: false }));
   };
+
+  // ✅ ENHANCED CHART COMPONENT WITH CUSTOM DATE RANGE
+  const ContactsChart = ({ contacts }) => {
+    const handlePredefinedRange = (range) => {
+      const today = new Date();
+      let newStartDate;
+
+      switch (range) {
+        case 'last7days':
+          newStartDate = subDays(today, 7);
+          break;
+        case 'last30days':
+          newStartDate = subDays(today, 30);
+          break;
+        case 'lastMonth':
+          newStartDate = subMonths(today, 1);
+          break;
+        case 'last3Months':
+          newStartDate = subMonths(today, 3);
+          break;
+        case 'last6Months':
+          newStartDate = subMonths(today, 6);
+          break;
+        case 'lastYear':
+          newStartDate = subMonths(today, 12);
+          break;
+        default:
+          return;
+      }
+
+      setStartDate(startOfDay(newStartDate));
+      setEndDate(endOfDay(today));
+      setDateRangeType(range);
+    };
+
+    const processChartData = useMemo(() => {
+      const filteredContacts = contacts.filter(contact => {
+        const createdDate = contact.created_at ? parseISO(contact.created_at) : null;
+        return createdDate && 
+               isAfter(createdDate, startOfDay(startDate)) && 
+               createdDate <= endOfDay(endDate);
+      });
+
+      const createdDates = {};
+      const updatedDates = {};
+
+      filteredContacts.forEach(contact => {
+        if (contact.created_at) {
+          const date = format(parseISO(contact.created_at), 'yyyy-MM-dd');
+          createdDates[date] = (createdDates[date] || 0) + 1;
+        }
+
+        if (contact.updated_at) {
+          const updateDate = parseISO(contact.updated_at);
+          if (isAfter(updateDate, startOfDay(startDate)) && updateDate <= endOfDay(endDate)) {
+            const date = format(updateDate, 'yyyy-MM-dd');
+            updatedDates[date] = (updatedDates[date] || 0) + 1;
+          }
+        }
+      });
+
+      const allDates = Array.from(
+        new Set([...Object.keys(createdDates), ...Object.keys(updatedDates)])
+      ).sort();
+
+      return {
+        labels: allDates,
+        datasets: [
+          {
+            label: 'Contacts Created',
+            data: allDates.map(date => createdDates[date] || 0),
+            borderColor: 'rgb(59, 130, 246)',
+            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+            tension: 0.4,
+            fill: true,
+          },
+          {
+            label: 'Contacts Updated',
+            data: allDates.map(date => updatedDates[date] || 0),
+            borderColor: 'rgb(139, 69, 19)',
+            backgroundColor: 'rgba(139, 69, 19, 0.1)',
+            tension: 0.4,
+            fill: true,
+          },
+        ],
+      };
+    }, [contacts, startDate, endDate]);
+
+    const chartOptions = {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'top',
+        },
+        title: {
+          display: false,
+        },
+        filler: {
+          propagate: false,
+        },
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            stepSize: 1,
+          },
+        },
+        x: {
+          ticks: {
+            maxTicksLimit: 15,
+          },
+        },
+      },
+      interaction: {
+        intersect: false,
+      },
+    };
+
+    const predefinedRanges = [
+      { key: 'last7days', label: 'Last 7 Days' },
+      { key: 'last30days', label: 'Last 30 Days' },
+      { key: 'lastMonth', label: 'Last Month' },
+      { key: 'last3Months', label: 'Last 3 Months' },
+      { key: 'last6Months', label: 'Last 6 Months' },
+      { key: 'lastYear', label: 'Last Year' },
+    ];
+
+    return (
+      <div>
+        <div className="mb-4 space-y-3">
+          <div className="flex flex-wrap gap-2">
+            {predefinedRanges.map(({ key, label }) => (
+              <button
+                key={key}
+                onClick={() => handlePredefinedRange(key)}
+                className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
+                  dateRangeType === key
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+            <button
+              onClick={() => setDateRangeType('custom')}
+              className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
+                dateRangeType === 'custom'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              }`}
+            >
+              Custom Range
+            </button>
+          </div>
+
+          {dateRangeType === 'custom' && (
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium text-gray-700">From:</label>
+                <DatePicker
+                  selected={startDate}
+                  onChange={(date) => setStartDate(date)}
+                  selectsStart
+                  startDate={startDate}
+                  endDate={endDate}
+                  maxDate={endDate}
+                  className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  dateFormat="MMM dd, yyyy"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium text-gray-700">To:</label>
+                <DatePicker
+                  selected={endDate}
+                  onChange={(date) => setEndDate(date)}
+                  selectsEnd
+                  startDate={startDate}
+                  endDate={endDate}
+                  minDate={startDate}
+                  maxDate={new Date()}
+                  className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  dateFormat="MMM dd, yyyy"
+                />
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="h-64">
+          <Line data={processChartData} options={chartOptions} />
+        </div>
+
+        <div className="mt-3 text-xs text-gray-500 flex justify-between">
+          <span>
+            Range: {format(startDate, 'MMM dd, yyyy')} - {format(endDate, 'MMM dd, yyyy')}
+          </span>
+          <span>
+            Total in range: {processChartData.datasets[0].data.reduce((a, b) => a + b, 0)} created, {' '}
+            {processChartData.datasets[1].data.reduce((a, b) => a + b, 0)} updated
+          </span>
+        </div>
+      </div>
+    );
+  };
+
+  // ✅ FIXED SEQUENTIAL BATCH GEOCODING WITH USA ADDRESS SUPPORT
+  const ContactsMap = ({ contacts }) => {
+    const [geocodedContacts, setGeocodedContacts] = useState([]);
+    const [isGeocoding, setIsGeocoding] = useState(false);
+    const [progress, setProgress] = useState(0);
+    
+    // ✅ Use ref-based tracking to prevent multiple executions
+    const isProcessingRef = useRef(false);
+    const contactsHashRef = useRef('');
+
+    // ✅ ENHANCED GEOCODING WITH USA ADDRESS SUPPORT
+    const geocodeSingleContact = async (contact) => {
+      const { street = '', city = '', state = '', country = 'India' } = contact;
+      
+      console.log(`🔍 Starting geocode for: ${contact.name} (ID: ${contact.contact_id})`);
+      console.log(`📍 Address data: Street:"${street}" City:"${city}" State:"${state}" Country:"${country}"`);
+      
+      if (!city) {
+        console.log(`❌ Skipping ${contact.name} - no city provided`);
+        return null;
+      }
+
+      // ✅ COUNTRY-SPECIFIC GEOCODING STRATEGIES
+      let strategies = [];
+      
+      if (country === 'USA' || country === 'United States') {
+        strategies = [
+          `${city}, ${state}, United States`,           // Standard USA format
+          `${city}, ${state}, USA`,                     // Alternative USA format
+          `${street}, ${city}, ${state}, United States`, // With street
+        ];
+      } else if (country === 'Canada') {
+        strategies = [
+          `${city}, ${state}, Canada`,
+          `${street}, ${city}, ${state}, Canada`,
+          `${city}, Canada`,
+        ];
+      } else if (country === 'Australia') {
+        strategies = [
+          `${city}, ${state}, Australia`,
+          `${street}, ${city}, ${state}, Australia`, 
+          `${city}, Australia`,
+        ];
+      } else {
+        // Default strategies for other countries
+        strategies = [
+          `${city} ${state} ${country}`.trim(),
+          `Hospital ${city} ${state} ${country}`.trim(),
+          `${street} ${city} ${state}`.trim(),
+        ];
+      }
+
+      for (let i = 0; i < strategies.length; i++) {
+        const query = strategies[i];
+        console.log(`🎯 Strategy ${i + 1}/${strategies.length} for ${contact.name}: "${query}"`);
+        
+        try {
+          const response = await axios.get('https://nominatim.openstreetmap.org/search', {
+            params: {
+              q: query,
+              format: 'json',
+              limit: 3,
+              countrycodes: countryCodeMap[country] || 'in',
+              addressdetails: 1
+            }
+          });
+
+          console.log(`📡 API response for ${contact.name}: ${response.data?.length || 0} results`);
+
+          if (response.data && response.data.length > 0) {
+            let bestResult = response.data[0];
+
+            // Find better result if multiple returned
+            if (response.data.length > 1) {
+              const exactCityMatch = response.data.find(result => 
+                result.display_name.toLowerCase().includes(city.toLowerCase())
+              );
+              if (exactCityMatch) {
+                bestResult = exactCityMatch;
+                console.log(`🎯 Found exact city match for ${contact.name}`);
+              }
+            }
+
+            console.log(`✅ SUCCESS for ${contact.name}:`);
+            console.log(`   Display: ${bestResult.display_name}`);
+            console.log(`   Coords: ${bestResult.lat}, ${bestResult.lon}`);
+            
+            let precision = 0.5;
+            if (bestResult.display_name.toLowerCase().includes('hospital')) precision += 0.3;
+            if (bestResult.display_name.toLowerCase().includes(city.toLowerCase())) precision += 0.2;
+            if (bestResult.display_name.toLowerCase().includes('medical')) precision += 0.25;
+            precision = Math.max(precision, bestResult.importance || 0.5);
+            precision = Math.min(precision, 1.0);
+
+            const geocodedContact = {
+              id: contact.contact_id,
+              position: [parseFloat(bestResult.lat), parseFloat(bestResult.lon)],
+              name: contact.name,
+              email: contact.email_address,
+              address: `${street} ${city}, ${state}, ${country}`.trim(),
+              city,
+              state,
+              country,
+              category: contact.category || 'A',
+              createdAt: contact.created_at,
+              precision,
+              geocodeResult: bestResult.display_name,
+            };
+
+            console.log(`🎯 Created marker for ${contact.name} at position:`, geocodedContact.position);
+            console.log(`   Precision score: ${precision.toFixed(2)}`);
+            return geocodedContact;
+          } else {
+            console.log(`⚠️ No results for ${contact.name} with strategy ${i + 1}: "${query}"`);
+          }
+        } catch (error) {
+          console.error(`❌ API Error for ${contact.name}:`, error.response?.status, error.message);
+          
+          // Check for rate limiting
+          if (error.response?.status === 429) {
+            console.log(`⏳ Rate limited, waiting longer...`);
+            await new Promise(resolve => setTimeout(resolve, 2000));
+          }
+        }
+        
+        // Delay between strategies
+        await new Promise(resolve => setTimeout(resolve, 300));
+      }
+      
+      console.log(`💀 ALL STRATEGIES FAILED for: ${contact.name}`);
+      return null;
+    };
+
+    useMapEvents({
+      zoomend: () => {
+        if (geocodedContacts.length > 0) {
+          setGeocodedContacts(prev => [...prev]);
+        }
+      },
+      moveend: () => {
+        if (geocodedContacts.length > 0) {
+          setGeocodedContacts(prev => [...prev]);
+        }
+      }
+    });
+
+    // ✅ FIXED useEffect with enhanced batch processing
+    useEffect(() => {
+      if (!contacts || contacts.length === 0) {
+        console.log("❌ No contacts to process");
+        return;
+      }
+
+      // Create unique hash for contacts to detect changes
+      const currentHash = contacts.map(c => `${c.contact_id}-${c.city}-${c.state}`).join('|');
+      
+      if (isProcessingRef.current || contactsHashRef.current === currentHash) {
+        console.log("❌ Already processing or same contacts, skipping");
+        return;
+      }
+
+      console.log("🚀 Starting ENHANCED SEQUENTIAL BATCH geocoding");
+      console.log(`📊 Total contacts: ${contacts.length}`);
+      
+      // Filter contacts with valid addresses
+      const contactsToProcess = contacts.filter(c => c.city && c.state);
+      const skippedContacts = contacts.filter(c => !c.city || !c.state);
+      
+      console.log(`📍 Contacts with valid addresses (city + state): ${contactsToProcess.length}`);
+      console.log(`⚠️ Contacts skipped (missing city/state): ${skippedContacts.length}`);
+
+      if (contactsToProcess.length === 0) {
+        console.log("❌ No valid contacts to geocode");
+        return;
+      }
+
+      // Set processing flags
+      isProcessingRef.current = true;
+      contactsHashRef.current = currentHash;
+      setIsGeocoding(true);
+      setProgress(0);
+      setGeocodedContacts([]);
+      
+      const processContacts = async () => {
+        try {
+          console.log(`🔄 About to process ${contactsToProcess.length} valid contacts:`);
+          contactsToProcess.forEach((contact, index) => {
+            console.log(`   ${index + 1}. ${contact.name} - ${contact.city}, ${contact.state}, ${contact.country}`);
+          });
+          
+          // ✅ Process in sequential batches with enhanced logging
+          const allResults = await processInSequentialBatches(
+            contactsToProcess,
+            3, // Batch size
+            geocodeSingleContact,
+            (batchResults, batchNumber, totalBatches) => {
+              const validResults = batchResults.filter(Boolean);
+              console.log(`📊 BATCH ${batchNumber}/${totalBatches} COMPLETED: ${validResults.length} valid markers`);
+              
+              // Instant rendering callback
+              setGeocodedContacts(prev => {
+                const newTotal = [...prev, ...validResults];
+                console.log(`📍 TOTAL MARKERS ON MAP: ${newTotal.length}`);
+                return newTotal;
+              });
+              
+              const progressPercent = (batchNumber / totalBatches) * 100;
+              setProgress(progressPercent);
+            }
+          );
+          
+          const validResults = allResults.filter(Boolean);
+          
+          console.log("🎉 FINAL GEOCODING SUMMARY:");
+          console.log(`   ✅ Successfully geocoded: ${validResults.length}`);
+          console.log(`   📍 Total markers on map: ${validResults.length}`);
+          
+          if (validResults.length > 0) {
+            console.log(`📍 ALL MARKERS CREATED:`);
+            validResults.forEach((result, index) => {
+              console.log(`   ${index + 1}. ${result.name} (${result.city}, ${result.country}) - [${result.position[0]}, ${result.position[1]}]`);
+            });
+          }
+          
+        } catch (error) {
+          console.error("❌ Sequential batch geocoding error:", error);
+        } finally {
+          isProcessingRef.current = false;
+          setIsGeocoding(false);
+          setProgress(100);
+          console.log("🏁 Geocoding process completed");
+        }
+      };
+
+      processContacts();
+    }, [contacts]);
+
+    const createPrecisionIcon = (category, precision) => {
+      const colors = {
+        A: '#ef4444', 
+        B: '#f59e0b',  
+        C: '#10b981', 
+      };
+
+      const size = precision > 0.8 ? 32 : precision > 0.6 ? 28 : 26;
+      const borderColor = precision > 0.8 ? '#10b981' : precision > 0.6 ? '#f59e0b' : 'white';
+      const borderWidth = precision > 0.8 ? 4 : 3;
+      const star = precision > 0.8 ? '★' : '';
+
+      return L.divIcon({
+        className: 'precision-marker',
+        html: `<div style="
+          background-color: ${colors[category] || '#6b7280'};
+          width: ${size}px;
+          height: ${size}px;
+          border-radius: 50%;
+          border: ${borderWidth}px solid ${borderColor};
+          box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: white;
+          font-weight: bold;
+          font-size: ${Math.round(size * 0.4)}px;
+          position: relative;
+          z-index: 1000;
+        ">${category}${star}</div>`,
+        iconSize: [size, size],
+        iconAnchor: [size/2, size/2],
+      });
+    };
+
+    return (
+      <>
+        {isGeocoding && (
+          <div className="absolute inset-0 bg-white bg-opacity-90 flex items-center justify-center z-10 rounded-lg">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-10 w-10 border-b-3 border-green-600 mx-auto"></div>
+              <p className="mt-3 text-sm text-gray-700 font-semibold">
+                🔄 Enhanced Geocoding... {Math.round(progress)}%
+              </p>
+              <p className="mt-1 text-xs text-gray-600">
+                Improved USA address support - check console for details
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* ✅ ENHANCED FITBOUNDS COMPONENT */}
+        {geocodedContacts.length > 0 && (
+          <FitBoundsComponent positions={geocodedContacts.map(c => c.position)} />
+        )}
+
+        {/* ✅ RENDER ALL MARKERS WITH ENHANCED VISIBILITY */}
+        {geocodedContacts.map((contact, index) => {
+          console.log(`🗺️ Rendering marker ${index + 1}:`, contact.name, contact.position);
+          return (
+            <Marker 
+              key={`marker-${contact.id}-${index}`}
+              position={contact.position}
+              icon={createPrecisionIcon(contact.category, contact.precision)}
+            >
+              <Popup className="precision-popup" maxWidth={400}>
+                <div className="p-3">
+                  <div className="font-bold text-lg text-gray-900 mb-3 border-b pb-2">
+                    {contact.name}
+                  </div>
+                  <div className="space-y-2 text-sm">
+                    <div><strong>Email:</strong> {contact.email}</div>
+                    <div><strong>Original Address:</strong> {contact.address}</div>
+                    
+                    <div className="bg-gray-50 p-2 rounded border-l-4 border-blue-400">
+                      <div className="text-xs text-gray-600 font-medium">Geocoded Location:</div>
+                      <div className="text-xs text-gray-700 mt-1">{contact.geocodeResult}</div>
+                    </div>
+                    
+                    <div><strong>City/Country:</strong> {contact.city}, {contact.country}</div>
+                    <div><strong>Coordinates:</strong> [{contact.position[0].toFixed(4)}, {contact.position[1].toFixed(4)}]</div>
+                    
+                    <div className="flex items-center gap-2">
+                      <strong>Category:</strong> 
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${
+                        contact.category === 'A' ? 'bg-red-100 text-red-800' :
+                        contact.category === 'B' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-green-100 text-green-800'
+                      }`}>
+                        {contact.category}
+                      </span>
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                      <strong>Precision:</strong> 
+                      <span className={`px-2 py-1 rounded text-xs font-bold ${
+                        contact.precision > 0.8 ? 'bg-green-100 text-green-800' :
+                        contact.precision > 0.6 ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-red-100 text-red-800'
+                      }`}>
+                        {contact.precision > 0.8 ? '🎯 High Precision' : 
+                         contact.precision > 0.6 ? '📍 Medium Precision' : '📌 General Area'}
+                      </span>
+                    </div>
+                    
+                    {contact.createdAt && (
+                      <div><strong>Added:</strong> {format(parseISO(contact.createdAt), "MMM dd, yyyy")}</div>
+                    )}
+                  </div>
+                </div>
+              </Popup>
+            </Marker>
+          );
+        })}
+      </>
+    );
+  };
+
+  const ContactsMapContainer = ({ contacts }) => {
+    return (
+      <div className="h-64 rounded-lg overflow-hidden relative">
+        <MapContainer 
+          center={[20, 0]} 
+          zoom={2} 
+          style={{ height: '100%', width: '100%' }}
+          className="rounded-lg"
+          preferCanvas={true}
+        >
+          <TileLayer
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          />
+          
+          <ContactsMap contacts={contacts} />
+        </MapContainer>
+      </div>
+    );
+  };
+
   useEffect(() => {
     fetchDashboardData();
   }, []);
-  // Fetch dashboard data
+
+  const exportCsv = (contacts) => {
+    const headers = [
+      "Added By", "Created At", "Name", "Phone Number",
+      "Secondary Phone Number", "Email Address", "Secondary Email",
+      "Skills", "Linkedin Url", "Job Title", "Company Name", "Department Type",
+      "From Date", "To Date", "Event Name", "Event Role", "Event held Organization",
+      "Event location", "Date of Birth", "Gender", "Nationality", "Marital Status",
+      "Category", "Emergency Contact Name", "Emergency Contact Relationship",
+      "Logger", "Street", "City", "State", "Country", "ZipCode",
+      "Pg Course Name", "Pg College Name", "Pg University Type", "Pg Start Date",
+      "Pg End Date", "Ug Course Name", "Ug College Name", "Ug University Type",
+      "Ug Start Date", "Ug End Date"
+    ];
+
+    const csvRows = [];
+    csvRows.push(headers.join(','));
+
+    contacts.forEach(contact => {
+      const row = [
+        contact.added_by || '',
+        contact.created_at ? format(parseISO(contact.created_at), "yyyy-MM-dd HH:mm:ss") : '',
+        contact.name || '',
+        contact.phone_number || '',
+        contact.secondary_phone_number || '',
+        contact.email_address || '',
+        contact.secondary_email || '',
+        contact.skills || '',
+        contact.linkedin_url || '',
+        contact.job_title || '',
+        contact.company_name || '',
+        contact.department_type || '',
+        contact.from_date || '',
+        contact.to_date || '',
+        contact.event_name || '',
+        contact.event_role || '',
+        contact.event_held_organization || '',
+        contact.event_location || '',
+        contact.dob ? format(parseISO(contact.dob), "yyyy-MM-dd") : '',
+        contact.gender || '',
+        contact.nationality || '',
+        contact.marital_status || '',
+        contact.category || '',
+        contact.emergency_contact_name || '',
+        contact.emergency_contact_relationship || '',
+        contact.logger || '',
+        contact.street || '',
+        contact.city || '',
+        contact.state || '',
+        contact.country || '',
+        contact.zipcode || '',
+        contact.pg_course_name || '',
+        contact.pg_college_name || '',
+        contact.pg_university_type || '',
+        contact.pg_start_date || '',
+        contact.pg_end_date || '',
+        contact.ug_course_name || '',
+        contact.ug_college_name || '',
+        contact.ug_university_type || '',
+        contact.ug_start_date || '',
+        contact.ug_end_date || ''
+      ];
+
+      csvRows.push(row.map(field => `"${String(field).replace(/"/g, '""')}"`).join(','));
+    });
+
+    return csvRows.join('\n');
+  };
+
+  const exportContactsToCSV = async () => {
+    try {
+      setLoading(true);
+
+      const response = await axios.get(`http://localhost:8000/api/get-all-contact/`);
+      const contacts = response.data.data;
+
+      const csvContent = exportCsv(contacts);
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const fileName = `contacts-export-${format(new Date(), 'yyyy-MM-dd-HHmm')}.csv`;
+
+      saveAs(blob, fileName);
+      showAlert("success", `Successfully exported ${contacts.length} contacts to CSV`);
+
+    } catch (error) {
+      console.error("Error exporting contacts:", error);
+      showAlert("error", "Failed to export contacts to CSV");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
 
-      // Fetch various data in parallel
       const [
         recentcontact,
         contactsResponse,
@@ -147,28 +968,26 @@ function Admin() {
         categoryAResponse,
         categoryBResponse,
         categoryCResponse,
+        allContactsResponse,
       ] = await Promise.all([
         axios.get(`http://localhost:8000/api/get-all-contact/?limit=5`),
         axios.get(`http://localhost:8000/api/contacts/${id}`),
         axios.get("http://localhost:8000/api/get-unverified-contacts/"),
         axios.get("http://localhost:8000/api/get-unverified-images/"),
-        axios.get(
-          "http://localhost:8000/api/get-contacts-by-category/?category=A"
-        ),
-        axios.get(
-          "http://localhost:8000/api/get-contacts-by-category/?category=B"
-        ),
-        axios.get(
-          "http://localhost:8000/api/get-contacts-by-category/?category=C"
-        ),
+        axios.get("http://localhost:8000/api/get-contacts-by-category/?category=A"),
+        axios.get("http://localhost:8000/api/get-contacts-by-category/?category=B"),
+        axios.get("http://localhost:8000/api/get-contacts-by-category/?category=C"),
+        axios.get("http://localhost:8000/api/get-all-contact/"),
       ]);
+
+      setContacts(allContactsResponse.data.data || allContactsResponse.data);
+
       const formattedContacts = recentcontact?.data?.data?.map((item) => ({
         ...item,
         role: item.experiences?.[0]?.job_title || "N/A",
         company: item.experiences?.[0]?.company || "N/A",
         location:
-          `${item.address?.city || ""}, ${item.address?.state || ""
-            }`.trim() === ","
+          `${item.address?.city || ""}, ${item.address?.state || ""}`.trim() === ","
             ? "N/A"
             : `${item.address?.city || ""}, ${item.address?.state || ""}`,
         skills: item.skills
@@ -176,11 +995,11 @@ function Admin() {
           : [],
       }));
       setRecentContacts(formattedContacts);
+
       const contacts = contactsResponse.data;
       const unverifiedContacts = unverifiedContactsResponse.data;
       const unverifiedImages = unverifiedImagesResponse.data;
 
-      // Calculate stats
       setStats({
         totalContacts: contacts.length,
         verifiedContacts: contacts.filter((c) => c.verified).length,
@@ -189,13 +1008,12 @@ function Admin() {
           (acc, contact) => acc + (contact.events?.length || 0),
           0
         ),
-        completedTasks: 0, // You can fetch this from tasks API
-        pendingTasks: 0, // You can fetch this from tasks API
+        completedTasks: 0,
+        pendingTasks: 0,
         totalImages: unverifiedImages.length,
-        activeAssignments: 0, // You can fetch this from assignments API
+        activeAssignments: 0,
       });
 
-      // Set category data
       setCategoryData({
         A: categoryAResponse.data.length,
         B: categoryBResponse.data.length,
@@ -209,20 +1027,89 @@ function Admin() {
     }
   };
 
+  const csvInputRef = useRef(null);
+
+  const handleCSVUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    if (!file.name.endsWith('.csv') && file.type !== 'text/csv') {
+      showAlert("error", "Please select a valid CSV file");
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      showAlert("error", "File size too large. Maximum 10MB allowed.");
+      return;
+    }
+
+    showAlert("info", "Processing CSV file...");
+
+    try {
+      const formData = new FormData();
+      formData.append('csv_file', file);
+      formData.append('created_by', id);
+
+      const response = await axios.post('http://localhost:8000/api/import-csv', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      if (response.data.success) {
+        const { successCount, errorCount, duplicateCount, totalRows } = response.data.data;
+
+        showAlert("success",
+          `CSV Import Complete!\n` +
+          `📊 Total rows processed: ${totalRows}\n` +
+          `✅ Successfully added: ${successCount}\n` +
+          `⚠️ Duplicates skipped: ${duplicateCount}\n` +
+          `❌ Errors encountered: ${errorCount}`
+        );
+
+        fetchDashboardData();
+      } else {
+        showAlert("error", `Import failed: ${response.data.message}`);
+      }
+    } catch (error) {
+      console.error('CSV import error:', error);
+      const errorMessage = error.response?.data?.message ||
+        error.message ||
+        'Unknown error occurred during CSV import';
+      showAlert("error", `CSV Import Error: ${errorMessage}`);
+    }
+
+    event.target.value = '';
+  };
+
   const quickActions = [
     {
       title: "Add New Contact",
-      description: "Create a new contact entry",
+      description: "Create a new contact entry that is verified",
       icon: Users,
       color: "bg-blue-500",
-      onClick: () => console.log("Add contact"),
+      onClick: () => navigate('/details-input', {
+        state: {
+          contact: null,
+          isAddMode: true,
+          source: 'admin',
+          currentUserId: id,
+          userRole: role,
+          successCallback: {
+            message: `User has been successfully added to contacts.`,
+            refreshData: true
+          }
+        }
+      }),
     },
     {
-      title: "Review Unverified",
-      description: "Check pending verifications",
+      title: "Add CSV File",
+      description: "Add contacts that are verified",
       icon: UserCheck,
       color: "bg-orange-500",
-      onClick: () => console.log("Review unverified"),
+      onClick: () => {
+        csvInputRef.current?.click();
+      },
     },
     {
       title: "Assign Tasks",
@@ -232,11 +1119,11 @@ function Admin() {
       onClick: () => navigate("/task-assignments"),
     },
     {
-      title: "Generate Report",
-      description: "Export data reports",
+      title: "Generate CSV File",
+      description: "Export data CSV",
       icon: Download,
       color: "bg-purple-500",
-      onClick: () => console.log("Generate report"),
+      onClick: () => exportContactsToCSV(),
     },
   ];
 
@@ -253,6 +1140,13 @@ function Admin() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <input
+        ref={csvInputRef}
+        type="file"
+        accept=".csv,text/csv,application/vnd.ms-excel"
+        onChange={handleCSVUpload}
+        style={{ display: 'none' }}
+      />
       <Alert
         isOpen={alert.isOpen}
         severity={alert.severity}
@@ -460,11 +1354,6 @@ function Admin() {
                 ) : (
                   <div className="space-y-3">
                     {recentContacts.map((contact, index) => {
-                      // Add these console logs to debug
-                      console.log("Contact object:", contact);
-                      console.log("Contact name:", contact.name);
-                      console.log("Contact email:", contact.email_address);
-
                       return (
                         <div
                           key={contact.contact_id || index}
@@ -502,41 +1391,31 @@ function Admin() {
                     })}
                   </div>
                 )}
-
               </div>
-
             </div>
           </div>
 
-          {/* System Health */}
-          <div className="mt-8 bg-white rounded-lg p-6 shadow-sm border border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">
-              System Health
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="text-center">
-                <div className="inline-flex items-center justify-center w-12 h-12 bg-green-100 rounded-full mb-2">
-                  <CheckCircle2 className="w-6 h-6 text-green-600" />
-                </div>
-                <p className="text-sm font-medium text-gray-900">Database</p>
-                <p className="text-xs text-green-600">Healthy</p>
+          {/* Analytics Section - Chart and Map */}
+          <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Contact Activity Chart */}
+            <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
+              <div className="flex items-center gap-2 mb-4">
+                <BarChart3 className="w-5 h-5 text-blue-600" />
+                <h2 className="text-lg font-semibold text-gray-900">Contact Activity Over Time</h2>
               </div>
-              <div className="text-center">
-                <div className="inline-flex items-center justify-center w-12 h-12 bg-green-100 rounded-full mb-2">
-                  <Activity className="w-6 h-6 text-green-600" />
-                </div>
-                <p className="text-sm font-medium text-gray-900">
-                  API Services
-                </p>
-                <p className="text-xs text-green-600">Online</p>
+              <ContactsChart contacts={contacts} />
+            </div>
+
+            {/* Contact Locations Map */}
+            <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
+              <div className="flex items-center gap-2 mb-4">
+                <MapPin className="w-5 h-5 text-green-600" />
+                <h2 className="text-lg font-semibold text-gray-900">Contact Locations</h2>
               </div>
-              <div className="text-center">
-                <div className="inline-flex items-center justify-center w-12 h-12 bg-orange-100 rounded-full mb-2">
-                  <AlertTriangle className="w-6 h-6 text-orange-600" />
-                </div>
-                <p className="text-sm font-medium text-gray-900">Storage</p>
-                <p className="text-xs text-orange-600">85% Used</p>
-              </div>
+              <ContactsMapContainer contacts={contacts} />
+              <p className="text-xs text-gray-500 mt-2">
+                🌍 **Global view with enhanced bounds** - Map automatically fits to show all markers worldwide. Enhanced USA address geocoding included.
+              </p>
             </div>
           </div>
         </div>
@@ -546,4 +1425,3 @@ function Admin() {
 }
 
 export default Admin;
-
