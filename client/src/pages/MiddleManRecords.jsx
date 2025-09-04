@@ -4,7 +4,7 @@ import Alert from "../components/Alert";
 import Avatar from "../assets/Avatar.png";
 import Header from "../components/Header";
 import { useAuthStore } from "../store/AuthStore";
-import axios from "axios";
+import api from '../utils/axios';
 import { format, parseISO } from "date-fns";
 import { useNavigate } from "react-router-dom";
 
@@ -129,8 +129,8 @@ function MiddleManRecords() {
   const { id, role } = useAuthStore();
 
   const handleSelectContact = () => {
-    axios
-      .get(`http://localhost:8000/api/get-unverified-contacts/`)
+    api
+      .get(`/api/get-unverified-contacts/`)
       .then((response) => {
         console.log("Contacts fetched successfully:", response.data);
         setData(response.data);
@@ -143,8 +143,8 @@ function MiddleManRecords() {
 
   const handleSelectUnverifiedVisitingCards = async () => {
     try {
-      const response = await axios.get(
-        `http://localhost:8000/api/get-unverified-images/`
+      const response = await api.get(
+        `/api/get-unverified-images/`
       );
       console.log("Visiting cards fetched successfully:", response.data);
       setVisitingCard(response.data.data || []);
@@ -157,8 +157,8 @@ function MiddleManRecords() {
   const handleSelectAssignedByUser = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(
-        `http://localhost:8000/api/get-assigned-to/${id}`
+      const response = await api.get(
+        `/api/get-assigned-to/${id}`
       );
       console.log("Assigned by user data fetched successfully:", response.data);
       setAssignedByUserData(response.data);
@@ -256,8 +256,8 @@ function MiddleManRecords() {
       try {
         switch (userToDelete.type) {
           case "contact":
-            await axios.delete(
-              `http://localhost:8000/api/delete-contact/${userToDelete.id}?userType=${role}`
+            await api.delete(
+              `/api/delete-contact/${userToDelete.id}?userType=${role}`
             );
 
             setData((prevData) =>
@@ -270,8 +270,8 @@ function MiddleManRecords() {
             break;
 
           case "assignment":
-            await axios.delete(
-              `http://localhost:8000/api/delete-assignment/${userToDelete.assignment_id}`
+            await api.delete(
+              `/api/delete-assignment/${userToDelete.assignment_id}`
             );
 
             setAssignedByUserData((prevData) =>
@@ -287,8 +287,8 @@ function MiddleManRecords() {
             break;
 
           case "visitingCard":
-            await axios.delete(
-              `http://localhost:8000/api/delete-image/${userToDelete.id}?userType=${role}`
+            await api.delete(
+              `/api/delete-image/${userToDelete.id}?userType=${role}`
             );
 
             setVisitingCard((prevData) =>
@@ -343,7 +343,6 @@ function MiddleManRecords() {
       console.log("Error loading user for add", error);
     }
   };
-
   const handleDeleteAssignedUser = async (assignment_id) => {
     handleAssignmentDelete(assignment_id);
   };

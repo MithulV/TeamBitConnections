@@ -1,4 +1,5 @@
 import db from "../src/config/db.js";
+import { logContactModification } from "./ModificationHistoryControllers.js";
 
 export const GetAllContact = async (req, res) => {
   const { limit } = req.query;
@@ -6,163 +7,164 @@ export const GetAllContact = async (req, res) => {
 
   let query;
 
-  if (limitValue && limitValue > 0) {
-    // Query WITH LIMIT
-    query = db`
-      SELECT 
-        c.contact_id,
-        c.created_by,
-        l.email as added_by,
-        c.created_at,
-        c.name,
-        c.phone_number,
-        c.secondary_phone_number,
-        c.email_address,
-        c.secondary_email,
-        c.skills,
-        c.linkedin_url,
-        c.dob,
-        c.gender,
-        c.nationality,
-        c.marital_status,
-        c.category,
-        c.emergency_contact_name,
-        c.emergency_contact_relationship,
-        c.logger,
-        
-        -- Address fields
-        ca.street,
-        ca.city,
-        ca.state,
-        ca.country,
-        ca.zipcode,
-        
-        -- Education fields (concatenated if multiple)
-        STRING_AGG(DISTINCT ce.pg_course_name, '; ') as pg_course_name,
-        STRING_AGG(DISTINCT ce.pg_college, '; ') as pg_college_name,
-        STRING_AGG(DISTINCT ce.pg_university, '; ') as pg_university_type,
-        STRING_AGG(DISTINCT ce.pg_from_date::text, '; ') as pg_start_date,
-        STRING_AGG(DISTINCT ce.pg_to_date::text, '; ') as pg_end_date,
-        STRING_AGG(DISTINCT ce.ug_course_name, '; ') as ug_course_name,
-        STRING_AGG(DISTINCT ce.ug_college, '; ') as ug_college_name,
-        STRING_AGG(DISTINCT ce.ug_university, '; ') as ug_university_type,
-        STRING_AGG(DISTINCT ce.ug_from_date::text, '; ') as ug_start_date,
-        STRING_AGG(DISTINCT ce.ug_to_date::text, '; ') as ug_end_date,
-        
-        -- Experience fields (concatenated if multiple)
-        STRING_AGG(DISTINCT cex.job_title, '; ') as job_title,
-        STRING_AGG(DISTINCT cex.company, '; ') as company_name,
-        STRING_AGG(DISTINCT cex.department, '; ') as department_type,
-        STRING_AGG(DISTINCT cex.from_date::text, '; ') as from_date,
-        STRING_AGG(DISTINCT cex.to_date::text, '; ') as to_date,
-        
-        -- Event fields (concatenated if multiple)
-        STRING_AGG(DISTINCT e.event_name, '; ') as event_name,
-        STRING_AGG(DISTINCT e.event_role, '; ') as event_role,
-        STRING_AGG(DISTINCT e.event_held_organization, '; ') as event_held_organization,
-        STRING_AGG(DISTINCT e.event_location, '; ') as event_location
-        
-      FROM contact c
-      LEFT JOIN login l ON c.created_by = l.id
-      LEFT JOIN contact_address ca ON c.contact_id = ca.contact_id
-      LEFT JOIN contact_education ce ON c.contact_id = ce.contact_id
-      LEFT JOIN contact_experience cex ON c.contact_id = cex.contact_id
-      LEFT JOIN event e ON c.contact_id = e.contact_id
-      GROUP BY 
-        c.contact_id, c.created_by, l.email, c.created_at, c.name,
-        c.phone_number, c.secondary_phone_number, c.email_address,
-        c.secondary_email, c.skills, c.linkedin_url,
-        c.dob, c.gender, c.nationality, c.marital_status,
-        c.category, c.emergency_contact_name, c.emergency_contact_relationship,
-        c.logger, ca.street, ca.city, ca.state, ca.country, ca.zipcode
-      ORDER BY c.created_at DESC
-      LIMIT ${limitValue}
-    `;
-  } else {
-    // Query WITHOUT LIMIT (all records)
-    query = db`
-      SELECT 
-        c.contact_id,
-        c.created_by,
-        l.email as added_by,
-        c.created_at,
-        c.name,
-        c.phone_number,
-        c.secondary_phone_number,
-        c.email_address,
-        c.secondary_email,
-        c.skills,
-        c.linkedin_url,
-        c.dob,
-        c.gender,
-        c.nationality,
-        c.marital_status,
-        c.category,
-        c.emergency_contact_name,
-        c.emergency_contact_relationship,
-        c.logger,
-        
-        -- Address fields
-        ca.street,
-        ca.city,
-        ca.state,
-        ca.country,
-        ca.zipcode,
-        
-        -- Education fields (concatenated if multiple)
-        STRING_AGG(DISTINCT ce.pg_course_name, '; ') as pg_course_name,
-        STRING_AGG(DISTINCT ce.pg_college, '; ') as pg_college_name,
-        STRING_AGG(DISTINCT ce.pg_university, '; ') as pg_university_type,
-        STRING_AGG(DISTINCT ce.pg_from_date::text, '; ') as pg_start_date,
-        STRING_AGG(DISTINCT ce.pg_to_date::text, '; ') as pg_end_date,
-        STRING_AGG(DISTINCT ce.ug_course_name, '; ') as ug_course_name,
-        STRING_AGG(DISTINCT ce.ug_college, '; ') as ug_college_name,
-        STRING_AGG(DISTINCT ce.ug_university, '; ') as ug_university_type,
-        STRING_AGG(DISTINCT ce.ug_from_date::text, '; ') as ug_start_date,
-        STRING_AGG(DISTINCT ce.ug_to_date::text, '; ') as ug_end_date,
-        
-        -- Experience fields (concatenated if multiple)
-        STRING_AGG(DISTINCT cex.job_title, '; ') as job_title,
-        STRING_AGG(DISTINCT cex.company, '; ') as company_name,
-        STRING_AGG(DISTINCT cex.department, '; ') as department_type,
-        STRING_AGG(DISTINCT cex.from_date::text, '; ') as from_date,
-        STRING_AGG(DISTINCT cex.to_date::text, '; ') as to_date,
-        
-        -- Event fields (concatenated if multiple)
-        STRING_AGG(DISTINCT e.event_name, '; ') as event_name,
-        STRING_AGG(DISTINCT e.event_role, '; ') as event_role,
-        STRING_AGG(DISTINCT e.event_held_organization, '; ') as event_held_organization,
-        STRING_AGG(DISTINCT e.event_location, '; ') as event_location
-        
-      FROM contact c
-      LEFT JOIN login l ON c.created_by = l.id
-      LEFT JOIN contact_address ca ON c.contact_id = ca.contact_id
-      LEFT JOIN contact_education ce ON c.contact_id = ce.contact_id
-      LEFT JOIN contact_experience cex ON c.contact_id = cex.contact_id
-      LEFT JOIN event e ON c.contact_id = e.contact_id
-      GROUP BY 
-        c.contact_id, c.created_by, l.email, c.created_at, c.name,
-        c.phone_number, c.secondary_phone_number, c.email_address,
-        c.secondary_email, c.skills, c.linkedin_url,
-        c.dob, c.gender, c.nationality, c.marital_status,
-        c.category, c.emergency_contact_name, c.emergency_contact_relationship,
-        c.logger, ca.street, ca.city, ca.state, ca.country, ca.zipcode
-      ORDER BY c.created_at DESC
-    `;
+  try {
+    if (limitValue && limitValue > 0) {
+      query = db`
+        SELECT 
+          c.contact_id,
+          c.created_by,
+          l.email as added_by,
+          c.created_at,
+          c.name,
+          c.phone_number,
+          c.secondary_phone_number,
+          c.email_address,
+          c.secondary_email,
+          c.skills,
+          c.linkedin_url,
+          c.dob,
+          c.gender,
+          c.nationality,
+          c.marital_status,
+          c.category,
+          c.emergency_contact_name,
+          c.emergency_contact_relationship,
+          c.logger,
+          
+          ca.street,
+          ca.city,
+          ca.state,
+          ca.country,
+          ca.zipcode,
+          
+          STRING_AGG(DISTINCT ce.pg_course_name, '; ') as pg_course_name,
+          STRING_AGG(DISTINCT ce.pg_college, '; ') as pg_college_name,
+          STRING_AGG(DISTINCT ce.pg_university, '; ') as pg_university_type,
+          STRING_AGG(DISTINCT ce.pg_from_date::text, '; ') as pg_start_date,
+          STRING_AGG(DISTINCT ce.pg_to_date::text, '; ') as pg_end_date,
+          STRING_AGG(DISTINCT ce.ug_course_name, '; ') as ug_course_name,
+          STRING_AGG(DISTINCT ce.ug_college, '; ') as ug_college_name,
+          STRING_AGG(DISTINCT ce.ug_university, '; ') as ug_university_type,
+          STRING_AGG(DISTINCT ce.ug_from_date::text, '; ') as ug_start_date,
+          STRING_AGG(DISTINCT ce.ug_to_date::text, '; ') as ug_end_date,
+          
+          STRING_AGG(DISTINCT cex.job_title, '; ') as job_title,
+          STRING_AGG(DISTINCT cex.company, '; ') as company_name,
+          STRING_AGG(DISTINCT cex.department, '; ') as department_type,
+          STRING_AGG(DISTINCT cex.from_date::text, '; ') as from_date,
+          STRING_AGG(DISTINCT cex.to_date::text, '; ') as to_date,
+          
+          STRING_AGG(DISTINCT e.event_name, '; ') as event_name,
+          STRING_AGG(DISTINCT e.event_role, '; ') as event_role,
+          STRING_AGG(DISTINCT e.event_held_organization, '; ') as event_held_organization,
+          STRING_AGG(DISTINCT e.event_location, '; ') as event_location,
+          BOOL_OR(e.verified) as verified,
+          STRING_AGG(DISTINCT e.contact_status, '; ') as contact_status
+          
+        FROM contact c
+        LEFT JOIN login l ON c.created_by = l.id
+        LEFT JOIN contact_address ca ON c.contact_id = ca.contact_id
+        LEFT JOIN contact_education ce ON c.contact_id = ce.contact_id
+        LEFT JOIN contact_experience cex ON c.contact_id = cex.contact_id
+        LEFT JOIN event e ON c.contact_id = e.contact_id
+        GROUP BY 
+          c.contact_id, c.created_by, l.email, c.created_at, c.name,
+          c.phone_number, c.secondary_phone_number, c.email_address,
+          c.secondary_email, c.skills, c.linkedin_url,
+          c.dob, c.gender, c.nationality, c.marital_status,
+          c.category, c.emergency_contact_name, c.emergency_contact_relationship,
+          c.logger, ca.street, ca.city, ca.state, ca.country, ca.zipcode
+        ORDER BY c.created_at DESC
+        LIMIT ${limitValue}
+      `;
+    } else {
+      query = db`
+        SELECT 
+          c.contact_id,
+          c.created_by,
+          l.email as added_by,
+          c.created_at,
+          c.name,
+          c.phone_number,
+          c.secondary_phone_number,
+          c.email_address,
+          c.secondary_email,
+          c.skills,
+          c.linkedin_url,
+          c.dob,
+          c.gender,
+          c.nationality,
+          c.marital_status,
+          c.category,
+          c.emergency_contact_name,
+          c.emergency_contact_relationship,
+          c.logger,
+          
+          ca.street,
+          ca.city,
+          ca.state,
+          ca.country,
+          ca.zipcode,
+          
+          STRING_AGG(DISTINCT ce.pg_course_name, '; ') as pg_course_name,
+          STRING_AGG(DISTINCT ce.pg_college, '; ') as pg_college_name,
+          STRING_AGG(DISTINCT ce.pg_university, '; ') as pg_university_type,
+          STRING_AGG(DISTINCT ce.pg_from_date::text, '; ') as pg_start_date,
+          STRING_AGG(DISTINCT ce.pg_to_date::text, '; ') as pg_end_date,
+          STRING_AGG(DISTINCT ce.ug_course_name, '; ') as ug_course_name,
+          STRING_AGG(DISTINCT ce.ug_college, '; ') as ug_college_name,
+          STRING_AGG(DISTINCT ce.ug_university, '; ') as ug_university_type,
+          STRING_AGG(DISTINCT ce.ug_from_date::text, '; ') as ug_start_date,
+          STRING_AGG(DISTINCT ce.ug_to_date::text, '; ') as ug_end_date,
+          
+          STRING_AGG(DISTINCT cex.job_title, '; ') as job_title,
+          STRING_AGG(DISTINCT cex.company, '; ') as company_name,
+          STRING_AGG(DISTINCT cex.department, '; ') as department_type,
+          STRING_AGG(DISTINCT cex.from_date::text, '; ') as from_date,
+          STRING_AGG(DISTINCT cex.to_date::text, '; ') as to_date,
+          
+          STRING_AGG(DISTINCT e.event_name, '; ') as event_name,
+          STRING_AGG(DISTINCT e.event_role, '; ') as event_role,
+          STRING_AGG(DISTINCT e.event_held_organization, '; ') as event_held_organization,
+          STRING_AGG(DISTINCT e.event_location, '; ') as event_location,
+          BOOL_OR(e.verified) as verified,
+          STRING_AGG(DISTINCT e.contact_status, '; ') as contact_status
+          
+        FROM contact c
+        LEFT JOIN login l ON c.created_by = l.id
+        LEFT JOIN contact_address ca ON c.contact_id = ca.contact_id
+        LEFT JOIN contact_education ce ON c.contact_id = ce.contact_id
+        LEFT JOIN contact_experience cex ON c.contact_id = cex.contact_id
+        LEFT JOIN event e ON c.contact_id = e.contact_id
+        GROUP BY 
+          c.contact_id, c.created_by, l.email, c.created_at, c.name,
+          c.phone_number, c.secondary_phone_number, c.email_address,
+          c.secondary_email, c.skills, c.linkedin_url,
+          c.dob, c.gender, c.nationality, c.marital_status,
+          c.category, c.emergency_contact_name, c.emergency_contact_relationship,
+          c.logger, ca.street, ca.city, ca.state, ca.country, ca.zipcode
+        ORDER BY c.created_at DESC
+      `;
+    }
+
+    const result = await query;
+
+    res.status(200).json({
+      success: true,
+      data: result
+    });
+  } catch (error) {
+    console.error("Error in GetAllContact:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server Error",
+      error: error.message
+    });
   }
-
-  const result = await query;
-
-  res.status(200).json({
-    success: true,
-    data: result
-  });
 };
-
 
 export const CreateContact = async (req, res) => {
   const {
-    // --- Contact Fields ---
     name,
     phone_number,
     email_address,
@@ -180,28 +182,23 @@ export const CreateContact = async (req, res) => {
     skills,
     logger,
     linkedin_url,
-
-    // --- SINGLE OBJECTS ---
     address,
     education,
-
-    // --- ARRAYS of OBJECTS ---
     experiences,
     events,
   } = req.body;
 
-  console.log(req.body);
+  console.log("CreateContact request body:", req.body);
 
-  // --- Core Validation ---
   if (!name || !phone_number || !email_address) {
     return res.status(400).json({
+      success: false,
       message: "Required fields are missing (name, phone_number, email_address).",
     });
   }
 
   try {
     const result = await db.begin(async (t) => {
-      // CHECK FOR EXISTING CONTACT BY EMAIL OR PHONE (PREVENT DUPLICATES)
       const existingContactsResult = await t`
         SELECT * FROM contact 
         WHERE (email_address = ${email_address} AND email_address IS NOT NULL)
@@ -210,14 +207,9 @@ export const CreateContact = async (req, res) => {
       `;
 
       if (existingContactsResult.length > 0) {
-        // Return early if duplicate found
-        return res.status(409).json({
-          message: `Contact with this email (${email_address}) or phone (${phone_number}) already exists.`,
-          existingContact: existingContactsResult[0]
-        });
+        throw new Error(`Contact with this email (${email_address}) or phone (${phone_number}) already exists.`);
       }
 
-      // 1. Insert the main contact record (only if no duplicate exists)
       const [contact] = await t`
         INSERT INTO contact (
           name, phone_number, email_address, dob, gender, nationality, marital_status, category,
@@ -240,7 +232,6 @@ export const CreateContact = async (req, res) => {
       let createdExperiences = [],
         createdEvents = [];
 
-      // 2. Insert Address (if provided)
       if (address) {
         [createdAddress] = await t`
           INSERT INTO contact_address (contact_id, street, city, state, country, zipcode) 
@@ -249,7 +240,6 @@ export const CreateContact = async (req, res) => {
         `;
       }
 
-      // 3. Insert Education (if provided)
       if (education) {
         [createdEducation] = await t`
           INSERT INTO contact_education (
@@ -266,7 +256,6 @@ export const CreateContact = async (req, res) => {
         `;
       }
 
-      // 4. Insert Experiences Array (if provided)
       if (experiences && experiences.length > 0) {
         for (const exp of experiences) {
           const [newExp] = await t`
@@ -281,10 +270,8 @@ export const CreateContact = async (req, res) => {
         }
       }
 
-      // 5. Insert Events Array (if provided)
       if (events && events.length > 0) {
         for (const event of events) {
-          // Check if event already exists for this contact to avoid event duplicates too
           const [existingEvent] = await t`
             SELECT * FROM event 
             WHERE contact_id = ${contactId} 
@@ -318,42 +305,56 @@ export const CreateContact = async (req, res) => {
       };
     });
 
-    return res.status(201).json({ message: "Contact created successfully!", data: result });
+    return res.status(201).json({
+      success: true,
+      message: "Contact created successfully!",
+      data: result
+    });
   } catch (err) {
-    console.error(err);
+    console.error("CreateContact error:", err);
     if (err.code === "23505") {
-      // PostgreSQL unique constraint violation
       return res.status(409).json({
+        success: false,
         message: "A contact with this email or phone number already exists."
       });
     }
-    return res.status(500).json({ message: "Server Error!", error: err.message });
+    return res.status(500).json({
+      success: false,
+      message: "Server Error!",
+      error: err.message
+    });
   }
 };
 
-// READ: Get all contacts with their related data
 export const GetContacts = async (req, res) => {
   try {
     const { userId } = req.params;
     const contacts = await db`
-            SELECT
-                c.*,
-                (SELECT row_to_json(ca) FROM contact_address ca WHERE ca.contact_id = c.contact_id LIMIT 1) as address,
-                (SELECT row_to_json(ce) FROM contact_education ce WHERE ce.contact_id = c.contact_id LIMIT 1) as education,
-                (SELECT json_agg(cx) FROM contact_experience cx WHERE cx.contact_id = c.contact_id) as experiences,
-                (SELECT json_agg(e) FROM event e WHERE e.contact_id = c.contact_id) as events
-            FROM
-                contact c
-            WHERE
-                created_by = ${userId}
-            ORDER BY
-                c.contact_id DESC
-        `;
+      SELECT
+        c.*,
+        (SELECT row_to_json(ca) FROM contact_address ca WHERE ca.contact_id = c.contact_id LIMIT 1) as address,
+        (SELECT row_to_json(ce) FROM contact_education ce WHERE ce.contact_id = c.contact_id LIMIT 1) as education,
+        (SELECT json_agg(cx) FROM contact_experience cx WHERE cx.contact_id = c.contact_id) as experiences,
+        (SELECT json_agg(e) FROM event e WHERE e.contact_id = c.contact_id) as events
+      FROM
+        contact c
+      WHERE
+        created_by = ${userId}
+      ORDER BY
+        c.contact_id DESC
+    `;
 
-    return res.status(200).json(contacts);
+    return res.status(200).json({
+      success: true,
+      data: contacts
+    });
   } catch (err) {
-    console.error(err);
-    return res.status(500).json({ message: "Server Error!", error: err.message });
+    console.error("GetContacts error:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Server Error!",
+      error: err.message
+    });
   }
 };
 
@@ -361,52 +362,61 @@ export const GetContactsByCategory = async (req, res) => {
   try {
     const { category } = req.query;
     const contacts = await db`
-            SELECT
-                c.*,
-                (SELECT row_to_json(ca) FROM contact_address ca WHERE ca.contact_id = c.contact_id LIMIT 1) as address,
-                (SELECT row_to_json(ce) FROM contact_education ce WHERE ce.contact_id = c.contact_id LIMIT 1) as education,
-                (SELECT json_agg(cx) FROM contact_experience cx WHERE cx.contact_id = c.contact_id) as experiences,
-                (SELECT json_agg(e) FROM event e WHERE e.contact_id = c.contact_id) as events
-            FROM
-                contact c
-            WHERE
-                category = ${category}
-            ORDER BY
-                c.contact_id DESC
-        `;
+      SELECT
+        c.*,
+        (SELECT row_to_json(ca) FROM contact_address ca WHERE ca.contact_id = c.contact_id LIMIT 1) as address,
+        (SELECT row_to_json(ce) FROM contact_education ce WHERE ce.contact_id = c.contact_id LIMIT 1) as education,
+        (SELECT json_agg(cx) FROM contact_experience cx WHERE cx.contact_id = c.contact_id) as experiences,
+        (SELECT json_agg(e) FROM event e WHERE e.contact_id = c.contact_id) as events
+      FROM
+        contact c
+      WHERE
+        category = ${category}
+      ORDER BY
+        c.contact_id DESC
+    `;
 
-    return res.status(200).json(contacts);
+    return res.status(200).json({
+      success: true,
+      data: contacts
+    });
   } catch (err) {
-    console.error(err);
-    return res.status(500).json({ message: "Server Error!", error: err.message });
+    console.error("GetContactsByCategory error:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Server Error!",
+      error: err.message
+    });
   }
 };
 
 export const GetUnVerifiedContacts = async (req, res) => {
   try {
-    const { userId } = req.params;
-
     const contactsWithEvents = await db`
-        SELECT c.*, 
-              (SELECT row_to_json(ca) FROM contact_address ca WHERE ca.contact_id = c.contact_id) as address,
-              (SELECT row_to_json(ce) FROM contact_education ce WHERE ce.contact_id = c.contact_id) as education,
-              (SELECT json_agg(cx) FROM contact_experience cx WHERE cx.contact_id = c.contact_id) as experiences,
-              json_build_array(row_to_json(e)) as events
-        FROM event e 
-        INNER JOIN contact c ON e.contact_id = c.contact_id 
-        WHERE e.verified = FALSE
-          AND NOT EXISTS (
-            SELECT 1 FROM user_assignments ua 
-            WHERE ua.event_id = e.event_id 
-              AND ua.completed = FALSE
-          )
-        ORDER BY c.contact_id DESC, e.event_id DESC;
-        `;
+      SELECT c.*, 
+        (SELECT row_to_json(ca) FROM contact_address ca WHERE ca.contact_id = c.contact_id) as address,
+        (SELECT row_to_json(ce) FROM contact_education ce WHERE ce.contact_id = c.contact_id) as education,
+        (SELECT json_agg(cx) FROM contact_experience cx WHERE cx.contact_id = c.contact_id) as experiences,
+        json_build_array(row_to_json(e)) as events
+      FROM event e 
+      INNER JOIN contact c ON e.contact_id = c.contact_id 
+      WHERE e.verified = FALSE
+        AND NOT EXISTS (
+          SELECT 1 FROM user_assignments ua 
+          WHERE ua.event_id = e.event_id 
+            AND ua.completed = FALSE
+        )
+      ORDER BY c.contact_id DESC, e.event_id DESC
+    `;
 
-    return res.status(200).json(contactsWithEvents);
+    return res.status(200).json({
+      success: true,
+      data: contactsWithEvents
+    });
   } catch (err) {
-    console.error(err);
+    console.error("GetUnVerifiedContacts error:", err);
     return res.status(500).json({
+      success: false,
       message: "Server Error!",
       error: err.message,
     });
@@ -416,28 +426,31 @@ export const GetUnVerifiedContacts = async (req, res) => {
 export const UpdateContactAndEvents = async (req, res) => {
   const { id } = req.params;
   const {
-    // Contact Fields
     name,
     phone_number,
     email_address,
-    // Events Array
     events,
   } = req.body;
 
-  // --- 1. Strict Validation ---
   if (!id) {
-    return res.status(400).json({ message: "Contact ID is required in the URL." });
+    return res.status(400).json({
+      success: false,
+      message: "Contact ID is required in the URL."
+    });
   }
   if (!name || !phone_number || !email_address) {
     return res.status(400).json({
+      success: false,
       message: "Required fields are missing (name, phone_number, email_address).",
     });
   }
   if (!events || !Array.isArray(events) || events.length === 0) {
-    return res.status(400).json({ message: "The 'events' field must be a non-empty array." });
+    return res.status(400).json({
+      success: false,
+      message: "The 'events' field must be a non-empty array."
+    });
   }
 
-  // Validate each object in the events array
   for (const event of events) {
     if (
       event.event_id === undefined ||
@@ -448,6 +461,7 @@ export const UpdateContactAndEvents = async (req, res) => {
       event.event_location === undefined
     ) {
       return res.status(400).json({
+        success: false,
         message: "Each event object must contain all required fields (event_id, event_name, etc.).",
         invalid_event: event,
       });
@@ -455,80 +469,78 @@ export const UpdateContactAndEvents = async (req, res) => {
   }
 
   try {
-    // --- 2. Use a Transaction ---
-    // The `sql.begin` or `sql.transaction` block automatically handles BEGIN, COMMIT, and ROLLBACK.
     const result = await db.begin(async (t) => {
-      // --- 3. Update the Contact Record ---
-      // The template literal `t` is the transactional version of `sql`
       const contactResults = await t`
-                UPDATE contact
-                SET
-                    name = ${name},
-                    phone_number = ${phone_number},
-                    email_address = ${email_address}
-                WHERE contact_id = ${id}
-                RETURNING *
-            `;
+        UPDATE contact
+        SET
+          name = ${name},
+          phone_number = ${phone_number},
+          email_address = ${email_address},
+          updated_at = NOW()
+        WHERE contact_id = ${id}
+        RETURNING *
+      `;
 
-      // If the query returns no rows, the contact wasn't found.
       if (contactResults.length === 0) {
-        // Throwing an error here will automatically trigger a ROLLBACK.
         throw new Error("ContactNotFound");
       }
       const updatedContact = contactResults[0];
 
-      // --- 4. Update Each Event Record ---
       const updatedEvents = [];
       for (const event of events) {
         const eventResults = await t`
-                    UPDATE event
-                    SET
-                        event_name = ${event.event_name},
-                        event_role = ${event.event_role},
-                        event_date = ${event.event_date},
-                        event_held_organization = ${event.event_held_organization},
-                        event_location = ${event.event_location}
-                    WHERE
-                        event_id = ${event.event_id}
-                        AND contact_id = ${id} -- Security check: Ensures the event belongs to the contact
-                    RETURNING *
-                `;
+          UPDATE event
+          SET
+            event_name = ${event.event_name},
+            event_role = ${event.event_role},
+            event_date = ${event.event_date},
+            event_held_organization = ${event.event_held_organization},
+            event_location = ${event.event_location},
+            updated_at = NOW()
+          WHERE
+            event_id = ${event.event_id}
+            AND contact_id = ${id}
+          RETURNING *
+        `;
 
-        // If an event update returns no rows, the event_id was invalid or didn't belong to the contact.
         if (eventResults.length === 0) {
           throw new Error("EventNotFound");
         }
         updatedEvents.push(eventResults[0]);
       }
 
-      // Return the final data structure from the transaction block
       return {
         contact: updatedContact,
         events: updatedEvents,
       };
     });
 
-    // --- 5. Send Success Response ---
     return res.status(200).json({
+      success: true,
       message: "Contact and events updated successfully!",
       data: result,
     });
   } catch (err) {
     console.error("Update Transaction Failed:", err);
 
-    // --- 6. Handle Specific Errors ---
     if (err.message === "ContactNotFound" || err.message === "EventNotFound") {
       return res.status(404).json({
+        success: false,
         message: "Contact or one of the specified events not found for the given contact ID.",
       });
     }
-    // PostgreSQL unique_violation error code
     if (err.code === "23505") {
-      return res.status(409).json({ message: "A contact with this email address already exists." });
+      return res.status(409).json({
+        success: false,
+        message: "A contact with this email address already exists."
+      });
     }
 
-    // Generic server error for all other cases
-    return res.status(500).json({ message: "Server Error!", error: err.message });
+    return res.status(500).json({
+      success: false,
+      message: "Server Error!",
+      error: err.message
+    });
   }
 };
 
@@ -570,11 +582,10 @@ export const UpdateContact = async (req, res) => {
   try {
     const result = await db.begin(async (t) => {
       let contactRecord;
-      let existingContact = null; // DECLARE AT TOP LEVEL
+      let existingContact = null;
       let wasExistingContact = false;
 
       if (!contact_id) {
-        // CHECK FOR EXISTING CONTACT BY EMAIL OR PHONE (PREVENT DUPLICATES)
         const existingContactsResult = await t`
           SELECT * FROM contact 
           WHERE (email_address = ${email_address} AND email_address IS NOT NULL)
@@ -611,7 +622,6 @@ export const UpdateContact = async (req, res) => {
             RETURNING *
           `;
         } else {
-          // CREATE NEW CONTACT ONLY IF NO DUPLICATE EXISTS
           console.log("Creating new contact...");
           [contactRecord] = await t`
             INSERT INTO contact (
@@ -628,7 +638,6 @@ export const UpdateContact = async (req, res) => {
           `;
         }
       } else {
-        // UPDATE EXISTING CONTACT WHEN contact_id IS PROVIDED
         console.log("Updating existing contact...");
         [contactRecord] = await t`
           UPDATE contact SET
@@ -658,7 +667,6 @@ export const UpdateContact = async (req, res) => {
       let updatedAddress = null, updatedEducation = null;
       let updatedExperiences = [], updatedEvents = [];
 
-      // HANDLE ADDRESS (UPSERT)
       if (address && activeContactId) {
         [updatedAddress] = await t`
           INSERT INTO contact_address (contact_id, street, city, state, country, zipcode)
@@ -673,7 +681,6 @@ export const UpdateContact = async (req, res) => {
         `;
       }
 
-      // HANDLE EDUCATION (UPSERT)
       if (education && activeContactId) {
         [updatedEducation] = await t`
           INSERT INTO contact_education (
@@ -700,7 +707,6 @@ export const UpdateContact = async (req, res) => {
         `;
       }
 
-      // HANDLE EXPERIENCES (REPLACE ALL)
       if (experiences && experiences.length > 0 && activeContactId) {
         await t`DELETE FROM contact_experience WHERE contact_id = ${activeContactId}`;
         for (const exp of experiences) {
@@ -716,7 +722,6 @@ export const UpdateContact = async (req, res) => {
         }
       }
 
-      // HANDLE EVENT UPDATE (IF event_id PROVIDED)
       if (event_id && activeContactId) {
         const [updatedEvent] = await t`
           UPDATE event SET
@@ -733,9 +738,7 @@ export const UpdateContact = async (req, res) => {
         if (updatedEvent) updatedEvents.push(updatedEvent);
       }
 
-      // HANDLE NEW EVENT CREATION (IF event_name BUT NO event_id)
       if (!event_id && event_name && activeContactId) {
-        // Check if event already exists for this contact to avoid duplicates
         const [existingEvent] = await t`
           SELECT * FROM event 
           WHERE contact_id = ${activeContactId} 
@@ -771,7 +774,6 @@ export const UpdateContact = async (req, res) => {
         }
       }
 
-      // HANDLE ASSIGNMENT COMPLETION
       if (assignment_id) {
         console.log("Marking assignment as completed:", assignment_id);
         await t`UPDATE user_assignments SET completed = TRUE WHERE id = ${assignment_id}`;
@@ -788,49 +790,53 @@ export const UpdateContact = async (req, res) => {
     });
 
     const message = contact_id ? "Contact updated successfully!" : "Contact processed successfully!";
-    return res.status(200).json({ message, data: result });
+    return res.status(200).json({
+      success: true,
+      message,
+      data: result
+    });
   } catch (err) {
-    console.error(err);
-    return res.status(500).json({ message: "Server Error!", error: err.message });
+    console.error("UpdateContact error:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Server Error!",
+      error: err.message
+    });
   }
 };
 
-// DELETE: A contact and ALL of their associated data (except photos)
 export const DeleteContact = async (req, res) => {
   const { id } = req.params;
   const { userType } = req.query;
 
   try {
     await db.begin(async (t) => {
-      // Get contact with status and verified fields
       const [contact] = await t`
-                SELECT contact_id, contact_status, verified 
-                FROM event 
-                WHERE contact_id = ${id}
-            `;
+        SELECT contact_id, contact_status, verified 
+        FROM event 
+        WHERE contact_id = ${id}
+      `;
 
       if (!contact) {
         throw new Error("Contact not found");
       }
 
-      // Handle based on user type
       if (userType === 'user') {
-        // Check if user is allowed to delete based on status and verified
         if ((contact.contact_status === 'pending' || contact.contact_status === 'rejected')
           && contact.verified === false) {
 
-          // Allow deletion - contact is pending/rejected and not verified
           await performCompleteDeletion(t, id);
 
           return res.status(200).json({
+            success: true,
             message: "Contact and all associated data deleted successfully!",
             action: "deleted"
           });
 
         } else if (contact.contact_status === 'approved' && contact.verified === true) {
 
-          // Deny deletion - contact is approved and verified
           return res.status(403).json({
+            success: false,
             message: "Cannot delete approved and verified contacts. Contact support if needed.",
             action: "denied",
             reason: "Contact is approved and verified",
@@ -839,8 +845,8 @@ export const DeleteContact = async (req, res) => {
           });
 
         } else {
-          // Handle edge cases (e.g., approved but not verified, etc.)
           return res.status(403).json({
+            success: false,
             message: "You don't have permission to delete this contact as it is approved.",
             action: "denied",
             reason: "Insufficient permissions for current contact state",
@@ -850,14 +856,14 @@ export const DeleteContact = async (req, res) => {
         }
       }
       else if (['cata', 'catb', 'catc', 'admin'].includes(userType)) {
-        // Middlemen or Admin - set status as rejected
         await t`
-                    UPDATE event 
-                    SET contact_status = 'rejected',verified=${true}
-                    WHERE contact_id = ${id}
-                `;
+          UPDATE event 
+          SET contact_status = 'rejected', verified = ${true}
+          WHERE contact_id = ${id}
+        `;
 
         return res.status(200).json({
+          success: true,
           message: "Contact status updated to rejected successfully!",
           action: "rejected",
           previousStatus: contact.contact_status
@@ -869,14 +875,21 @@ export const DeleteContact = async (req, res) => {
     });
 
   } catch (err) {
-    console.error(err);
+    console.error("DeleteContact error:", err);
 
     if (err.message === "Contact not found") {
-      return res.status(404).json({ message: "Contact not found." });
+      return res.status(404).json({
+        success: false,
+        message: "Contact not found."
+      });
     } else if (err.message === "Invalid user type") {
-      return res.status(400).json({ message: "Invalid user type provided." });
+      return res.status(400).json({
+        success: false,
+        message: "Invalid user type provided."
+      });
     } else {
       return res.status(500).json({
+        success: false,
         message: "Server Error!",
         error: err.message
       });
@@ -884,130 +897,126 @@ export const DeleteContact = async (req, res) => {
   }
 };
 
-// Helper function for complete deletion
 const performCompleteDeletion = async (transaction, contactId) => {
-  // Delete from all child tables
   await transaction`DELETE FROM contact_address WHERE contact_id = ${contactId}`;
   await transaction`DELETE FROM contact_education WHERE contact_id = ${contactId}`;
   await transaction`DELETE FROM contact_experience WHERE contact_id = ${contactId}`;
   await transaction`DELETE FROM event WHERE contact_id = ${contactId}`;
-  // Finally, delete the parent contact record
   await transaction`DELETE FROM contact WHERE contact_id = ${contactId}`;
 };
 
-
-// ADD EVENT to an existing contact
 export const AddEventToExistingContact = async (req, res) => {
   const { contactId } = req.params;
   const { eventName, eventRole, eventDate, eventHeldOrganization, eventLocation, verified } = req.body;
 
   if (!eventName || !eventRole || !eventDate) {
-    return res.status(400).json({ message: "Required event fields are missing." });
+    return res.status(400).json({
+      success: false,
+      message: "Required event fields are missing."
+    });
   }
 
   try {
     const [newEvent] = await db`
-            INSERT INTO event (contact_id, event_name, event_role, event_date, event_held_organization, event_location, verified)
-            VALUES (${contactId}, ${eventName}, ${eventRole}, ${eventDate}, ${eventHeldOrganization}, ${eventLocation}, ${verified || false
-      })
-            RETURNING *
-        `;
-    return res.status(201).json({ message: "New event added successfully!", data: newEvent });
+      INSERT INTO event (contact_id, event_name, event_role, event_date, event_held_organization, event_location, verified)
+      VALUES (${contactId}, ${eventName}, ${eventRole}, ${eventDate}, ${eventHeldOrganization}, ${eventLocation}, ${verified || false})
+      RETURNING *
+    `;
+    return res.status(201).json({
+      success: true,
+      message: "New event added successfully!",
+      data: newEvent
+    });
   } catch (err) {
-    console.error(err);
-    if (err.code === "23503") return res.status(404).json({ message: "Contact not found." });
-    return res.status(500).json({ message: "Server Error!", error: err.message });
+    console.error("AddEventToExistingContact error:", err);
+    if (err.code === "23503") return res.status(404).json({
+      success: false,
+      message: "Contact not found."
+    });
+    return res.status(500).json({
+      success: false,
+      message: "Server Error!",
+      error: err.message
+    });
   }
 };
 
-// SEARCH: Find contacts by name, email, phone, or skills
 export const SearchContacts = async (req, res) => {
-  // The search term is passed as a query parameter, e.g., /search?q=marie
   const { q } = req.query;
 
-  // If no search term is provided, return an empty array.
   if (!q) {
-    return res.status(200).json([]);
+    return res.status(200).json({
+      success: true,
+      data: []
+    });
   }
 
-  // Prepare the search term for a partial, case-insensitive match
   const searchTerm = `%${q}%`;
 
   try {
     const contacts = await db`
-            SELECT
-                contact_id,
-                name,
-                email_address,
-                phone_number,
-                skills
-            FROM
-                contact
-            WHERE
-                name ILIKE ${searchTerm} OR
-                email_address ILIKE ${searchTerm} OR
-                phone_number ILIKE ${searchTerm} OR
-                skills ILIKE ${searchTerm}
-            ORDER BY
-                name
-            LIMIT 10
-        `;
+      SELECT
+        contact_id,
+        name,
+        email_address,
+        phone_number,
+        skills
+      FROM
+        contact
+      WHERE
+        name ILIKE ${searchTerm} OR
+        email_address ILIKE ${searchTerm} OR
+        phone_number ILIKE ${searchTerm} OR
+        skills ILIKE ${searchTerm}
+      ORDER BY
+        name
+      LIMIT 10
+    `;
 
-    // If no contacts are found, it will correctly return an empty array.
-    return res.status(200).json(contacts);
+    return res.status(200).json({
+      success: true,
+      data: contacts
+    });
   } catch (err) {
-    console.error(err);
-    return res.status(500).json({ message: "Server Error!", error: err.message });
+    console.error("SearchContacts error:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Server Error!",
+      error: err.message
+    });
   }
 };
 
 export const GetFilteredContacts = async (req, res) => {
   const queryParams = req.query;
 
-  // Convert single values to arrays for consistent handling
   const normalizeParam = (param) => {
     if (!param) return null;
     return Array.isArray(param) ? param : [param];
   };
 
   const {
-    // Basic Contact Filters
     name,
     phone_number,
     email_address,
     created_by,
-
-    // Date Range Filters
     created_from,
     created_to,
     dob_from,
     dob_to,
-
-    // Education Year Filters
     education_from_year,
     education_to_year,
-
-    // Experience Year Filters
     experience_from_year,
     experience_to_year,
-
-    // Event Year Filter
     event_year,
-
-    // Single value filters
     address_zipcode,
     address_street,
-
-    // Pagination
     page = 1,
     limit = 20,
-
-    // Sorting
     sort_by = "name",
     sort_order = "ASC",
   } = queryParams;
 
-  // Normalize array parameters
   const category = normalizeParam(queryParams.category);
   const gender = normalizeParam(queryParams.gender);
   const nationality = normalizeParam(queryParams.nationality);
@@ -1031,16 +1040,13 @@ export const GetFilteredContacts = async (req, res) => {
   const event_location = normalizeParam(queryParams.event_location);
 
   try {
-    // Build dynamic WHERE conditions
     const conditions = [];
 
-    // Basic contact filters
     if (name) conditions.push(`c.name ILIKE '%${name}%'`);
     if (phone_number) conditions.push(`c.phone_number ILIKE '%${phone_number}%'`);
     if (email_address) conditions.push(`c.email_address ILIKE '%${email_address}%'`);
     if (created_by) conditions.push(`c.created_by = '${created_by}'`);
 
-    // Array-based filters for ENUM fields (exact match)
     if (category) {
       const categoryValues = category.map(cat => `'${cat}'`).join(',');
       conditions.push(`c.category IN (${categoryValues})`);
@@ -1056,7 +1062,6 @@ export const GetFilteredContacts = async (req, res) => {
       conditions.push(`c.marital_status IN (${maritalValues})`);
     }
 
-    // Array-based filters for text fields (partial match with OR)
     if (nationality) {
       const nationalityConditions = nationality.map(nat => `c.nationality ILIKE '%${nat}%'`);
       conditions.push(`(${nationalityConditions.join(' OR ')})`);
@@ -1067,7 +1072,6 @@ export const GetFilteredContacts = async (req, res) => {
       conditions.push(`(${skillsConditions.join(' OR ')})`);
     }
 
-    // Address filters
     if (address_city) {
       const cityConditions = address_city.map(city => `ca.city ILIKE '%${city}%'`);
       conditions.push(`(${cityConditions.join(' OR ')})`);
@@ -1086,7 +1090,6 @@ export const GetFilteredContacts = async (req, res) => {
     if (address_zipcode) conditions.push(`ca.zipcode = '${address_zipcode}'`);
     if (address_street) conditions.push(`ca.street ILIKE '%${address_street}%'`);
 
-    // Education filters
     if (pg_course_name) {
       const pgCourseConditions = pg_course_name.map(course => `ce.pg_course_name ILIKE '%${course}%'`);
       conditions.push(`(${pgCourseConditions.join(' OR ')})`);
@@ -1117,7 +1120,6 @@ export const GetFilteredContacts = async (req, res) => {
       conditions.push(`(${ugUniversityConditions.join(' OR ')})`);
     }
 
-    // Experience filters
     if (job_title) {
       const jobTitleConditions = job_title.map(jt => `exp.job_title ILIKE '%${jt}%'`);
       conditions.push(`(${jobTitleConditions.join(' OR ')})`);
@@ -1133,7 +1135,6 @@ export const GetFilteredContacts = async (req, res) => {
       conditions.push(`(${departmentConditions.join(' OR ')})`);
     }
 
-    // Event filters
     if (event_name) {
       const eventNameConditions = event_name.map(name => `e.event_name ILIKE '%${name}%'`);
       conditions.push(`(${eventNameConditions.join(' OR ')})`);
@@ -1154,13 +1155,11 @@ export const GetFilteredContacts = async (req, res) => {
       conditions.push(`(${eventLocationConditions.join(' OR ')})`);
     }
 
-    // Date filters
     if (created_from) conditions.push(`c.created_at >= '${created_from}'`);
     if (created_to) conditions.push(`c.created_at <= '${created_to}'`);
     if (dob_from) conditions.push(`c.dob >= '${dob_from}'`);
     if (dob_to) conditions.push(`c.dob <= '${dob_to}'`);
 
-    // Year-based filters
     if (education_from_year)
       conditions.push(
         `(EXTRACT(YEAR FROM ce.pg_from_date) >= ${education_from_year} OR EXTRACT(YEAR FROM ce.ug_from_date) >= ${education_from_year})`
@@ -1181,55 +1180,50 @@ export const GetFilteredContacts = async (req, res) => {
     const sortField = validSortFields.includes(sort_by) ? sort_by : "name";
     const sortDirection = sort_order.toUpperCase() === "DESC" ? "DESC" : "ASC";
 
-    // Main query using postgres.js template literals
     const contacts = await db`
-            SELECT DISTINCT 
-                c.*,
-                ca.street, ca.city, ca.state, ca.country, ca.zipcode,
-                ce.pg_course_name, ce.pg_college, ce.pg_university, 
-                ce.pg_from_date, ce.pg_to_date,
-                ce.ug_course_name, ce.ug_college, ce.ug_university, 
-                ce.ug_from_date, ce.ug_to_date
-            FROM contact c
-            LEFT JOIN contact_address ca ON c.contact_id = ca.contact_id
-            LEFT JOIN contact_education ce ON c.contact_id = ce.contact_id
-            LEFT JOIN contact_experience exp ON c.contact_id = exp.contact_id
-            LEFT JOIN event e ON c.contact_id = e.contact_id
-            ${whereClause ? db.unsafe(whereClause) : db``}
-            ORDER BY ${db.unsafe(`c.${sortField} ${sortDirection}`)}
-            LIMIT ${limit} OFFSET ${offset}
-        `;
+      SELECT DISTINCT 
+        c.*,
+        ca.street, ca.city, ca.state, ca.country, ca.zipcode,
+        ce.pg_course_name, ce.pg_college, ce.pg_university, 
+        ce.pg_from_date, ce.pg_to_date,
+        ce.ug_course_name, ce.ug_college, ce.ug_university, 
+        ce.ug_from_date, ce.ug_to_date
+      FROM contact c
+      LEFT JOIN contact_address ca ON c.contact_id = ca.contact_id
+      LEFT JOIN contact_education ce ON c.contact_id = ce.contact_id
+      LEFT JOIN contact_experience exp ON c.contact_id = exp.contact_id
+      LEFT JOIN event e ON c.contact_id = e.contact_id
+      ${whereClause ? db.unsafe(whereClause) : db``}
+      ORDER BY ${db.unsafe(`c.${sortField} ${sortDirection}`)}
+      LIMIT ${limit} OFFSET ${offset}
+    `;
 
-    // Get total count for pagination
     const [countResult] = await db`
-            SELECT COUNT(DISTINCT c.contact_id) as total
-            FROM contact c
-            LEFT JOIN contact_address ca ON c.contact_id = ca.contact_id
-            LEFT JOIN contact_education ce ON c.contact_id = ce.contact_id
-            LEFT JOIN contact_experience exp ON c.contact_id = exp.contact_id
-            LEFT JOIN event e ON c.contact_id = e.contact_id
-            ${whereClause ? db.unsafe(whereClause) : db``}
-        `;
+      SELECT COUNT(DISTINCT c.contact_id) as total
+      FROM contact c
+      LEFT JOIN contact_address ca ON c.contact_id = ca.contact_id
+      LEFT JOIN contact_education ce ON c.contact_id = ce.contact_id
+      LEFT JOIN contact_experience exp ON c.contact_id = exp.contact_id
+      LEFT JOIN event e ON c.contact_id = e.contact_id
+      ${whereClause ? db.unsafe(whereClause) : db``}
+    `;
 
     const totalContacts = parseInt(countResult.total);
     const totalPages = Math.ceil(totalContacts / limit);
 
-    // Get detailed data for each contact
     const contactsWithDetails = await Promise.all(
       contacts.map(async (contact) => {
-        // Get all experiences for this contact
         const experiences = await db`
-                    SELECT * FROM contact_experience 
-                    WHERE contact_id = ${contact.contact_id} 
-                    ORDER BY from_date DESC
-                `;
+          SELECT * FROM contact_experience 
+          WHERE contact_id = ${contact.contact_id} 
+          ORDER BY from_date DESC
+        `;
 
-        // Get all events for this contact
         const events = await db`
-                    SELECT * FROM event 
-                    WHERE contact_id = ${contact.contact_id} 
-                    ORDER BY event_date DESC
-                `;
+          SELECT * FROM event 
+          WHERE contact_id = ${contact.contact_id} 
+          ORDER BY event_date DESC
+        `;
 
         return {
           ...contact,
@@ -1240,6 +1234,7 @@ export const GetFilteredContacts = async (req, res) => {
     );
 
     return res.status(200).json({
+      success: true,
       message: "Contacts retrieved successfully!",
       data: {
         contacts: contactsWithDetails,
@@ -1254,89 +1249,96 @@ export const GetFilteredContacts = async (req, res) => {
       },
     });
   } catch (err) {
-    console.error(err);
+    console.error("GetFilteredContacts error:", err);
     return res.status(500).json({
+      success: false,
       message: "Server Error!",
       error: err.message,
     });
   }
 };
 
-
 export const GetFilterOptions = async (req, res) => {
   try {
-    // Get all filter options with counts (remove destructuring brackets)
     const genders = await db`
-            SELECT DISTINCT gender as value, COUNT(*)::text as count 
-            FROM contact WHERE gender IS NOT NULL 
-            GROUP BY gender ORDER BY count DESC
-        `;
+      SELECT DISTINCT gender as value, COUNT(*)::text as count 
+      FROM contact WHERE gender IS NOT NULL 
+      GROUP BY gender ORDER BY count DESC
+    `;
 
     const categories = await db`
-            SELECT DISTINCT category as value, COUNT(*)::text as count 
-            FROM contact WHERE category IS NOT NULL 
-            GROUP BY category ORDER BY count DESC
-        `;
+      SELECT DISTINCT category as value, COUNT(*)::text as count 
+      FROM contact WHERE category IS NOT NULL 
+      GROUP BY category ORDER BY count DESC
+    `;
 
     const nationalities = await db`
-            SELECT DISTINCT nationality as value, COUNT(*)::text as count 
-            FROM contact WHERE nationality IS NOT NULL 
-            GROUP BY nationality ORDER BY count DESC
-        `;
+      SELECT DISTINCT nationality as value, COUNT(*)::text as count 
+      FROM contact 
+      WHERE nationality IS NOT NULL
+      GROUP BY nationality ORDER BY count DESC
+    `;
 
     const maritalStatuses = await db`
-            SELECT DISTINCT marital_status as value, COUNT(*)::text as count 
-            FROM contact WHERE marital_status IS NOT NULL 
-            GROUP BY marital_status ORDER BY count DESC
-        `;
+      SELECT DISTINCT marital_status as value, COUNT(*)::text as count 
+      FROM contact 
+      WHERE marital_status IS NOT NULL
+      GROUP BY marital_status ORDER BY count DESC
+    `;
 
     const countries = await db`
-            SELECT DISTINCT ca.country as value, COUNT(DISTINCT c.contact_id)::text as count
-            FROM contact c JOIN contact_address ca ON c.contact_id = ca.contact_id
-            WHERE ca.country IS NOT NULL GROUP BY ca.country ORDER BY count DESC
-        `;
+      SELECT DISTINCT ca.country as value, COUNT(DISTINCT c.contact_id)::text as count
+      FROM contact c JOIN contact_address ca ON c.contact_id = ca.contact_id
+      WHERE ca.country IS NOT NULL
+      GROUP BY ca.country ORDER BY count DESC
+    `;
 
     const states = await db`
-            SELECT DISTINCT ca.state as value, COUNT(DISTINCT c.contact_id)::text as count
-            FROM contact c JOIN contact_address ca ON c.contact_id = ca.contact_id
-            WHERE ca.state IS NOT NULL GROUP BY ca.state ORDER BY count DESC
-        `;
+      SELECT DISTINCT ca.state as value, COUNT(DISTINCT c.contact_id)::text as count
+      FROM contact c JOIN contact_address ca ON c.contact_id = ca.contact_id
+      WHERE ca.state IS NOT NULL
+      GROUP BY ca.state ORDER BY count DESC
+    `;
 
     const cities = await db`
-            SELECT DISTINCT ca.city as value, COUNT(DISTINCT c.contact_id)::text as count
-            FROM contact c JOIN contact_address ca ON c.contact_id = ca.contact_id
-            WHERE ca.city IS NOT NULL GROUP BY ca.city ORDER BY count DESC
-        `;
+      SELECT DISTINCT ca.city as value, COUNT(DISTINCT c.contact_id)::text as count
+      FROM contact c JOIN contact_address ca ON c.contact_id = ca.contact_id
+      WHERE ca.city IS NOT NULL
+      GROUP BY ca.city ORDER BY count DESC
+    `;
 
     const companies = await db`
-            SELECT DISTINCT exp.company as value, COUNT(DISTINCT c.contact_id)::text as count
-            FROM contact c JOIN contact_experience exp ON c.contact_id = exp.contact_id
-            WHERE exp.company IS NOT NULL GROUP BY exp.company ORDER BY count DESC
-        `;
+      SELECT DISTINCT exp.company as value, COUNT(DISTINCT c.contact_id)::text as count
+      FROM contact c JOIN contact_experience exp ON c.contact_id = exp.contact_id
+      WHERE exp.company IS NOT NULL
+      GROUP BY exp.company ORDER BY count DESC
+    `;
 
     const jobTitles = await db`
-            SELECT DISTINCT exp.job_title as value, COUNT(DISTINCT c.contact_id)::text as count
-            FROM contact c JOIN contact_experience exp ON c.contact_id = exp.contact_id
-            WHERE exp.job_title IS NOT NULL GROUP BY exp.job_title ORDER BY count DESC
-        `;
+      SELECT DISTINCT exp.job_title as value, COUNT(DISTINCT c.contact_id)::text as count
+      FROM contact c JOIN contact_experience exp ON c.contact_id = exp.contact_id
+      WHERE exp.job_title IS NOT NULL
+      GROUP BY exp.job_title ORDER BY count DESC
+    `;
 
     const pgCourses = await db`
-            SELECT DISTINCT ce.pg_course_name as value, COUNT(DISTINCT c.contact_id)::text as count
-            FROM contact c JOIN contact_education ce ON c.contact_id = ce.contact_id
-            WHERE ce.pg_course_name IS NOT NULL GROUP BY ce.pg_course_name ORDER BY count DESC
-        `;
+      SELECT DISTINCT ce.pg_course_name as value, COUNT(DISTINCT c.contact_id)::text as count
+      FROM contact c JOIN contact_education ce ON c.contact_id = ce.contact_id
+      WHERE ce.pg_course_name IS NOT NULL
+      GROUP BY ce.pg_course_name ORDER BY count DESC
+    `;
 
     const ugCourses = await db`
-            SELECT DISTINCT ce.ug_course_name as value, COUNT(DISTINCT c.contact_id)::text as count
-            FROM contact c JOIN contact_education ce ON c.contact_id = ce.contact_id
-            WHERE ce.ug_course_name IS NOT NULL GROUP BY ce.ug_course_name ORDER BY count DESC
-        `;
+      SELECT DISTINCT ce.ug_course_name as value, COUNT(DISTINCT c.contact_id)::text as count
+      FROM contact c JOIN contact_education ce ON c.contact_id = ce.contact_id
+      WHERE ce.ug_course_name IS NOT NULL
+      GROUP BY ce.ug_course_name ORDER BY count DESC
+    `;
 
-    // Parse skills if stored as comma-separated values
     const skillsData = await db`
-            SELECT skills FROM contact 
-            WHERE skills IS NOT NULL AND skills != ''
-        `;
+      SELECT skills FROM contact 
+      WHERE skills IS NOT NULL AND skills != ''
+    `;
 
     const skillCounts = {};
     skillsData.forEach(row => {
@@ -1353,22 +1355,27 @@ export const GetFilterOptions = async (req, res) => {
       .sort((a, b) => parseInt(b.count) - parseInt(a.count));
 
     return res.json({
-      genders,
-      categories,
-      nationalities,
-      marital_statuses: maritalStatuses,
-      countries,
-      states,
-      cities,
-      companies,
-      job_titles: jobTitles,
-      pg_courses: pgCourses,
-      ug_courses: ugCourses,
-      skills
+      success: true,
+      data: {
+        genders,
+        categories,
+        nationalities,
+        marital_statuses: maritalStatuses,
+        countries,
+        states,
+        cities,
+        companies,
+        job_titles: jobTitles,
+        pg_courses: pgCourses,
+        ug_courses: ugCourses,
+        skills
+      }
     });
   } catch (err) {
-    console.error(err);
-    return res.status(500).json({ error: err.message });
+    console.error("GetFilterOptions error:", err);
+    return res.status(500).json({
+      success: false,
+      error: err.message
+    });
   }
 };
-

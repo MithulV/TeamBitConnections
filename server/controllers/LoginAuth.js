@@ -14,7 +14,6 @@ export const loginUser = async (req, res) => {
         
         if (rows.length > 0) {
             const user = rows[0]
-
             // JWT payload
             const payload = {
                 id: user.id,
