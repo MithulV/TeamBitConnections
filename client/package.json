@@ -17,6 +17,7 @@
     "chart.js": "^4.5.0",
     "date-fns": "^4.1.0",
     "file-saver": "^2.0.5",
+    "google-map-react": "^2.2.5",
     "leaflet": "^1.9.4",
     "leaflet-control-geocoder": "^3.3.0",
     "lottie-react": "^2.4.1",
