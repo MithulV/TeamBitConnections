@@ -92,9 +92,9 @@ function DetailsInput() {
   const { id } = useAuthStore();
 
   // Get contact data and source information from navigation state
-  const { 
-    contact: initialData = null, 
-    isAddMode = false, 
+  const {
+    contact: initialData = null,
+    isAddMode = false,
     source = 'unknown',
     currentUserId,
     userRole,
@@ -751,18 +751,20 @@ function DetailsInput() {
 
     return apiPayload;
   };
-
+  console.log(location.state);
   // Handle different API calls with alerts
   const handleSubmit = async (e) => {
     e.preventDefault();
     const apiPayload = transformFormDataForAPI(formData);
     console.log("Transformed API Payload:", apiPayload);
-
+    console.log("isAddMode:", isAddMode);
+    console.log("initialData:", initialData);
+    console.log("source:", source);
     try {
       if (isAddMode && initialData) {
         let response;
         let successMessage = "";
-        
+
         // Different API calls based on source
         if (source === 'middleman') {
           // For MiddleManRecords - approve contact
@@ -781,26 +783,42 @@ function DetailsInput() {
           successMessage = successCallback?.message || `${apiPayload.name || initialData.name} has been successfully updated.`;
           console.log("UserAssignments Update response:", response);
         }
-        
+
         // Show success alert before navigating
         showAlert("success", successMessage);
-        
+
         // Navigate back with success state after a delay
         setTimeout(() => {
           if (source === 'userassignments' && successCallback) {
             // Pass success info back to parent
-            navigate(-1, { 
-              state: { 
-                fromDetailsInput: true, 
-                success: true, 
+            navigate(-1, {
+              state: {
+                fromDetailsInput: true,
+                success: true,
                 message: successMessage,
-                refreshData: successCallback.refreshData 
-              } 
+                refreshData: successCallback.refreshData
+              }
             });
           } else {
             navigate(-1);
           }
-        }, 1500); // Show alert for 1.5 seconds before navigating
+        }, 1500);
+
+      } else if (isAddMode && !initialData || isAddMode && initialData == null) {
+        if (source == "admin") {
+          let response;
+          let successMessage = "";
+          response = await axios.post(
+            `http://localhost:8000/api/create-contact-by-admin/?contact_status=approved&event_verified=true`,
+            apiPayload
+          );
+          successMessage = `${apiPayload.name || initialData.name} has been successfully added to contacts.`;
+          console.log("admin Update response:", response);
+          showAlert("success", successMessage);
+          setTimeout(() => {
+            navigate(-1);
+          }, 1500);
+        }
       }
     } catch (error) {
       console.log("Error updating user", error);
@@ -818,10 +836,10 @@ function DetailsInput() {
           event_id: initialData.events[0]?.event_id,
         });
         console.log("Assign to user response:", response.data);
-        
+
         // Show success alert
         showAlert("success", `${initialData.name} has been successfully assigned to user.`);
-        
+
         // Navigate back after showing alert
         setTimeout(() => {
           navigate(-1);
@@ -1015,9 +1033,8 @@ function DetailsInput() {
           required={field.label.includes("*")}
           readOnly={field.readOnly || false}
           rows={3}
-          className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0077b8] resize-vertical ${
-            field.readOnly ? "bg-gray-100 cursor-not-allowed" : ""
-          }`}
+          className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0077b8] resize-vertical ${field.readOnly ? "bg-gray-100 cursor-not-allowed" : ""
+            }`}
         />
       ) : field.type === "date" ? (
         <DatePicker
@@ -1061,9 +1078,8 @@ function DetailsInput() {
           onChange={handleInputChange}
           required={field.label.includes("*")}
           readOnly={field.readOnly || false}
-          className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0077b8] ${
-            field.readOnly ? "bg-gray-100 cursor-not-allowed" : ""
-          }`}
+          className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0077b8] ${field.readOnly ? "bg-gray-100 cursor-not-allowed" : ""
+            }`}
         />
       )}
     </div>
