@@ -372,7 +372,7 @@ function MiddleManRecords() {
             >
               Form Data
             </button>
-            <button
+            <button 
               onClick={() => setActiveView("visitingCards")}
               className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${activeView === "visitingCards"
                 ? "bg-blue-600 text-white shadow-md"
