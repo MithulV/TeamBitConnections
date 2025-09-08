@@ -15,6 +15,8 @@ import Header from "../components/Header";
 import { useAuthStore } from "../store/AuthStore";
 import api from '../utils/axios';
 import Alert from "../components/Alert";
+import { useNavigate } from "react-router-dom";
+
 
 // Helper function to generate initials from a name
 const getInitials = (name = "") => {
@@ -25,6 +27,17 @@ const getInitials = (name = "") => {
     .join("")
     .toUpperCase();
 };
+
+// isEditing ? (
+//             <div className="p-5">
+//               <DetailsInput
+//                 onBack={handleEditCancel}
+//                 onSave={handleEditComplete}
+//                 initialData={editingUser}
+//                 isEditMode={true}
+//               />
+//             </div>
+//           ) : (
 
 // Helper function to assign a consistent color based on the contact's ID
 const colors = [
@@ -342,14 +355,11 @@ const FilterModal = ({
                 <h2 className="text-2xl font-bold">Advanced Filters</h2>
                 <p className="text-blue-100 text-sm">
                   {getActiveFilterCount() > 0
-                    ? `${getActiveFilterCount()} active filters • ${
-                        contacts.length
-                      } contacts found`
-                    : `Filter from ${
-                        filterOptions.skills?.length || 0
-                      }+ skills, ${
-                        filterOptions.companies?.length || 0
-                      }+ companies, and more`}
+                    ? `${getActiveFilterCount()} active filters • ${contacts.length
+                    } contacts found`
+                    : `Filter from ${filterOptions.skills?.length || 0
+                    }+ skills, ${filterOptions.companies?.length || 0
+                    }+ companies, and more`}
                 </p>
               </div>
             </div>
@@ -628,6 +638,8 @@ const MiddleManHome = () => {
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  const navigate = useNavigate();
+
   // Filter options from API
   const [filterOptions, setFilterOptions] = useState({
     genders: [],
@@ -672,7 +684,7 @@ const MiddleManHome = () => {
     message: "",
   });
 
-  const { role } = useAuthStore();
+  const { id, role } = useAuthStore();
 
   const showAlert = (severity, message) => {
     setAlert({
@@ -701,7 +713,8 @@ const MiddleManHome = () => {
           : "/api/get-filter-options";
 
         const response = await api.get(url);
-        setFilterOptions(response.data);
+        console.log("Filter Options: ", response.data)
+        setFilterOptions(response.data.data);
       } catch (error) {
         console.error("Failed to fetch filter options:", error);
       }
@@ -830,8 +843,21 @@ const MiddleManHome = () => {
 
   // Edit handlers
   const handleEditClick = (user) => {
-    setEditingUser(user || null);
-    setIsEditing(true);
+    // setEditingUser(user || null);
+    // setIsEditing(true);
+    navigate('/details-input', {
+      state: {
+        contact: user,
+        isAddMode: true,
+        source: 'middleman',
+        currentUserId: id,
+        userRole: role,
+        successCallback: {
+          message: `${user.name} has been successfully verified and added to contacts.`,
+          refreshData: true
+        }
+      }
+    });
   };
 
   const handleEditComplete = async (updatedData) => {
@@ -943,16 +969,7 @@ const MiddleManHome = () => {
       <Header />
       <div className="p-6">
         <div className="max-w-7xl mx-auto">
-          {isEditing ? (
-            <div className="p-5">
-              <DetailsInput
-                onBack={handleEditCancel}
-                onSave={handleEditComplete}
-                initialData={editingUser}
-                isEditMode={true}
-              />
-            </div>
-          ) : (
+          {(
             <>
               {/* Search and Filter Controls */}
               <div className="flex flex-col md:flex-row gap-4 items-center mb-6">
@@ -973,11 +990,10 @@ const MiddleManHome = () => {
                 {/* Filter Button */}
                 <button
                   onClick={() => setIsFilterModalOpen(true)}
-                  className={`flex items-center gap-2 px-4 py-3 border rounded-lg transition-colors ${
-                    getActiveFilterCount() > 0
-                      ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700"
-                      : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-                  }`}
+                  className={`flex items-center gap-2 px-4 py-3 border rounded-lg transition-colors ${getActiveFilterCount() > 0
+                    ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700"
+                    : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                    }`}
                   title="Open Filters"
                 >
                   <Filter size={20} />
