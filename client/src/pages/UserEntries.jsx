@@ -371,7 +371,7 @@ function UserEntries() {
             {profileData.map((participant, index) => {
               return (
                 <BasicDetailCard
-                  key={participant.contact_id || index}
+                  key={index}
                   name={participant.name}
                   phone={participant.phone_number}
                   email={participant.email_address}
