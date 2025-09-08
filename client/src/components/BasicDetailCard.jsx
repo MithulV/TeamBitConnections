@@ -1,5 +1,6 @@
 import React from 'react'
 import { PhoneOutgoing, Mail, MapPin, Building2, Edit2, Trash2, UserRoundPlus } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 
 function Tooltip({ label, children }) {
   const id = React.useId ? React.useId() : `tooltip-${Math.random().toString(36).slice(2, 9)}`
@@ -37,7 +38,6 @@ function Tooltip({ label, children }) {
   )
 }
 
-// Status Badge Component - Clean and minimal
 const StatusBadge = ({ status }) => {
   if (!status) return null;
   
@@ -83,16 +83,72 @@ export default function BasicDetailCard({
   onDelete, 
   editOrAdd, 
   assignedOn, 
-  status 
+  status,
+  // Props for navigation (still kept for compatibility)
+  contact_id,
+  phone_number,
+  email_address,
+  events = []
 }) {
+  const navigate = useNavigate();
+  
   const icons = {
     edit: <Edit2 size={14} />,
     add: <UserRoundPlus size={14} />
   }
 
+  // **UPDATED: Handle click differently based on editOrAdd type**
+  const handleClick = () => {
+    if (editOrAdd === "edit") {
+      // For edit mode, use navigation (as before)
+      const contactData = {
+        contact_id: contact_id,
+        name: name,
+        phone_number: phone_number || phone,
+        email_address: email_address || email,
+        events: events
+      };
+
+      const userToEdit = {
+        id: contactData.contact_id,
+        name: contactData.name,
+        phoneNumber: contactData.phone_number,
+        emailAddress: contactData.email_address,
+        events: contactData.events?.length > 0
+          ? contactData.events.map((event) => ({
+              eventId: event.event_id,
+              eventName: event.event_name || "",
+              eventRole: event.event_role || "",
+              eventDate: event.event_date || "",
+              eventHeldOrganization: event.event_held_organization || "",
+              eventLocation: event.event_location || "",
+            }))
+          : [{
+              eventId: "",
+              eventName: "",
+              eventRole: "",
+              eventDate: "",
+              eventHeldOrganization: "",
+              eventLocation: "",
+            }],
+      };
+
+      navigate('/form-input', { 
+        state: { 
+          contact: userToEdit,
+          isEditMode: true 
+        } 
+      });
+    } else if (editOrAdd === "add") {
+      // For add mode, use callback (opens DetailsInput in parent)
+      if (onType) {
+        onType();
+      }
+    }
+  };
+
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-lg transition-all min-w-0 overflow-visible">
-      {/* ✅ Move Status to Header Row - Better Layout */}
       <div className="p-5 pb-0">
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center gap-4 min-w-0 flex-1">
@@ -119,7 +175,6 @@ export default function BasicDetailCard({
           <div className="flex items-start gap-3 shrink-0">
             {status && <StatusBadge status={status} />}
             
-            {/* Contact Icons */}
             <div className="flex flex-col gap-y-2">
               <Tooltip label={phone}>
                 <a href={`tel:${phone}`} className="flex items-center gap-1 text-sm text-gray-500 hover:text-blue-600">
@@ -135,7 +190,6 @@ export default function BasicDetailCard({
           </div>
         </div>
 
-        {/* Details */}
         <div className="flex flex-row items-center gap-x-4 text-sm text-gray-600">
           <div className="flex items-center gap-2 min-w-0 flex-1">
             <MapPin size={14} className="shrink-0 text-brand" />
@@ -144,7 +198,6 @@ export default function BasicDetailCard({
             </Tooltip>
           </div>
 
-          {/* Vertical divider */}
           <div className="h-4 w-px bg-gray-300"></div>
 
           <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -156,8 +209,7 @@ export default function BasicDetailCard({
         </div>
       </div>
 
-      {/* Footer - Date and Action Buttons */}
-      <div className="flex items-center justify-between mt-3 px-4  py-1 border-t border-gray-100 bg-gray-50/30">
+      <div className="flex items-center justify-between mt-3 px-4 py-1 border-t border-gray-100 bg-gray-50/30">
         {assignedOn ? (
           <div className="text-xs text-gray-500">Assigned on : {assignedOn}</div>
         ) : (
@@ -168,7 +220,7 @@ export default function BasicDetailCard({
           {editOrAdd && (
             <Tooltip label={editOrAdd}>
               <button
-                onClick={onType}
+                onClick={handleClick}
                 className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
               >
                 {icons[editOrAdd] || null}

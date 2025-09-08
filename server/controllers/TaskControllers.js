@@ -45,7 +45,7 @@ const checkForUpdatedAtOneMonth = async (id) => {
             deadline.setDate(deadline.getDate() + 5); // 5 days from now
             const formattedDeadline = deadline.toISOString().split("T")[0]; // Format: YYYY-MM-DD
 
-            const taskDescription = `Update the details of ${result[0].name} whose phone number and email is ${result[0].phone_number} and ${result[0].email_address}`;
+            const taskDescription = `Update the details of <b>${result[0].name}</b> whose phone number and email is <b>${result[0].phone_number}</b> and <b>${result[0].email_address}</b>`;
 
             // First, check if the task already exists
             const existingTask = await db`
