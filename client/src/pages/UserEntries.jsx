@@ -286,7 +286,7 @@ function UserEntries() {
         `/api/contacts/${id}`
       );
       console.log("Contacts fetched successfully:", response.data.data);
-      setProfileData(response.data);
+      setProfileData(response.data.data);
     } catch (error) {
       console.error("Error fetching contacts:", error);
     }
@@ -371,7 +371,7 @@ function UserEntries() {
             {profileData.map((participant, index) => {
               return (
                 <BasicDetailCard
-                  key={participant.contact_id || index}
+                  key={index}
                   name={participant.name}
                   phone={participant.phone_number}
                   email={participant.email_address}
