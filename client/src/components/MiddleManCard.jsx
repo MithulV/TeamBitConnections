@@ -1,5 +1,14 @@
 import React, { useState } from "react";
-import { Edit, ExternalLink, Trash2, MapPin, Building, Phone, Mail, Notebook, } from "lucide-react";
+import {
+  Edit,
+  ExternalLink,
+  Trash2,
+  MapPin,
+  Building,
+  Phone,
+  Mail,
+  Notebook,
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 // Remove the DeleteConfirmationModal from here since we're using the parent's modal
@@ -7,7 +16,7 @@ const MiddleManCard = ({ contact, onDelete, onEdit }) => {
   const navigate = useNavigate();
   // Remove local modal state since parent handles the modal
   console.log(contact);
-  
+
   const handleViewProfile = () => {
     navigate(`/profile/${contact.id}`, { state: contact });
   };
@@ -66,10 +75,7 @@ const MiddleManCard = ({ contact, onDelete, onEdit }) => {
             >
               {contact.name}
             </h3>
-            <p
-              className="text-sm text-gray-600 truncate"
-              title={contact.role}
-            >
+            <p className="text-sm text-gray-600 truncate" title={contact.role}>
               {contact.role}
             </p>
           </div>
@@ -102,28 +108,48 @@ const MiddleManCard = ({ contact, onDelete, onEdit }) => {
 
       {/* Contact Details */}
       <div className="space-y-3 mb-4">
-        <div className="flex items-center gap-2 text-sm text-gray-600 min-w-0">
-          <Building size={14} className="flex-shrink-0" />
-          <span className="truncate" title={contact.company}>
-            {contact.company}
-          </span>
-          <MapPin size={14} className="ml-2 flex-shrink-0" />
-          <span className="truncate" title={contact.location}>
-            {contact.location}
-          </span>
+        {/* Company and Address Section - Split into two halves */}
+        <div className="grid grid-cols-2 gap-3 text-sm text-gray-600">
+          {/* Company - First Half */}
+          <div className="flex items-center gap-2 min-w-0">
+            <Building size={14} className="flex-shrink-0" />
+            <span
+              className="truncate hover:text-gray-800 transition-colors duration-200"
+              title={contact.company || "No company info"}
+            >
+              {contact.company || "N/A"}
+            </span>
+          </div>
+
+          {/* Address - Second Half */}
+          <div className="flex items-center gap-2 min-w-0">
+            <MapPin size={14} className="flex-shrink-0" />
+            <span
+              className="truncate hover:text-gray-800 transition-colors duration-200"
+              title={contact.location || "No location info"}
+            >
+              {contact.location || "N/A"}
+            </span>
+          </div>
         </div>
 
         <div className="space-y-2 text-sm text-gray-600">
           <div className="flex items-center gap-2 min-w-0">
             <Phone size={14} className="flex-shrink-0" />
-            <span className="truncate" title={contact.phone_number}>
-              {contact.phone_number}
+            <span
+              className="truncate hover:text-gray-800 transition-colors duration-200"
+              title={contact.phone_number || "No phone number"}
+            >
+              {contact.phone_number || "N/A"}
             </span>
           </div>
           <div className="flex items-center gap-2 min-w-0">
             <Mail size={14} className="flex-shrink-0" />
-            <span className="truncate" title={contact.email_address}>
-              {contact.email_address}
+            <span
+              className="truncate hover:text-gray-800 transition-colors duration-200"
+              title={contact.email_address || "No email address"}
+            >
+              {contact.email_address || "N/A"}
             </span>
           </div>
         </div>
@@ -144,7 +170,9 @@ const MiddleManCard = ({ contact, onDelete, onEdit }) => {
           {contact.skills && contact.skills.length > 2 && (
             <span
               className="px-2 py-1 bg-gray-200 text-gray-600 rounded text-xs font-medium"
-              title={`+${contact.skills.length - 2} more skills: ${contact.skills.slice(2).join(", ")}`}
+              title={`+${
+                contact.skills.length - 2
+              } more skills: ${contact.skills.slice(2).join(", ")}`}
             >
               +{contact.skills.length - 2}
             </span>

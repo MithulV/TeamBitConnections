@@ -886,7 +886,7 @@ const MiddleManHome = () => {
       setIsEditing(false);
       setEditingUser(null);
     } catch (error) {
-      console.error("Failed to update contact:", error);
+      console.error("Failed to update contact:",error);
       showAlert("error", "Failed to update contact. Please try again.");
     }
   };
