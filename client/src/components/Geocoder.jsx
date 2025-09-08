@@ -29,7 +29,7 @@ class IndianGlobalGeocodingService {
     return addressFields.some(field => field && field.toString().trim().length > 0);
   }
 
-  // ✅ UPDATED: Global strategies (removed India-specific defaults)
+  // UPDATED: Global strategies (removed India-specific defaults)
   generateGlobalStrategies(contact) {
     const { 
       street = '', 

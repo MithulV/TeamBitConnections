@@ -286,7 +286,7 @@ function UserEntries() {
         `/api/contacts/${id}`
       );
       console.log("Contacts fetched successfully:", response.data.data);
-      setProfileData(response.data);
+      setProfileData(response.data.data);
     } catch (error) {
       console.error("Error fetching contacts:", error);
     }
