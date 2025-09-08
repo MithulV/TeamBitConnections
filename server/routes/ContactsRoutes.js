@@ -33,6 +33,7 @@ import {
 import { GetTasks, CompleteTask,CreateTask } from "../controllers/TaskControllers.js";
 import { createTask } from "node-cron";
 import { ImportContactsFromCSV,uploadCSV } from "../controllers/CsvImportControllers.js";
+import verifyToken from "../middlewares/AuthMiddleware.js";
 const router = express.Router();
 router.get("/get-all-contact/",GetAllContact)
 router.get("/contacts/filter/", GetFilteredContacts);
