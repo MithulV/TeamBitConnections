@@ -2,8 +2,8 @@ import React from 'react';
 import { Route, Routes, Navigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Login from '../pages/Login';
-import UserHome from '../pages/UserHome';
-import Admin from '../pages/admin';
+import UserHome from '../pages/userHome';
+import Admin from '../pages/Admin';
 import MiddleManHome from '../pages/MiddleManHome';
 import MiddleManRecords from '../pages/MiddleManRecords';
 import MiddleManTasks from '../pages/MiddleManTasks';
@@ -15,6 +15,9 @@ import DetailsInput from '../components/DetailsInput';
 import VisitingCardDetails from '../pages/VisitingCardDetails';
 import UserAssignments from '../pages/UserAssignments';
 import TaskAssignments from '../pages/TaskAssignments';
+// Import the new components
+import CameraInput from '../components/CameraInput';
+import FormInput from '../components/FormInput';
 // A helper component to render the correct home page based on role
 const RoleBasedHome = () => {
     const { role } = useAuthStore();
@@ -103,6 +106,10 @@ function Applayout() {
                                 <TaskAssignments />
                             </AdminRouteWrapper>
                         } />
+
+                        <Route path="/camera-input" element={<CameraInput />} />
+                        <Route path="/form-input" element={<FormInput />} />
+                        <Route path="/details-input" element={<DetailsInput />} />
                     </Route>
 
                     {/* Fallback route to redirect to home if logged in, or login if not */}
@@ -112,6 +119,5 @@ function Applayout() {
         </div>
     );
 }
-
 
 export default Applayout;

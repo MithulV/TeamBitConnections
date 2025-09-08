@@ -212,19 +212,18 @@ const TasksPage = () => {
           </h3>
           <div className="flex items-center gap-3 mb-3">
             <span
-              className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                task.task_type === "assigned"
-                  ? "bg-blue-100 text-blue-700"
-                  : task.task_type === "automated"
+              className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${task.task_type === "assigned"
+                ? "bg-blue-100 text-blue-700"
+                : task.task_type === "automated"
                   ? "bg-purple-100 text-purple-700"
                   : "bg-gray-100 text-gray-700"
-              }`}
+                }`}
             >
               {task.task_type === "assigned"
                 ? "👤 Assigned"
                 : task.task_type === "automated"
-                ? "🤖 Automated"
-                : `📋 ${task.task_type}`}
+                  ? "🤖 Automated"
+                  : `📋 ${task.task_type}`}
             </span>
           </div>
           <div className="flex items-center gap-4 text-sm text-gray-600 mb-3">
@@ -244,12 +243,13 @@ const TasksPage = () => {
           </div>
         </div>
       </div>
+      <div className="flex h-19 flex-1">
+        <p className="text-gray-600 text-sm mb-4 line-clamp-3">
+          {task.task_description}
+        </p>
+      </div>
 
-      <p className="text-gray-600 text-sm mb-4 line-clamp-3">
-        {task.task_description}
-      </p>
-
-      <div className="flex gap-2">
+      <div className="flex  gap-2">
         <button
           onClick={() => handleViewDetails(task)}
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
@@ -389,19 +389,18 @@ const TasksPage = () => {
               {/* Task Type and Category */}
               <div className="flex items-center gap-3 mb-4">
                 <span
-                  className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                    selectedTask.task_type === "assigned"
-                      ? "bg-blue-100 text-blue-700"
-                      : selectedTask.task_type === "automated"
+                  className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${selectedTask.task_type === "assigned"
+                    ? "bg-blue-100 text-blue-700"
+                    : selectedTask.task_type === "automated"
                       ? "bg-purple-100 text-purple-700"
                       : "bg-gray-100 text-gray-700"
-                  }`}
+                    }`}
                 >
                   {selectedTask.task_type === "assigned"
                     ? "👤 Assigned"
                     : selectedTask.task_type === "automated"
-                    ? "🤖 Automated"
-                    : `📋 ${selectedTask.task_type}`}
+                      ? "🤖 Automated"
+                      : `📋 ${selectedTask.task_type}`}
                 </span>
                 <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-700">
                   Category: {selectedTask.task_assigned_category}
