@@ -61,6 +61,7 @@ router.get("/get-tasks/", GetTasks);
 router.put("/complete-task/:id", CompleteTask);
 router.get("/get-filter-options", GetFilterOptions);
 router.post("/create-task",CreateTask);
+router.get("/searchContacts", SearchContacts)
 //csv file upload
 router.post('/import-csv', uploadCSV, ImportContactsFromCSV);
 export default router;
