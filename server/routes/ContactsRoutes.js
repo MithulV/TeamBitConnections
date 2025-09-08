@@ -32,7 +32,8 @@ import {
 } from "../controllers/PhotoControllers.js";
 import { GetTasks, CompleteTask,CreateTask } from "../controllers/TaskControllers.js";
 import { createTask } from "node-cron";
-import verifyToken from '../middlewares/AuthMiddleware.js'
+import { ImportContactsFromCSV,uploadCSV } from "../controllers/CsvImportControllers.js";
+import verifyToken from "../middlewares/AuthMiddleware.js";
 const router = express.Router();
 router.get("/get-all-contact/",GetAllContact)
 router.get("/contacts/filter/", GetFilteredContacts);
@@ -45,6 +46,7 @@ router.post("/create-contact", CreateContact);
 router.post("/upload-contact/", upload.single("image"), UploadImage);
 router.get("/get-contact-images/:userId", GetPicturesByUserId);
 router.put("/update-contact/:contact_id", UpdateContact);
+router.post("/create-contact-by-admin",UpdateContact);
 router.delete("/delete-contact/:id", DeleteContact);
 router.post("/add-event-existing-contact/:contactId",AddEventToExistingContact);
 router.put("/update-contacts-and-events/:id", UpdateContactAndEvents);
@@ -59,4 +61,6 @@ router.get("/get-tasks/", GetTasks);
 router.put("/complete-task/:id", CompleteTask);
 router.get("/get-filter-options", GetFilterOptions);
 router.post("/create-task",CreateTask);
+//csv file upload
+router.post('/import-csv', uploadCSV, ImportContactsFromCSV);
 export default router;
