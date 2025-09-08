@@ -374,6 +374,10 @@ export const UpdateContactAndEvents = async (req, res) => {
 
 // UPDATE: A contact's core details
 export const UpdateContact = async (req, res) => {
+    console.log("=== UpdateContact Function Called ===");
+    console.log("Contact ID:", req.params.contact_id);
+    console.log("Query params:", req.query);
+    console.log("Request body:", JSON.stringify(req.body, null, 2));
 
     const { contact_id } = req.params;
     const {event_verified,contact_status}=req.query;
