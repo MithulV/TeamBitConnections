@@ -290,9 +290,8 @@ export const CreateContact = async (req, res) => {
                 contact_id, event_name, event_role, event_date, event_held_organization, event_location, verified, created_by
               ) VALUES (
                 ${contactId}, ${event.event_name}, ${event.event_role || null}, ${event.event_date || null}, 
-                ${event.event_held_organization || null}, ${event.event_location || null}, ${
-                            event.verified || false
-                        }, ${created_by || null}
+                ${event.event_held_organization || null}, ${event.event_location || null}, ${event.verified || false},
+                ${created_by || null}
               ) RETURNING *
             `;
                         createdEvents.push(newEvent);
@@ -336,20 +335,21 @@ export const GetContacts = async (req, res) => {
     try {
         const { userId } = req.params;
         const contacts = await db`
-          SELECT
-              c.*,
-              (SELECT row_to_json(ca) FROM contact_address ca WHERE ca.contact_id = c.contact_id LIMIT 1) as address,
-              (SELECT row_to_json(ce) FROM contact_education ce WHERE ce.contact_id = c.contact_id LIMIT 1) as education,
-              (SELECT json_agg(cx) FROM contact_experience cx WHERE cx.contact_id = c.contact_id) as experiences,
-              json_build_array(row_to_json(e)) as events -- Event data as JSON object
-          FROM
-              contact c
-          INNER JOIN 
-              event e ON e.contact_id = c.contact_id
-          WHERE 
-              e.created_by = 1
-          ORDER BY
-              c.contact_id DESC, e.event_id DESC
+SELECT
+    c.*,
+    (SELECT row_to_json(ca) FROM contact_address ca WHERE ca.contact_id = c.contact_id LIMIT 1) as address,
+    (SELECT row_to_json(ce) FROM contact_education ce WHERE ce.contact_id = c.contact_id LIMIT 1) as education,
+    (SELECT json_agg(cx) FROM contact_experience cx WHERE cx.contact_id = c.contact_id) as experiences,
+    json_build_array(row_to_json(e)) as events -- Event data as JSON object
+FROM
+    contact c
+INNER JOIN 
+    event e ON e.contact_id = c.contact_id
+WHERE 
+    e.created_by = 1
+ORDER BY
+    c.contact_id DESC, e.event_id DESC
+
     `;
 
         return res.status(200).json({
@@ -962,29 +962,24 @@ export const SearchContacts = async (req, res) => {
     const searchTerm = `%${q}%`;
 
     try {
-      const contacts = await db`
-        SELECT
-          contact_id,
-          name,
-          email_address,
-          phone_number
-        FROM
-          contact
-        WHERE
-          (name ILIKE ${searchTerm} OR
-          email_address ILIKE ${searchTerm} OR
-          phone_number ILIKE ${searchTerm}) AND
-          EXISTS (
-            SELECT 1 
-            FROM event 
-            WHERE event.contact_id = contact.contact_id 
-              AND event.verified = true
-          )
-        ORDER BY
-          name
-        LIMIT 10
-      `;
-
+        const contacts = await db`
+      SELECT
+        contact_id,
+        name,
+        email_address,
+        phone_number,
+        skills
+      FROM
+        contact
+      WHERE
+        name ILIKE ${searchTerm} OR
+        email_address ILIKE ${searchTerm} OR
+        phone_number ILIKE ${searchTerm} OR
+        skills ILIKE ${searchTerm}
+      ORDER BY
+        name
+      LIMIT 10
+    `;
 
         return res.status(200).json({
             success: true,
