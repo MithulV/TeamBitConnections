@@ -962,24 +962,29 @@ export const SearchContacts = async (req, res) => {
     const searchTerm = `%${q}%`;
 
     try {
-        const contacts = await db`
-      SELECT
-        contact_id,
-        name,
-        email_address,
-        phone_number,
-        skills
-      FROM
-        contact
-      WHERE
-        name ILIKE ${searchTerm} OR
-        email_address ILIKE ${searchTerm} OR
-        phone_number ILIKE ${searchTerm} OR
-        skills ILIKE ${searchTerm}
-      ORDER BY
-        name
-      LIMIT 10
-    `;
+const contacts = await db`
+  SELECT
+    contact_id,
+    name,
+    email_address,
+    phone_number
+  FROM
+    contact
+  WHERE
+    (name ILIKE ${searchTerm} OR
+     email_address ILIKE ${searchTerm} OR
+     phone_number ILIKE ${searchTerm}) AND
+    EXISTS (
+      SELECT 1 
+      FROM event 
+      WHERE event.contact_id = contact.contact_id 
+        AND event.verified = true
+    )
+  ORDER BY
+    name
+  LIMIT 10
+`;
+
 
         return res.status(200).json({
             success: true,
