@@ -285,7 +285,7 @@ function UserEntries() {
       const response = await api.get(
         `/api/contacts/${id}`
       );
-      console.log("Contacts fetched successfully:", response.data);
+      console.log("Contacts fetched successfully:", response.data.data);
       setProfileData(response.data);
     } catch (error) {
       console.error("Error fetching contacts:", error);
