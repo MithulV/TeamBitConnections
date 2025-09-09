@@ -2,11 +2,16 @@ import cron from "node-cron";
 import db from "../src/config/db.js";
 import dotenv from "dotenv";
 import nodemailer from "nodemailer";
-// Schedule updated_at 2 month check daily at 6:00 AM
+import { logContactModification } from "./ModificationHistoryControllers.js";
+
+
+// Schedule updated_at 2 month check daily at 9:00 AM
 cron.schedule("0 9 * * *", async () => {
     console.log("task : ", new Date());
     await checkForTask();
 });
+
+
 // Schedule birthday check daily at 6:00 AM
 cron.schedule("0 6 * * *", async () => {
     console.log("Running daily birthday check at:", new Date());
@@ -17,11 +22,24 @@ cron.schedule("0 6 * * *", async () => {
     }
 });
 
+
+// Schedule contact check daily at 7:00 AM (checks for 30 day intervals)
+cron.schedule("0 7 * * *", async () => {
+    console.log("Running daily contact check at:", new Date());
+    try {
+        await checkLastContactDate();
+    } catch (error) {
+        console.error("Contact date check failed:", error);
+    }
+});
+
+
 const checkForTask = async () => {
     try {
         const rows =
             await db`SELECT DISTINCT c.contact_id FROM contact c INNER JOIN event e ON c.contact_id=e.contact_id WHERE e.verified = TRUE`;
         console.log(`Found ${rows.length} verified contacts:`, rows);
+
         // records whose updated_at date > 2 months will be handled here
         for (const contact of rows) {
             console.log(contact.contact_id);
@@ -34,6 +52,7 @@ const checkForTask = async () => {
     }
 };
 
+
 const checkForUpdatedAtOneMonth = async (id) => {
     try {
         let result =
@@ -45,7 +64,7 @@ const checkForUpdatedAtOneMonth = async (id) => {
             deadline.setDate(deadline.getDate() + 5); // 5 days from now
             const formattedDeadline = deadline.toISOString().split("T")[0]; // Format: YYYY-MM-DD
 
-            const taskDescription = `Update the details of <b>${result[0].name}</b> whose phone number and email is <b>${result[0].phone_number}</b> and <b>${result[0].email_address}</b>`;
+            const taskDescription = `Update the details of ${result[0].name} whose phone number and email is ${result[0].phone_number} and ${result[0].email_address}`;
 
             // First, check if the task already exists
             const existingTask = await db`
@@ -59,13 +78,14 @@ const checkForUpdatedAtOneMonth = async (id) => {
             // Only insert if no existing task found
             if (!existingTask || existingTask.length === 0) {
                 const insertResult = await db`
-                    INSERT INTO tasks (task_assigned_category, task_title, task_description, task_deadline, task_type) 
+                    INSERT INTO tasks (task_assigned_category, task_title, task_description, task_deadline, task_type, contact_id) 
                     VALUES (
                         ${result[0].category},
-                        ${"Contact Details Updations"},
+                        ${"Monthly Personal Check of Details"},
                         ${taskDescription},
                         ${formattedDeadline},
-                        ${"automated"}
+                        ${"automated"},
+                        ${result[0].contact_id}
                     )`;
 
                 console.log("Task created:", insertResult);
@@ -77,6 +97,150 @@ const checkForUpdatedAtOneMonth = async (id) => {
         console.error("Error in checkForUpdatedAtOneMonth:", error);
     }
 };
+
+
+// Function to check contacts that haven't been contacted in 30 days (1 month)
+const checkLastContactDate = async () => {
+    try {
+        console.log("Checking for contacts not contacted in the last 30 days...");
+
+        // Query to find contacts where last CONTACT modification was more than 30 days ago
+        const contactsNeedingContact = await db`
+            WITH last_contact_dates AS (
+                SELECT 
+                    c.contact_id,
+                    c.name,
+                    c.phone_number,
+                    c.email_address,
+                    c.category,
+                    c.created_at as contact_created_at,
+                    MAX(CASE 
+                        WHEN cmh.modification_type = 'CONTACT' 
+                        THEN cmh.created_at 
+                        ELSE NULL 
+                    END) as last_contact_date,
+                    COUNT(CASE 
+                        WHEN cmh.modification_type = 'CONTACT' 
+                        THEN 1 
+                        ELSE NULL 
+                    END) as total_contacts
+                FROM contact c
+                LEFT JOIN contact_modification_history cmh ON c.contact_id = cmh.contact_id
+                WHERE c.contact_id IN (
+                    SELECT DISTINCT contact_id 
+                    FROM event 
+                    WHERE verified = TRUE
+                )
+                GROUP BY c.contact_id, c.name, c.phone_number, c.email_address, c.category, c.created_at
+            )
+            SELECT 
+                contact_id,
+                name,
+                phone_number,
+                email_address,
+                category,
+                contact_created_at,
+                last_contact_date,
+                total_contacts,
+                CASE 
+                    WHEN last_contact_date IS NULL THEN 
+                        EXTRACT(DAY FROM (NOW() - contact_created_at))
+                    ELSE 
+                        EXTRACT(DAY FROM (NOW() - last_contact_date))
+                END as days_since_last_contact
+            FROM last_contact_dates
+            WHERE 
+                -- Never been contacted and contact created more than 30 days ago
+                (last_contact_date IS NULL AND contact_created_at <= NOW() - INTERVAL '30 days')
+                OR 
+                -- Last contact was more than 30 days ago
+                (last_contact_date IS NOT NULL AND last_contact_date <= NOW() - INTERVAL '30 days')
+            ORDER BY days_since_last_contact DESC
+        `;
+
+        console.log(`Found ${contactsNeedingContact.length} contacts needing follow-up contact:`, 
+                   contactsNeedingContact.map(c => ({ 
+                       name: c.name, 
+                       days: Math.floor(c.days_since_last_contact),
+                       totalContacts: c.total_contacts 
+                   })));
+
+        // Create tasks for each contact that needs follow-up
+        for (const contact of contactsNeedingContact) {
+            await createContactFollowupTask(contact);
+        }
+
+        return {
+            total: contactsNeedingContact.length,
+            contacts: contactsNeedingContact
+        };
+
+    } catch (error) {
+        console.error("Error in checkLastContactDate:", error);
+        throw error;
+    }
+};
+
+
+// Function to create tasks for contacts needing follow-up contact
+const createContactFollowupTask = async (contact) => {
+    try {
+        const deadline = new Date();
+        deadline.setDate(deadline.getDate() + 7); // 7 days from now
+        const formattedDeadline = deadline.toISOString().split("T")[0];
+
+        const daysSince = Math.floor(contact.days_since_last_contact);
+        const contactHistory = contact.total_contacts > 0 ? 
+            `Last contacted ${daysSince} days ago` : 
+            `Never been contacted (${daysSince} days since added)`;
+        
+        const taskDescription = `Follow-up contact needed for ${contact.name} (Phone: ${contact.phone_number}, Email: ${contact.email_address}). ${contactHistory}. Total previous contacts: ${contact.total_contacts}. Please reach out to maintain relationship.`;
+
+        // Check if similar task already exists (prevent duplicates)
+        const existingTask = await db`
+            SELECT 1 FROM tasks 
+            WHERE task_assigned_category = ${contact.category}
+            AND task_title = ${"Contact Follow-up Required"}
+            AND task_type = ${"automated"}
+            AND task_description LIKE ${'%' + contact.name + '%'}
+            AND task_completion = FALSE
+            LIMIT 1`;
+
+        // Only create task if it doesn't exist
+        if (!existingTask || existingTask.length === 0) {
+            const insertResult = await db`
+                INSERT INTO tasks (
+                    task_assigned_category, 
+                    task_title, 
+                    task_description, 
+                    task_deadline, 
+                    task_type,
+                    task_completion,
+                    contact_id
+                ) 
+                VALUES (
+                    ${contact.category},
+                    ${"Contact Follow-up Required"},
+                    ${taskDescription},
+                    ${formattedDeadline},
+                    ${"automated"},
+                    FALSE,
+                    ${contact.contact_id}
+                )`;
+
+            console.log(`Contact follow-up task created for: ${contact.name} (${daysSince} days since last contact)`);
+            return insertResult;
+        } else {
+            console.log(`Contact follow-up task already exists for: ${contact.name}`);
+            return null;
+        }
+
+    } catch (error) {
+        console.error(`Error creating contact follow-up task for contact ${contact.contact_id}:`, error);
+        throw error;
+    }
+};
+
 
 // Create manual task
 export const CreateTask = async (req, res) => {
@@ -120,6 +284,7 @@ export const CreateTask = async (req, res) => {
         });
     }
 };
+
 
 export const GetTasks = async (req, res) => {
     const { category } = req.query;
@@ -255,19 +420,46 @@ export const GetTasks = async (req, res) => {
     }
 };
 
+
 export const CompleteTask = async (req, res) => {
     const { id } = req.params;
+    console.log(id)
+    const { modified_by } = req.body;
+    
     try {
-        const task =
-            await db`UPDATE tasks SET task_completion = TRUE WHERE id=${id}`;
+        // Get task details including contact_id
+        const taskDetails = await db`SELECT * FROM tasks WHERE id=${id} LIMIT 1`;
+        
+        if (taskDetails.length === 0) {
+            return res.status(404).json({ 
+                success: false, 
+                error: "Task not found" 
+            });
+        }
+
+        const task = taskDetails[0];
+
+        // Update task as completed
+        await db`UPDATE tasks SET task_completion = TRUE WHERE id=${id}`;
+
+        // Log contact modification if contact_id exists
+        console.log(task.contact_id, modified_by)
+        if (task.contact_id && modified_by) {
+            await logContactModification(db, task.contact_id, modified_by, "CONTACT");
+        }
+
         return res.status(200).json({ success: true });
+
     } catch (error) {
-        console.error("Error fetching tasks:", error);
-        return res
-            .status(500)
-            .json({ success: false, error: "An internal server error occurred." });
+        console.error("Error completing task:", error);
+        return res.status(500).json({ 
+            success: false, 
+            error: "An internal server error occurred." 
+        });
     }
 };
+
+
 
 dotenv.config();
 // Configure email transporter
@@ -280,6 +472,7 @@ const transporter = nodemailer.createTransport({
         pass: process.env.EMAIL_PASS,
     },
 });
+
 
 // Birthday email template
 const createBirthdayEmail = (name) => {
@@ -315,6 +508,7 @@ const createBirthdayEmail = (name) => {
     };
 };
 
+
 // Function to send birthday email
 const sendBirthdayEmail = async (user) => {
     try {
@@ -333,25 +527,13 @@ const sendBirthdayEmail = async (user) => {
             `Birthday email sent to ${user.name} (${user.email}): ${info.messageId}`
         );
 
-        // Log to database (optional)
-        // await db`
-        //     INSERT INTO email_logs (user_id, email_type, sent_at, message_id, status)
-        //     VALUES (${user.user_id}, 'birthday', NOW(), ${info.messageId}, 'sent')
-        // `;
-
         return { success: true, messageId: info.messageId };
     } catch (error) {
         console.error(`Failed to send birthday email to ${user.name}:`, error);
-
-        // // Log error to database (optional)
-        // await db`
-        //     INSERT INTO email_logs (user_id, email_type, sent_at, status, error_message)
-        //     VALUES (${user.user_id}, 'birthday', NOW(), 'failed', ${error.message})
-        // `;
-
         return { success: false, error: error.message };
     }
 };
+
 
 // Function to check and send birthday emails
 const checkBirthdays = async () => {

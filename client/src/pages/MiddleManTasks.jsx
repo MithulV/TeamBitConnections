@@ -14,6 +14,7 @@ import { useAuthStore } from "../store/AuthStore";
 import api from '../utils/axios';
 
 const TasksPage = () => {
+  const { id } = useAuthStore()
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -86,7 +87,7 @@ const TasksPage = () => {
       const taskToComplete = tasks.find((task) => task.id === taskId);
 
       const response = await api.put(
-        `/api/complete-task/${taskId}`
+        `/api/complete-task/${taskId}`, { modified_by: id }
       );
 
       if (response.data.success) {

@@ -79,7 +79,7 @@ function FormInput() {
 
         if (contactChanged) {
           // Contact info changed, update the contact
-          response = await axios.put(`http://localhost:8000/api/update-contacts-and-events/${selectedContact.contact_id}`, formData);
+          response = await axios.put(`http://localhost:8000/api/update-contacts-and-events/${selectedContact.contact_id}/${id}`, formData);
           showAlert("success", `Contact has been successfully updated.`);
         } else {
           // Contact info unchanged, just add new event
@@ -92,7 +92,7 @@ function FormInput() {
             verified: false
           };
           
-          response = await axios.post(`http://localhost:8000/api/add-event-existing-contact/${selectedContact.contact_id}`, eventData);
+          response = await axios.post(`http://localhost:8000/api/add-event-existing-contact/${selectedContact.contact_id}/${id}`, eventData);
           showAlert("success", `New event added to existing contact successfully!`);
         }
       } else {

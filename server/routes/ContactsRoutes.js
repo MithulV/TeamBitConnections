@@ -34,6 +34,7 @@ import { GetTasks, CompleteTask,CreateTask } from "../controllers/TaskController
 import { createTask } from "node-cron";
 import { ImportContactsFromCSV,uploadCSV } from "../controllers/CsvImportControllers.js";
 import verifyToken from "../middlewares/AuthMiddleware.js";
+import { getModificationHistory } from "../controllers/ModificationHistoryControllers.js";
 const router = express.Router();
 router.get("/get-all-contact/",GetAllContact)
 router.get("/contacts/filter/", GetFilteredContacts);
@@ -48,8 +49,8 @@ router.get("/get-contact-images/:userId", GetPicturesByUserId);
 router.put("/update-contact/:contact_id", UpdateContact);
 router.post("/create-contact-by-admin",UpdateContact);
 router.delete("/delete-contact/:id", DeleteContact);
-router.post("/add-event-existing-contact/:contactId",AddEventToExistingContact);
-router.put("/update-contacts-and-events/:id", UpdateContactAndEvents);
+router.post("/add-event-existing-contact/:contactId/:userId",AddEventToExistingContact);
+router.put("/update-contacts-and-events/:id/:userId", UpdateContactAndEvents);
 router.delete("/delete-image/:id", DeleteImage);
 router.post("/verify-image/:id", VerifyImages);
 router.post("/assign/", createAssignment);
@@ -62,6 +63,7 @@ router.put("/complete-task/:id", CompleteTask);
 router.get("/get-filter-options", GetFilterOptions);
 router.post("/create-task",CreateTask);
 router.get("/searchContacts", SearchContacts)
+router.get("/get-modification-history/", getModificationHistory)
 //csv file upload
 router.post('/import-csv', uploadCSV, ImportContactsFromCSV);
 export default router;
