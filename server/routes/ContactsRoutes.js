@@ -58,7 +58,7 @@ router.post("/upload-contact/", upload.single("image"), UploadImage);
 router.get("/get-contact-images/:userId", GetPicturesByUserId);
 router.put("/update-contact/:contact_id", UpdateContact);
 router.post("/create-contact-by-admin", UpdateContact);
-router.delete("/delete-contact/:id", DeleteContact);
+router.delete("/delete-contact/:contactId", DeleteContact);
 router.post("/add-event-existing-contact/:contactId/:userId",AddEventToExistingContact);
 router.put("/update-contacts-and-events/:id/:userId", UpdateContactAndEvents);
 router.delete("/delete-image/:id", DeleteImage);
