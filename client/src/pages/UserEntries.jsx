@@ -113,6 +113,7 @@ function UserEntries() {
   const [activeView, setActiveView] = useState("formDetails");
   const [profileData, setProfileData] = useState([]);
   const [imageData, setImageData] = useState([]);
+  const { id, role } = useAuthStore();
 
   const [alert, setAlert] = useState({
     isOpen: false,
@@ -137,7 +138,7 @@ function UserEntries() {
 
   const handleDeleteClick = (contact_id) => {
     const user = profileData.find((user) => user.contact_id === contact_id);
-    setUserToDelete({ id: user?.contact_id, name: user?.name || "this user" });
+    setUserToDelete({ id: user?.contact_id, name: user?.name || "this user", event_id: user?.events[0].event_id });
     setShowDeleteModal(true);
   };
 
@@ -172,15 +173,22 @@ function UserEntries() {
           );
         } else {
           const response = await axios.delete(
-            `http://localhost:8000/api/delete-contact/${userToDelete.id}?userType=${role}`
+            `http://localhost:8000/api/delete-contact/${userToDelete.id}?userType=${role}&userId=${id}&eventId=${userToDelete.event_id}`
           );
 
           if (response.data.action === "deleted") {
-            setProfileData((prevData) =>
-              prevData.filter(
-                (contact) => contact.contact_id !== userToDelete.id
-              )
-            );
+            setProfileData((prevData) => {
+              return prevData.filter((contact) => {
+                // Only remove the specific contact with matching contact_id AND event_id
+                const shouldRemove = (
+                  contact.contact_id === userToDelete.id &&
+                  contact.events[0].event_id === userToDelete.event_id
+                );
+
+                return !shouldRemove; // Keep contact if shouldRemove is false
+              });
+            });
+
             showAlert("success", response.data.message);
           } else if (response.data.action === "rejected") {
             setProfileData((prevData) =>
@@ -197,7 +205,7 @@ function UserEntries() {
             showAlert(
               "success",
               response.data.message ||
-                `${userToDelete.name} has been processed successfully.`
+              `${userToDelete.name} has been processed successfully.`
             );
           }
         }
@@ -211,7 +219,7 @@ function UserEntries() {
           showAlert(
             "error",
             error.response.data.message ||
-              "You don't have permission to delete this contact."
+            "You don't have permission to delete this contact."
           );
         } else if (error.response?.status === 404) {
           showAlert("error", "Contact not found.");
@@ -246,24 +254,24 @@ function UserEntries() {
           events:
             participant.events?.length > 0
               ? participant.events.map((event) => ({
-                  // **FIXED: Map to the correct property names that FormInput expects**
-                  eventId: event.event_id,
-                  eventName: event.event_name || "",
-                  eventRole: event.event_role || "",
-                  eventDate: event.event_date || "",
-                  eventHeldOrganization: event.event_held_organization || "",
-                  eventLocation: event.event_location || "",
-                }))
+                // **FIXED: Map to the correct property names that FormInput expects**
+                eventId: event.event_id,
+                eventName: event.event_name || "",
+                eventRole: event.event_role || "",
+                eventDate: event.event_date || "",
+                eventHeldOrganization: event.event_held_organization || "",
+                eventLocation: event.event_location || "",
+              }))
               : [
-                  {
-                    eventId: "",
-                    eventName: "",
-                    eventRole: "",
-                    eventDate: "",
-                    eventHeldOrganization: "",
-                    eventLocation: "",
-                  },
-                ],
+                {
+                  eventId: "",
+                  eventName: "",
+                  eventRole: "",
+                  eventDate: "",
+                  eventHeldOrganization: "",
+                  eventLocation: "",
+                },
+              ],
         };
 
         console.log("Prepared user data for edit:", userToEdit);
@@ -281,8 +289,6 @@ function UserEntries() {
       console.log("Error editing user", error);
     }
   };
-  const { id, role } = useAuthStore();
-
   const handleSelectContact = async () => {
     try {
       const response = await api.get(`/api/contacts/${id}`);
@@ -344,21 +350,19 @@ function UserEntries() {
             <div className="flex gap-4 mb-6">
               <button
                 onClick={() => setActiveView("formDetails")}
-                className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
-                  activeView === "formDetails"
-                    ? "bg-blue-600 text-white shadow-md"
-                    : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
-                }`}
+                className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${activeView === "formDetails"
+                  ? "bg-blue-600 text-white shadow-md"
+                  : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
+                  }`}
               >
                 Form Details
               </button>
               <button
                 onClick={() => setActiveView("visitingCards")}
-                className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
-                  activeView === "visitingCards"
-                    ? "bg-blue-600 text-white shadow-md"
-                    : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
-                }`}
+                className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${activeView === "visitingCards"
+                  ? "bg-blue-600 text-white shadow-md"
+                  : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
+                  }`}
               >
                 Visiting Cards
               </button>
