@@ -70,7 +70,23 @@ function FormInput() {
     try {
       let response;
       
-      if (selectedContact) {
+      if (isEditMode && initialData) {
+        // We are in edit mode - updating existing contact and event
+        const eventToUpdate = {
+          ...formData,
+          events: formData.events.map(event => ({
+            ...event,
+            event_id: event.event_id || initialData.events[0]?.eventId || initialData.events[0]?.event_id // Ensure event_id is included
+          }))
+        };
+        
+        response = await axios.put(
+          `http://localhost:8000/api/update-contacts-and-events/${initialData.id || initialData.contact_id}/${id}`, 
+          eventToUpdate
+        );
+        showAlert("success", `Contact and event have been successfully updated.`);
+        
+      } else if (selectedContact) {
         // Check if this is just adding an event to existing contact or updating contact info
         const contactChanged = 
           selectedContact.name !== formData.name ||
@@ -106,7 +122,9 @@ function FormInput() {
       }, 2000);
     } catch (error) {
       console.error("Save contact error:", error);
-      if (selectedContact) {
+      if (isEditMode) {
+        showAlert("error", `Failed to update contact and event.`);
+      } else if (selectedContact) {
         showAlert("error", `Failed to ${formData.name !== selectedContact.name || formData.email_address !== selectedContact.email_address || formData.phone_number !== selectedContact.phone_number ? 'update contact' : 'add event to contact'}.`);
       } else {
         showAlert("error", `Failed to add contact.`);
@@ -128,7 +146,7 @@ function FormInput() {
         email_address: initialData.emailAddress || '',
         created_by: id,
         events: initialData.events && initialData.events.length > 0 ? initialData.events.map(event => ({
-          event_id: event.eventId || '',
+          event_id: event.eventId || event.event_id || '', // Handle both possible field names
           event_name: event.eventName || '',
           event_role: event.eventRole || '',
           event_date: event.eventDate || '',
@@ -143,13 +161,8 @@ function FormInput() {
           event_location: ''
         }]
       });
-      // Mark existing contact as selected
-      setSelectedContact({
-        contact_id: initialData.id || initialData.contact_id,
-        name: initialData.name || '',
-        phone_number: initialData.phoneNumber || '',
-        email_address: initialData.emailAddress || ''
-      });
+      // Don't set selectedContact in edit mode - this is different from selecting existing contact
+      setSelectedContact(null);
     } else {
       const today = new Date().toISOString().split('T')[0];
       setFormData(prev => ({
@@ -281,7 +294,7 @@ function FormInput() {
         email_address: initialData.emailAddress || '',
         created_by: id,
         events: initialData.events && initialData.events.length > 0 ? initialData.events.map(event => ({
-          event_id: event.eventId || '',
+          event_id: event.eventId || event.event_id || '',
           event_name: event.eventName || '',
           event_role: event.eventRole || '',
           event_date: event.eventDate || '',
@@ -296,12 +309,7 @@ function FormInput() {
           event_location: ''
         }]
       });
-      setSelectedContact({
-        contact_id: initialData.id || initialData.contact_id,
-        name: initialData.name || '',
-        phone_number: initialData.phoneNumber || '',
-        email_address: initialData.emailAddress || ''
-      });
+      setSelectedContact(null);
     } else {
       const today = new Date().toISOString().split('T')[0];
       setFormData({
@@ -364,6 +372,9 @@ function FormInput() {
 
   // Get button text and icon based on current state
   const getButtonConfig = () => {
+    if (isEditMode) {
+      return { text: 'Update Contact', icon: Save, color: 'blue' };
+    }
     if (selectedContact) {
       if (contactInfoChanged) {
         return { text: 'Update Contact', icon: Save, color: 'orange' };
@@ -423,18 +434,20 @@ function FormInput() {
             
             <div className="flex-shrink-0 mb-8">
               <h1 className="text-3xl font-bold text-gray-900 mb-3">
-                {isFixed 
-                  ? (contactInfoChanged ? 'Update Contact Information' : 'Add Event to Contact')
-                  : (isEditMode ? 'Edit Contact Information' : 'Contact Information')
+                {isEditMode 
+                  ? 'Edit Contact Information'
+                  : isFixed 
+                    ? (contactInfoChanged ? 'Update Contact Information' : 'Add Event to Contact')
+                    : 'Contact Information'
                 }
               </h1>
               <p className="text-gray-600">
-                {isFixed
-                  ? (contactInfoChanged 
-                      ? 'You are updating an existing contact\'s information.'
-                      : 'You are adding a new event to an existing contact.')
-                  : isEditMode
-                    ? 'Update the details for this contact. Required fields are marked with an asterisk.'
+                {isEditMode
+                  ? 'Update the details for this contact. Required fields are marked with an asterisk.'
+                  : isFixed
+                    ? (contactInfoChanged 
+                        ? 'You are updating an existing contact\'s information.'
+                        : 'You are adding a new event to an existing contact.')
                     : 'Fill in the details for the new contact. Required fields are marked with an asterisk.'
                 }
               </p>
