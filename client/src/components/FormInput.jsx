@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { RotateCcw, UserPlus, Save, ArrowLeft, User, Mail, Phone, Plus } from 'lucide-react';
+import { RotateCcw, UserPlus, Save, ArrowLeft, User, Mail, Phone, Plus, X } from 'lucide-react';
 import { useAuthStore } from '../store/AuthStore';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Header from '../components/Header';
@@ -27,6 +27,7 @@ function FormInput() {
     phone_number: '',
     email_address: '',
     created_by: id,
+    contact_id: '',
     events: [{
       event_id: '',
       event_name: '',
@@ -40,10 +41,8 @@ function FormInput() {
   // State for autocomplete suggestions and selected contact
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [showEmailSuggestions, setShowEmailSuggestions] = useState(false);
-  const [showPhoneSuggestions, setShowPhoneSuggestions] = useState(false);
-  const [selectedContact, setSelectedContact] = useState(null);
   const [activeField, setActiveField] = useState('');
+  const [selectedContact, setSelectedContact] = useState(null);
   const debounceTimeout = useRef(null);
 
   // Alert helper functions
@@ -71,12 +70,11 @@ function FormInput() {
       let response;
       
       if (isEditMode && initialData) {
-        // We are in edit mode - updating existing contact and event
         const eventToUpdate = {
           ...formData,
           events: formData.events.map(event => ({
             ...event,
-            event_id: event.event_id || initialData.events[0]?.eventId || initialData.events[0]?.event_id // Ensure event_id is included
+            event_id: event.event_id || initialData.events[0]?.eventId || initialData.events[0]?.event_id
           }))
         };
         
@@ -87,18 +85,15 @@ function FormInput() {
         showAlert("success", `Contact and event have been successfully updated.`);
         
       } else if (selectedContact) {
-        // Check if this is just adding an event to existing contact or updating contact info
         const contactChanged = 
           selectedContact.name !== formData.name ||
           selectedContact.email_address !== formData.email_address ||
           selectedContact.phone_number !== formData.phone_number;
 
         if (contactChanged) {
-          // Contact info changed, update the contact
           response = await axios.put(`http://localhost:8000/api/update-contacts-and-events/${selectedContact.contact_id}/${id}`, formData);
           showAlert("success", `Contact has been successfully updated.`);
         } else {
-          // Contact info unchanged, just add new event
           const eventData = {
             eventName: formData.events[0].event_name,
             eventRole: formData.events[0].event_role,
@@ -112,7 +107,6 @@ function FormInput() {
           showAlert("success", `New event added to existing contact successfully!`);
         }
       } else {
-        // Create new contact
         response = await axios.post(`http://localhost:8000/api/create-contact`, formData);
         showAlert("success", `Contact has been successfully added.`);
       }
@@ -145,8 +139,9 @@ function FormInput() {
         phone_number: initialData.phoneNumber || '',
         email_address: initialData.emailAddress || '',
         created_by: id,
+        contact_id: '',
         events: initialData.events && initialData.events.length > 0 ? initialData.events.map(event => ({
-          event_id: event.eventId || event.event_id || '', // Handle both possible field names
+          event_id: event.eventId || event.event_id || '',
           event_name: event.eventName || '',
           event_role: event.eventRole || '',
           event_date: event.eventDate || '',
@@ -161,7 +156,6 @@ function FormInput() {
           event_location: ''
         }]
       });
-      // Don't set selectedContact in edit mode - this is different from selecting existing contact
       setSelectedContact(null);
     } else {
       const today = new Date().toISOString().split('T')[0];
@@ -176,8 +170,6 @@ function FormInput() {
     }
     setSuggestions([]);
     setShowSuggestions(false);
-    setShowEmailSuggestions(false);
-    setShowPhoneSuggestions(false);
   }, [isEditMode, initialData, id]);
 
   // Allow only digits for phone input
@@ -188,36 +180,55 @@ function FormInput() {
     }
   };
 
-  // Hide all suggestion dropdowns
-  const hideAllSuggestions = () => {
-    setShowSuggestions(false);
-    setShowEmailSuggestions(false);
-    setShowPhoneSuggestions(false);
-  };
-
-  // Fetch suggestions from backend with debounce
+  // FIXED: Fetch field-specific suggestions from backend with debounce
   const fetchSuggestions = async (query, field) => {
-    try {
-      const response = await axios.get(`http://localhost:8000/api/searchContacts?q=${encodeURIComponent(query)}`);
-      setSuggestions(response.data.data);
-      setActiveField(field);
-      
-      // Show appropriate dropdown
-      hideAllSuggestions();
-      if (field === 'name') {
-        setShowSuggestions(true);
-      } else if (field === 'email_address') {
-        setShowEmailSuggestions(true);
-      } else if (field === 'phone_number') {
-        setShowPhoneSuggestions(true);
-      }
-    } catch {
+    if (!query || query.length < 1) {
       setSuggestions([]);
-      hideAllSuggestions();
+      setShowSuggestions(false);
+      return;
+    }
+
+    try {
+      console.log(`Fetching suggestions for field: ${field}, query: ${query}`); // Debug log
+      
+      // Use the correct endpoint - should match your existing search endpoint
+      const response = await axios.get(`http://localhost:8000/api/search-contact?q=${encodeURIComponent(query)}`);
+      console.log('API Response:', response.data); // Debug log
+      
+      const results = response.data.data || response.data || [];
+      console.log('Filtered results:', results); // Debug log
+      
+      // Filter results based on the field being searched
+      let filteredResults = [];
+      if (field === 'name') {
+        filteredResults = results.filter(contact => 
+          contact.name && contact.name.toLowerCase().includes(query.toLowerCase())
+        );
+      } else if (field === 'phone_number') {
+        filteredResults = results.filter(contact => 
+          contact.phone_number && contact.phone_number.includes(query)
+        );
+      } else if (field === 'email_address') {
+        filteredResults = results.filter(contact => 
+          contact.email_address && contact.email_address.toLowerCase().includes(query.toLowerCase())
+        );
+      } else {
+        filteredResults = results;
+      }
+      
+      console.log('Final filtered results:', filteredResults); // Debug log
+      
+      setSuggestions(filteredResults);
+      setActiveField(field);
+      setShowSuggestions(filteredResults.length > 0);
+    } catch (error) {
+      console.error('Error fetching suggestions:', error);
+      setSuggestions([]);
+      setShowSuggestions(false);
     }
   };
 
-  // Handle form input changes, reset selected contact on user edit
+  // Handle form input changes with field-specific search
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     const eventFields = ["event_name", "event_role", "event_date", "event_held_organization", "event_location"];
@@ -237,32 +248,40 @@ function FormInput() {
           ...prev,
           [name]: numbersOnly
         }));
-        if (selectedContact && selectedContact.phone_number !== numbersOnly) {
-          // Don't clear selectedContact, just mark that contact info changed
-        }
       } else {
         setFormData(prev => ({
           ...prev,
           [name]: value
         }));
-        if (['name', 'email_address'].includes(name) && selectedContact) {
-          // Don't clear selectedContact, just mark that contact info changed
-        }
       }
 
+      // Only search for basic information fields, not event fields
       if (['name', 'email_address', 'phone_number'].includes(name)) {
         if (debounceTimeout.current) clearTimeout(debounceTimeout.current);
+        
         if (value.trim().length === 0) {
           setSuggestions([]);
-          hideAllSuggestions();
+          setShowSuggestions(false);
           if (selectedContact) setSelectedContact(null);
           return;
         }
+        
+        // Clear selected contact if user is typing different values
+        if (selectedContact) {
+          setSelectedContact(null);
+        }
+        
         debounceTimeout.current = setTimeout(() => {
           fetchSuggestions(value, name);
         }, 300);
       }
     }
+  };
+
+  // Close suggestions dropdown
+  const closeSuggestions = () => {
+    setShowSuggestions(false);
+    setSuggestions([]);
   };
 
   // On selecting a suggestion, fill form fields and store selected contact
@@ -276,7 +295,7 @@ function FormInput() {
       events: prev.events
     }));
     setSelectedContact(contact);
-    hideAllSuggestions();
+    setShowSuggestions(false);
   };
 
   // Handle form submit
@@ -293,6 +312,7 @@ function FormInput() {
         phone_number: initialData.phoneNumber || '',
         email_address: initialData.emailAddress || '',
         created_by: id,
+        contact_id: '',
         events: initialData.events && initialData.events.length > 0 ? initialData.events.map(event => ({
           event_id: event.eventId || event.event_id || '',
           event_name: event.eventName || '',
@@ -317,6 +337,7 @@ function FormInput() {
         phone_number: '',
         email_address: '',
         created_by: id,
+        contact_id: '',
         events: [{
           event_name: '',
           event_role: '',
@@ -328,7 +349,7 @@ function FormInput() {
       setSelectedContact(null);
     }
     setSuggestions([]);
-    hideAllSuggestions();
+    setShowSuggestions(false);
   };
 
   // Check if contact info has changed from selected contact
@@ -338,7 +359,7 @@ function FormInput() {
     selectedContact.phone_number !== formData.phone_number
   );
 
-  // Enhanced suggestion item component
+  // Enhanced suggestion item component with better layout
   const SuggestionItem = ({ contact, onSelect }) => (
     <li
       onClick={() => onSelect(contact)}
@@ -352,10 +373,10 @@ function FormInput() {
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-gray-900 truncate">{contact.name}</p>
-          <div className="flex items-center space-x-4 mt-1">
+          <div className="flex flex-col space-y-1 mt-1">
             <div className="flex items-center space-x-1">
               <Mail className="w-3 h-3 text-gray-400" />
-              <p className="text-xs text-gray-600 truncate">{contact.email_address}</p>
+              <p className="text-xs text-gray-600 truncate max-w-[200px]">{contact.email_address}</p>
             </div>
             <div className="flex items-center space-x-1">
               <Phone className="w-3 h-3 text-gray-400" />
@@ -448,7 +469,7 @@ function FormInput() {
                     ? (contactInfoChanged 
                         ? 'You are updating an existing contact\'s information.'
                         : 'You are adding a new event to an existing contact.')
-                    : 'Fill in the details for the new contact. Required fields are marked with an asterisk.'
+                    : 'Fill in the details for the new contact. Start typing in name, email, or phone to search existing contacts.'
                 }
               </p>
             </div>
@@ -477,15 +498,22 @@ function FormInput() {
                         placeholder="Enter full name"
                         onChange={handleInputChange}
                         autoComplete="off"
-                        onFocus={() => { if (suggestions.length && activeField === 'name') setShowSuggestions(true); }}
                         required
                         className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-200 shadow-sm
                           ${isFixed ? 'border-blue-400 focus:ring-blue-500 bg-white' : 'border-gray-300 focus:ring-blue-500 hover:border-gray-400'}`}
                       />
-                      {showSuggestions && suggestions.length > 0 && (
-                        <div className="absolute z-20 w-full bg-white border border-gray-200 rounded-xl mt-1 shadow-2xl overflow-hidden">
-                          <div className="px-4 py-2 bg-gray-50 border-b border-gray-100">
-                            <p className="text-xs font-medium text-gray-600">Select existing contact</p>
+                      {showSuggestions && activeField === 'name' && suggestions.length > 0 && (
+                        <div className="absolute z-20 w-full bg-white border border-gray-200 rounded-xl mt-1 shadow-2xl overflow-hidden max-h-80">
+                          <div className="px-4 py-2 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
+                            <p className="text-xs font-medium text-gray-600">Select existing contact by name ({suggestions.length} found)</p>
+                            <button
+                              type="button"
+                              onClick={closeSuggestions}
+                              className="text-gray-400 hover:text-gray-600 transition-colors"
+                              title="Close suggestions"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
                           </div>
                           <ul className="max-h-64 overflow-auto">
                             {suggestions.map(contact => (
@@ -515,15 +543,22 @@ function FormInput() {
                         inputMode="numeric"
                         onChange={handleInputChange}
                         autoComplete="off"
-                        onFocus={() => { if (suggestions.length && activeField === 'phone_number') setShowPhoneSuggestions(true); }}
                         required
                         className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-200 shadow-sm
                           ${isFixed ? 'border-blue-400 focus:ring-blue-500 bg-white' : 'border-gray-300 focus:ring-blue-500 hover:border-gray-400'}`}
                       />
-                      {showPhoneSuggestions && suggestions.length > 0 && (
-                        <div className="absolute z-20 w-full bg-white border border-gray-200 rounded-xl mt-1 shadow-2xl overflow-hidden">
-                          <div className="px-4 py-2 bg-gray-50 border-b border-gray-100">
-                            <p className="text-xs font-medium text-gray-600">Select existing contact</p>
+                      {showSuggestions && activeField === 'phone_number' && suggestions.length > 0 && (
+                        <div className="absolute z-20 w-full bg-white border border-gray-200 rounded-xl mt-1 shadow-2xl overflow-hidden max-h-80">
+                          <div className="px-4 py-2 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
+                            <p className="text-xs font-medium text-gray-600">Select existing contact by phone ({suggestions.length} found)</p>
+                            <button
+                              type="button"
+                              onClick={closeSuggestions}
+                              className="text-gray-400 hover:text-gray-600 transition-colors"
+                              title="Close suggestions"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
                           </div>
                           <ul className="max-h-64 overflow-auto">
                             {suggestions.map(contact => (
@@ -551,15 +586,22 @@ function FormInput() {
                         placeholder="Enter email address"
                         onChange={handleInputChange}
                         autoComplete="off"
-                        onFocus={() => { if (suggestions.length && activeField === 'email_address') setShowEmailSuggestions(true); }}
                         required
                         className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-200 shadow-sm
                           ${isFixed ? 'border-blue-400 focus:ring-blue-500 bg-white' : 'border-gray-300 focus:ring-blue-500 hover:border-gray-400'}`}
                       />
-                      {showEmailSuggestions && suggestions.length > 0 && (
-                        <div className="absolute z-20 w-full bg-white border border-gray-200 rounded-xl mt-1 shadow-2xl overflow-hidden">
-                          <div className="px-4 py-2 bg-gray-50 border-b border-gray-100">
-                            <p className="text-xs font-medium text-gray-600">Select existing contact</p>
+                      {showSuggestions && activeField === 'email_address' && suggestions.length > 0 && (
+                        <div className="absolute z-20 w-full bg-white border border-gray-200 rounded-xl mt-1 shadow-2xl overflow-hidden max-h-80">
+                          <div className="px-4 py-2 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
+                            <p className="text-xs font-medium text-gray-600">Select existing contact by email ({suggestions.length} found)</p>
+                            <button
+                              type="button"
+                              onClick={closeSuggestions}
+                              className="text-gray-400 hover:text-gray-600 transition-colors"
+                              title="Close suggestions"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
                           </div>
                           <ul className="max-h-64 overflow-auto">
                             {suggestions.map(contact => (

@@ -996,7 +996,7 @@ const MiddleManHome = () => {
 
       <div className="px-6 pb-6">
         <div className="max-w-7xl mx-auto">
-          {
+          {(
             <>
               {/* Search and Filter Controls */}
               <div className="flex flex-col md:flex-row gap-4 items-center mb-6">
