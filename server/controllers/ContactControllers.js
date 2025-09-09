@@ -30,12 +30,15 @@ export const GetAllContact = async (req, res) => {
           c.emergency_contact_name,
           c.emergency_contact_relationship,
           c.logger,
-          
+          c.updated_at,
+
           ca.street,
           ca.city,
           ca.state,
           ca.country,
           ca.zipcode,
+          ca.created_at as address_created_at,
+          ca.updated_at as address_updated_at,
           
           STRING_AGG(DISTINCT ce.pg_course_name, '; ') as pg_course_name,
           STRING_AGG(DISTINCT ce.pg_college, '; ') as pg_college_name,
@@ -47,19 +50,25 @@ export const GetAllContact = async (req, res) => {
           STRING_AGG(DISTINCT ce.ug_university, '; ') as ug_university_type,
           STRING_AGG(DISTINCT ce.ug_from_date::text, '; ') as ug_start_date,
           STRING_AGG(DISTINCT ce.ug_to_date::text, '; ') as ug_end_date,
+          STRING_AGG(DISTINCT ce.created_at::text, '; ') as education_created_at,
+          STRING_AGG(DISTINCT ce.updated_at::text, '; ') as education_updated_at,
           
           STRING_AGG(DISTINCT cex.job_title, '; ') as job_title,
           STRING_AGG(DISTINCT cex.company, '; ') as company_name,
           STRING_AGG(DISTINCT cex.department, '; ') as department_type,
           STRING_AGG(DISTINCT cex.from_date::text, '; ') as from_date,
           STRING_AGG(DISTINCT cex.to_date::text, '; ') as to_date,
+          STRING_AGG(DISTINCT cex.created_at::text, '; ') as experience_created_at,
+          STRING_AGG(DISTINCT cex.updated_at::text, '; ') as experience_updated_at,
           
           STRING_AGG(DISTINCT e.event_name, '; ') as event_name,
           STRING_AGG(DISTINCT e.event_role, '; ') as event_role,
           STRING_AGG(DISTINCT e.event_held_organization, '; ') as event_held_organization,
           STRING_AGG(DISTINCT e.event_location, '; ') as event_location,
           BOOL_OR(e.verified) as verified,
-          STRING_AGG(DISTINCT e.contact_status, '; ') as contact_status
+          STRING_AGG(DISTINCT e.contact_status, '; ') as contact_status,
+          STRING_AGG(DISTINCT e.created_at::text, '; ') as event_created_at,
+          STRING_AGG(DISTINCT e.updated_at::text, '; ') as event_details_updated_at
           
         FROM contact c
         LEFT JOIN login l ON c.created_by = l.id
@@ -70,10 +79,11 @@ export const GetAllContact = async (req, res) => {
         GROUP BY 
           c.contact_id, c.created_by, l.email, c.created_at, c.name,
           c.phone_number, c.secondary_phone_number, c.email_address,
-          c.secondary_email, c.skills, c.linkedin_url,
-          c.dob, c.gender, c.nationality, c.marital_status,
-          c.category, c.emergency_contact_name, c.emergency_contact_relationship,
-          c.logger, ca.street, ca.city, ca.state, ca.country, ca.zipcode
+          c.secondary_email, c.skills, c.linkedin_url, c.dob, c.gender, 
+          c.nationality, c.marital_status, c.category, c.emergency_contact_name, 
+          c.emergency_contact_relationship, c.logger, c.updated_at,
+          ca.street, ca.city, ca.state, ca.country, ca.zipcode, 
+          ca.created_at, ca.updated_at
         ORDER BY c.created_at DESC
         LIMIT ${limitValue}
       `;
@@ -99,12 +109,15 @@ export const GetAllContact = async (req, res) => {
           c.emergency_contact_name,
           c.emergency_contact_relationship,
           c.logger,
+          c.updated_at,
           
           ca.street,
           ca.city,
           ca.state,
           ca.country,
           ca.zipcode,
+          ca.created_at as address_created_at,
+          ca.updated_at as address_updated_at,
           
           STRING_AGG(DISTINCT ce.pg_course_name, '; ') as pg_course_name,
           STRING_AGG(DISTINCT ce.pg_college, '; ') as pg_college_name,
@@ -116,19 +129,25 @@ export const GetAllContact = async (req, res) => {
           STRING_AGG(DISTINCT ce.ug_university, '; ') as ug_university_type,
           STRING_AGG(DISTINCT ce.ug_from_date::text, '; ') as ug_start_date,
           STRING_AGG(DISTINCT ce.ug_to_date::text, '; ') as ug_end_date,
+          STRING_AGG(DISTINCT ce.created_at::text, '; ') as education_created_at,
+          STRING_AGG(DISTINCT ce.updated_at::text, '; ') as education_updated_at,
           
           STRING_AGG(DISTINCT cex.job_title, '; ') as job_title,
           STRING_AGG(DISTINCT cex.company, '; ') as company_name,
           STRING_AGG(DISTINCT cex.department, '; ') as department_type,
           STRING_AGG(DISTINCT cex.from_date::text, '; ') as from_date,
           STRING_AGG(DISTINCT cex.to_date::text, '; ') as to_date,
+          STRING_AGG(DISTINCT cex.created_at::text, '; ') as experience_created_at,
+          STRING_AGG(DISTINCT cex.updated_at::text, '; ') as experience_updated_at,
           
           STRING_AGG(DISTINCT e.event_name, '; ') as event_name,
           STRING_AGG(DISTINCT e.event_role, '; ') as event_role,
           STRING_AGG(DISTINCT e.event_held_organization, '; ') as event_held_organization,
           STRING_AGG(DISTINCT e.event_location, '; ') as event_location,
           BOOL_OR(e.verified) as verified,
-          STRING_AGG(DISTINCT e.contact_status, '; ') as contact_status
+          STRING_AGG(DISTINCT e.contact_status, '; ') as contact_status,
+          STRING_AGG(DISTINCT e.created_at::text, '; ') as event_created_at,
+          STRING_AGG(DISTINCT e.updated_at::text, '; ') as event_details_updated_at
           
         FROM contact c
         LEFT JOIN login l ON c.created_by = l.id
@@ -139,10 +158,11 @@ export const GetAllContact = async (req, res) => {
         GROUP BY 
           c.contact_id, c.created_by, l.email, c.created_at, c.name,
           c.phone_number, c.secondary_phone_number, c.email_address,
-          c.secondary_email, c.skills, c.linkedin_url,
-          c.dob, c.gender, c.nationality, c.marital_status,
-          c.category, c.emergency_contact_name, c.emergency_contact_relationship,
-          c.logger, ca.street, ca.city, ca.state, ca.country, ca.zipcode
+          c.secondary_email, c.skills, c.linkedin_url, c.dob, c.gender, 
+          c.nationality, c.marital_status, c.category, c.emergency_contact_name, 
+          c.emergency_contact_relationship, c.logger, c.updated_at,
+          ca.street, ca.city, ca.state, ca.country, ca.zipcode, 
+          ca.created_at, ca.updated_at
         ORDER BY c.created_at DESC
       `;
         }

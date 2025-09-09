@@ -368,7 +368,7 @@ function UserEntries() {
         {/* Contact Cards */}
         {activeView === "formDetails" ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
-            {profileData.map((participant, index) => {
+            {profileData?.map((participant, index) => {
               return (
                 <BasicDetailCard
                   key={index}

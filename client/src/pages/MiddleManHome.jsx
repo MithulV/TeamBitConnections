@@ -710,6 +710,7 @@ const MiddleManHome = () => {
         const rolesDict = { cata: "A", catb: "B", catc: "C" };
         const category = rolesDict[role];
 
+        // For admin users, fetch all filter options without category filter
         const url = category
           ? `/api/get-filter-options?category=${category}`
           : "/api/get-filter-options";
@@ -734,7 +735,8 @@ const MiddleManHome = () => {
     const rolesDict = { cata: "A", catb: "B", catc: "C" };
     const category = rolesDict[role];
 
-    if (!category) {
+    // For admin users, we don't filter by category to show all records
+    if (!category && role !== "admin") {
       console.error("Invalid role for fetching contacts:", role);
       showAlert("error", "Invalid role for fetching contacts");
       return;
@@ -745,8 +747,10 @@ const MiddleManHome = () => {
       // Build query parameters
       const params = new URLSearchParams();
 
-      // Add category filter based on user role
-      params.append("category", category);
+      // Add category filter based on user role (skip for admin to show all categories)
+      if (category) {
+        params.append("category", category);
+      }
 
       // Add search term if exists
       if (searchTerm.trim()) {
@@ -969,7 +973,28 @@ const MiddleManHome = () => {
         duration={4000}
       />
       <Header />
-      <div className="p-6">
+
+      {/* Page Title Section */}
+      <div className="px-6 pt-6 pb-2">
+        <div className="max-w-7xl mx-auto">
+          <div className="mb-4">
+            <h1 className="text-2xl font-bold text-gray-900">
+              {role === "admin"
+                ? "All Contact Records"
+                : "Your Contact Records"}
+            </h1>
+            <p className="text-gray-600 mt-1">
+              {role === "admin"
+                ? "View and manage all contact records across all categories (A, B, C)"
+                : `Manage your category ${
+                    role === "cata" ? "A" : role === "catb" ? "B" : "C"
+                  } contact records`}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="px-6 pb-6">
         <div className="max-w-7xl mx-auto">
           {
             <>
@@ -1016,6 +1041,44 @@ const MiddleManHome = () => {
                   <span className="ml-2 text-gray-600">
                     Loading contacts...
                   </span>
+                </div>
+              )}
+
+              {/* Results Summary */}
+              {!loading && (
+                <div className="flex justify-between items-center mb-6 p-4 bg-white rounded-lg border border-gray-200">
+                  <div className="flex items-center gap-4">
+                    <div className="text-sm text-gray-600">
+                      <span className="font-medium text-gray-900">
+                        {filteredContacts.length}
+                      </span>{" "}
+                      contacts found
+                      {role === "admin" && (
+                        <span className="text-gray-500 ml-2">
+                          (All categories: A, B, C)
+                        </span>
+                      )}
+                    </div>
+                    {getActiveFilterCount() > 0 && (
+                      <div className="text-sm text-blue-600">
+                        {getActiveFilterCount()} filter
+                        {getActiveFilterCount() !== 1 ? "s" : ""} applied
+                      </div>
+                    )}
+                  </div>
+                  {role === "admin" && (
+                    <div className="flex gap-2">
+                      <span className="px-2 py-1 bg-red-100 text-red-700 text-xs rounded-full">
+                        A
+                      </span>
+                      <span className="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs rounded-full">
+                        B
+                      </span>
+                      <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">
+                        C
+                      </span>
+                    </div>
+                  )}
                 </div>
               )}
 
