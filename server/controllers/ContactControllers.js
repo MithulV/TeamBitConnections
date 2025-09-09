@@ -6,7 +6,7 @@ export const GetAllContact = async (req, res) => {
     const limitValue = limit ? parseInt(limit, 10) : null;
 
     let query;
-
+    
     try {
         if (limitValue && limitValue > 0) {
             query = db`
