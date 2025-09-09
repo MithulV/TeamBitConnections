@@ -4,7 +4,7 @@ import Alert from "../components/Alert";
 import Avatar from "../assets/Avatar.png";
 import Header from "../components/Header";
 import { useAuthStore } from "../store/AuthStore";
-import api from '../utils/axios';
+import api from "../utils/axios";
 import { format, parseISO } from "date-fns";
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -115,8 +115,10 @@ function MiddleManRecords() {
   const [userToDelete, setUserToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const location = useLocation();
-  console.log(location.pathname)
-  const [activeView, setActiveView] = useState(location.state?.view || "formData");
+  console.log(location.pathname);
+  const [activeView, setActiveView] = useState(
+    location.state?.view || "formData"
+  );
   const [loading, setLoading] = useState(false);
   const [alert, setAlert] = useState({
     isOpen: false,
@@ -145,9 +147,7 @@ function MiddleManRecords() {
 
   const handleSelectUnverifiedVisitingCards = async () => {
     try {
-      const response = await api.get(
-        `/api/get-unverified-images/`
-      );
+      const response = await api.get(`/api/get-unverified-images/`);
       console.log("Visiting cards fetched successfully:", response.data);
       setVisitingCard(response.data.data || []);
     } catch (error) {
@@ -159,9 +159,7 @@ function MiddleManRecords() {
   const handleSelectAssignedByUser = async () => {
     try {
       setLoading(true);
-      const response = await api.get(
-        `/api/get-assigned-to/${id}`
-      );
+      const response = await api.get(`/api/get-assigned-to/${id}`);
       console.log("Assigned by user data fetched successfully:", response.data);
       setAssignedByUserData(response.data);
     } catch (error) {
@@ -193,13 +191,14 @@ function MiddleManRecords() {
           if (navigationState.refreshData) {
             handleSelectContact();
           }
-          window.history.replaceState(null, '', window.location.pathname);
+          window.history.replaceState(null, "", window.location.pathname);
         }
       }
     };
 
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () =>
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
   }, []);
 
   const showAlert = (severity, message) => {
@@ -296,7 +295,10 @@ function MiddleManRecords() {
             setVisitingCard((prevData) =>
               prevData.filter((card) => card.id !== userToDelete.id)
             );
-            showAlert("success", "Visiting card has been successfully deleted.");
+            showAlert(
+              "success",
+              "Visiting card has been successfully deleted."
+            );
             break;
 
           default:
@@ -326,18 +328,18 @@ function MiddleManRecords() {
       const user = data.find((user) => user.contact_id === contact_id);
       console.log("Adding user:", user);
       if (user) {
-        navigate('/details-input', {
+        navigate("/details-input", {
           state: {
             contact: user,
             isAddMode: true,
-            source: 'middleman',
+            source: "middleman",
             currentUserId: id,
             userRole: role,
             successCallback: {
               message: `${user.name} has been successfully verified and added to contacts.`,
-              refreshData: true
-            }
-          }
+              refreshData: true,
+            },
+          },
         });
       }
     } catch (error) {
@@ -365,28 +367,31 @@ function MiddleManRecords() {
           <div className="flex gap-4 mb-6">
             <button
               onClick={() => setActiveView("formData")}
-              className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${activeView === "formData"
-                ? "bg-blue-600 text-white shadow-md"
-                : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
-                }`}
+              className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
+                activeView === "formData"
+                  ? "bg-blue-600 text-white shadow-md"
+                  : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
+              }`}
             >
               Form Data
             </button>
-            <button 
+            <button
               onClick={() => setActiveView("visitingCards")}
-              className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${activeView === "visitingCards"
-                ? "bg-blue-600 text-white shadow-md"
-                : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
-                }`}
+              className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
+                activeView === "visitingCards"
+                  ? "bg-blue-600 text-white shadow-md"
+                  : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
+              }`}
             >
               Visiting Cards
             </button>
             <button
               onClick={() => setActiveView("AssignedToUser")}
-              className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${activeView === "AssignedToUser"
-                ? "bg-blue-600 text-white shadow-md"
-                : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
-                }`}
+              className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
+                activeView === "AssignedToUser"
+                  ? "bg-blue-600 text-white shadow-md"
+                  : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
+              }`}
             >
               Assigned By Me
             </button>
@@ -407,12 +412,9 @@ function MiddleManRecords() {
                     "MMMM dd, yyyy"
                   )}
                   org={
-                    participant.events?.[0]?.event_held_organization ||
-                    "N/A"
+                    participant.events?.[0]?.event_held_organization || "N/A"
                   }
-                  location={
-                    participant.events?.[0]?.event_location || "N/A"
-                  }
+                  location={participant.events?.[0]?.event_location || "N/A"}
                   profileImage={participant.profileImage || Avatar}
                   onDelete={() => handleDeleteClick(participant.contact_id)}
                   onType={() => onAdd(participant.contact_id)}
@@ -485,9 +487,7 @@ function MiddleManRecords() {
                                 className="p-2 bg-white rounded-full shadow-lg hover:bg-gray-50 transition-colors duration-200"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  navigate(
-                                    `/visiting-card-details/${card.id}`
-                                  );
+                                  navigate(`/visiting-card-details/${card.id}`);
                                 }}
                               >
                                 <svg
@@ -547,9 +547,7 @@ function MiddleManRecords() {
                                   d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
                                 />
                               </svg>
-                              {new Date(
-                                card.created_at
-                              ).toLocaleDateString()}
+                              {new Date(card.created_at).toLocaleDateString()}
                             </div>
                           </div>
                         </div>
@@ -577,8 +575,7 @@ function MiddleManRecords() {
                       No visiting cards found
                     </h3>
                     <p className="text-gray-500 mb-6 max-w-md mx-auto">
-                      There are no visiting cards pending review at the
-                      moment.
+                      There are no visiting cards pending review at the moment.
                     </p>
                   </div>
                 )}
@@ -592,8 +589,8 @@ function MiddleManRecords() {
                     <div className="w-3 h-3 bg-green-400 rounded-full mr-2"></div>
                     <span className="text-sm text-gray-600">
                       {assignedByUserData.length} User
-                      {assignedByUserData.length !== 1 ? "s" : ""} Assigned
-                      by You still not completed their update
+                      {assignedByUserData.length !== 1 ? "s" : ""} Assigned by
+                      You still not completed their update
                     </span>
                   </div>
                   <button
@@ -657,9 +654,9 @@ function MiddleManRecords() {
                       assignedOn={
                         participant.assigned_on
                           ? format(
-                            parseISO(participant.assigned_on),
-                            "MMMM dd, yyyy"
-                          )
+                              parseISO(participant.assigned_on),
+                              "MMMM dd, yyyy"
+                            )
                           : "N/A"
                       }
                     />
@@ -686,8 +683,8 @@ function MiddleManRecords() {
                     No users assigned by you
                   </h3>
                   <p className="text-gray-500 mb-6 max-w-md mx-auto">
-                    You haven't assigned any users yet. Start assigning
-                    users to see them here.
+                    You haven't assigned any users yet. Start assigning users to
+                    see them here.
                   </p>
                   <button
                     onClick={handleSelectAssignedByUser}

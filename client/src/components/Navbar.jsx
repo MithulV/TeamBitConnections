@@ -54,7 +54,8 @@ function Navbar() {
     ],
     admin: [
       { name: "Admin Panel", icon: <Shield size={20} />, path: "/" },
-      { name: "Task Assignments", icon: <ClipboardList size={20} />, path: "/task-assignments" }
+      { name: "Task Assignments", icon: <ClipboardList size={20} />, path: "/task-assignments" },
+      { name: "Records", icon: <NotebookText size={20} />, path: "/all-entries" },
     ],
   };
 
@@ -101,7 +102,7 @@ function Navbar() {
 
       {/* Top Menu Items */}
       <div className="p-4 flex-1">
-        <div className="space-y-2">
+        <div className="space-y-3">
           {currentMenuItems.map((menuItem, index) => {
             const active = isActive(menuItem.path);
             return (
