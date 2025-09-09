@@ -459,6 +459,7 @@ export const GetUnVerifiedContacts = async (req, res) => {
 };
 
 export const UpdateContactAndEvents = async (req, res) => {
+    console.log("here")
     const { id, userId } = req.params;
     const { name, phone_number, email_address, events } = req.body;
 
@@ -1346,85 +1347,118 @@ export const GetFilteredContacts = async (req, res) => {
 
 export const GetFilterOptions = async (req, res) => {
     try {
+        // Get the user's category from request (could be from auth middleware, query param, or body)
+        const userCategory = req.query.category;
+        console.log(userCategory)
+        if (!userCategory) {
+            return res.status(400).json({
+                success: false,
+                error: "User category is required"
+            });
+        }
+
+        // Build the category filter condition
+        let categoryFilter = '';
+        if (userCategory.toLowerCase() === 'admin') {
+            // Admin can see all categories
+            categoryFilter = '';
+        } else if (['cata', 'catb', 'catc'].includes(userCategory.toLowerCase())) {
+            // Map user categories to database values
+            const categoryMap = {
+                'cata': 'A',
+                'catb': 'B', 
+                'catc': 'C'
+            };
+            const dbCategory = categoryMap[userCategory.toLowerCase()];
+            categoryFilter = `AND c.category = '${dbCategory}'`;
+        } else {
+            return res.status(400).json({
+                success: false,
+                error: "Invalid category. Must be 'cata', 'catb', 'catc', or 'admin'"
+            });
+        }
+
         const genders = await db`
-      SELECT DISTINCT gender as value, COUNT(*)::text as count 
-      FROM contact WHERE gender IS NOT NULL 
-      GROUP BY gender ORDER BY count DESC
-    `;
+            SELECT DISTINCT gender as value, COUNT(*)::text as count 
+            FROM contact c WHERE gender IS NOT NULL ${categoryFilter ? db.unsafe(categoryFilter) : db``}
+            GROUP BY gender ORDER BY count DESC
+        `;
 
         const categories = await db`
-      SELECT DISTINCT category as value, COUNT(*)::text as count 
-      FROM contact WHERE category IS NOT NULL 
-      GROUP BY category ORDER BY count DESC
-    `;
+            SELECT DISTINCT category as value, COUNT(*)::text as count 
+            FROM contact c WHERE category IS NOT NULL ${categoryFilter ? db.unsafe(categoryFilter) : db``}
+            GROUP BY category ORDER BY count DESC
+        `;
 
         const nationalities = await db`
-      SELECT DISTINCT nationality as value, COUNT(*)::text as count 
-      FROM contact 
-      WHERE nationality IS NOT NULL
-      GROUP BY nationality ORDER BY count DESC
-    `;
+            SELECT DISTINCT nationality as value, COUNT(*)::text as count 
+            FROM contact c 
+            WHERE nationality IS NOT NULL ${categoryFilter ? db.unsafe(categoryFilter) : db``}
+            GROUP BY nationality ORDER BY count DESC
+        `;
 
         const maritalStatuses = await db`
-      SELECT DISTINCT marital_status as value, COUNT(*)::text as count 
-      FROM contact 
-      WHERE marital_status IS NOT NULL
-      GROUP BY marital_status ORDER BY count DESC
-    `;
+            SELECT DISTINCT marital_status as value, COUNT(*)::text as count 
+            FROM contact c 
+            WHERE marital_status IS NOT NULL ${categoryFilter ? db.unsafe(categoryFilter) : db``}
+            GROUP BY marital_status ORDER BY count DESC
+        `;
 
         const countries = await db`
-      SELECT DISTINCT ca.country as value, COUNT(DISTINCT c.contact_id)::text as count
-      FROM contact c JOIN contact_address ca ON c.contact_id = ca.contact_id
-      WHERE ca.country IS NOT NULL
-      GROUP BY ca.country ORDER BY count DESC
-    `;
+            SELECT DISTINCT ca.country as value, COUNT(DISTINCT c.contact_id)::text as count
+            FROM contact c JOIN contact_address ca ON c.contact_id = ca.contact_id
+            WHERE ca.country IS NOT NULL ${categoryFilter ? db.unsafe(categoryFilter) : db``}
+            GROUP BY ca.country ORDER BY count DESC
+        `;
 
         const states = await db`
-      SELECT DISTINCT ca.state as value, COUNT(DISTINCT c.contact_id)::text as count
-      FROM contact c JOIN contact_address ca ON c.contact_id = ca.contact_id
-      WHERE ca.state IS NOT NULL
-      GROUP BY ca.state ORDER BY count DESC
-    `;
+            SELECT DISTINCT ca.state as value, COUNT(DISTINCT c.contact_id)::text as count
+            FROM contact c JOIN contact_address ca ON c.contact_id = ca.contact_id
+            WHERE ca.state IS NOT NULL ${categoryFilter ? db.unsafe(categoryFilter) : db``}
+            GROUP BY ca.state ORDER BY count DESC
+        `;
 
         const cities = await db`
-      SELECT DISTINCT ca.city as value, COUNT(DISTINCT c.contact_id)::text as count
-      FROM contact c JOIN contact_address ca ON c.contact_id = ca.contact_id
-      WHERE ca.city IS NOT NULL
-      GROUP BY ca.city ORDER BY count DESC
-    `;
+            SELECT DISTINCT ca.city as value, COUNT(DISTINCT c.contact_id)::text as count
+            FROM contact c JOIN contact_address ca ON c.contact_id = ca.contact_id
+            WHERE ca.city IS NOT NULL ${categoryFilter ? db.unsafe(categoryFilter) : db``}
+            GROUP BY ca.city ORDER BY count DESC
+        `;
 
         const companies = await db`
-      SELECT DISTINCT exp.company as value, COUNT(DISTINCT c.contact_id)::text as count
-      FROM contact c JOIN contact_experience exp ON c.contact_id = exp.contact_id
-      WHERE exp.company IS NOT NULL
-      GROUP BY exp.company ORDER BY count DESC
-    `;
+            SELECT DISTINCT exp.company as value, COUNT(DISTINCT c.contact_id)::text as count
+            FROM contact c JOIN contact_experience exp ON c.contact_id = exp.contact_id
+            WHERE exp.company IS NOT NULL ${categoryFilter ? db.unsafe(categoryFilter) : db``}
+            GROUP BY exp.company ORDER BY count DESC
+        `;
 
         const jobTitles = await db`
-      SELECT DISTINCT exp.job_title as value, COUNT(DISTINCT c.contact_id)::text as count
-      FROM contact c JOIN contact_experience exp ON c.contact_id = exp.contact_id
-      WHERE exp.job_title IS NOT NULL
-      GROUP BY exp.job_title ORDER BY count DESC
-    `;
+            SELECT DISTINCT exp.job_title as value, COUNT(DISTINCT c.contact_id)::text as count
+            FROM contact c JOIN contact_experience exp ON c.contact_id = exp.contact_id
+            WHERE exp.job_title IS NOT NULL ${categoryFilter ? db.unsafe(categoryFilter) : db``}
+            GROUP BY exp.job_title ORDER BY count DESC
+        `;
 
         const pgCourses = await db`
-      SELECT DISTINCT ce.pg_course_name as value, COUNT(DISTINCT c.contact_id)::text as count
-      FROM contact c JOIN contact_education ce ON c.contact_id = ce.contact_id
-      WHERE ce.pg_course_name IS NOT NULL
-      GROUP BY ce.pg_course_name ORDER BY count DESC
-    `;
+            SELECT DISTINCT ce.pg_course_name as value, COUNT(DISTINCT c.contact_id)::text as count
+            FROM contact c JOIN contact_education ce ON c.contact_id = ce.contact_id
+            WHERE ce.pg_course_name IS NOT NULL ${categoryFilter ? db.unsafe(categoryFilter) : db``}
+            GROUP BY ce.pg_course_name ORDER BY count DESC
+        `;
 
         const ugCourses = await db`
-      SELECT DISTINCT ce.ug_course_name as value, COUNT(DISTINCT c.contact_id)::text as count
-      FROM contact c JOIN contact_education ce ON c.contact_id = ce.contact_id
-      WHERE ce.ug_course_name IS NOT NULL
-      GROUP BY ce.ug_course_name ORDER BY count DESC
-    `;
+            SELECT DISTINCT ce.ug_course_name as value, COUNT(DISTINCT c.contact_id)::text as count
+            FROM contact c JOIN contact_education ce ON c.contact_id = ce.contact_id
+            WHERE ce.ug_course_name IS NOT NULL ${categoryFilter ? db.unsafe(categoryFilter) : db``}
+            GROUP BY ce.ug_course_name ORDER BY count DESC
+        `;
 
-        const skillsData = await db`
-      SELECT skills FROM contact 
-      WHERE skills IS NOT NULL AND skills != ''
-    `;
+        // For skills, we need to get the data first and then filter
+        const skillsQuery = userCategory.toLowerCase() === 'admin' 
+            ? db`SELECT skills FROM contact WHERE skills IS NOT NULL AND skills != ''`
+            : db`SELECT skills FROM contact c WHERE skills IS NOT NULL AND skills != '' ${db.unsafe(categoryFilter)}`;
+            
+        const skillsData = await skillsQuery;
 
         const skillCounts = {};
         skillsData.forEach((row) => {
@@ -1459,6 +1493,7 @@ export const GetFilterOptions = async (req, res) => {
                 ug_courses: ugCourses,
                 skills,
             },
+            filter_applied: userCategory !== 'admin' ? `Category filtered for ${userCategory}` : 'No category filter (admin access)'
         });
     } catch (err) {
         console.error("GetFilterOptions error:", err);
@@ -1468,6 +1503,7 @@ export const GetFilterOptions = async (req, res) => {
         });
     }
 };
+
 
 import { getModificationHistory } from "./ModificationHistoryControllers.js";
 
