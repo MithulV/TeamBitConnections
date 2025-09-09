@@ -101,7 +101,7 @@ function Navbar() {
 
       {/* Top Menu Items */}
       <div className="p-4 flex-1">
-        <div className="space-y-2">
+        <div className="space-y-3">
           {currentMenuItems.map((menuItem, index) => {
             const active = isActive(menuItem.path);
             return (
