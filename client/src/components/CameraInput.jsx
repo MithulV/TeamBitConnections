@@ -164,7 +164,7 @@ function CameraInput() {
       });
 
       console.log("Upload success:", res.data);
-      showAlert("success", "Contact has been successfully added.");
+      showAlert("success", "Visiting card has been successfully added.");
       
       // Navigate back after success
       setTimeout(() => {

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import api from "../utils/axios";
+import Alert from "../components/Alert";
 import {
   ArrowLeft,
   Zap,
@@ -39,6 +40,29 @@ const VisitingCardDetails = () => {
   const [loading, setLoading] = useState(true);
   const [currentStep, setCurrentStep] = useState(0);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Alert state
+  const [alert, setAlert] = useState({
+    isOpen: false,
+    severity: "success",
+    message: "",
+  });
+
+  const showAlert = (severity, message) => {
+    setAlert({
+      isOpen: true,
+      severity,
+      message,
+    });
+  };
+
+  const closeAlert = () => {
+    setAlert((prev) => ({
+      ...prev,
+      isOpen: false,
+    }));
+  };
+
   const [visitingCardDetails, setVisitingCardDetails] = useState({
     //contact_id
     contact_id: "",
@@ -118,9 +142,7 @@ const VisitingCardDetails = () => {
         setLoading(true);
 
         // Fetch all cards and find the one with matching ID
-        const response = await api.get(
-          `/api/get-unverified-images/`
-        );
+        const response = await api.get(`/api/get-unverified-images/`);
 
         const card = response.data.data?.find((card) => {
           return card.id.toString() === id.toString();
@@ -373,25 +395,22 @@ const VisitingCardDetails = () => {
         // Events array - transform from flat fields to object array
         events: visitingCardDetails.event_name
           ? [
-            {
-              event_name: visitingCardDetails.event_name,
-              event_role: visitingCardDetails.event_role,
-              event_date: visitingCardDetails.event_date,
-              event_held_organization:
-                visitingCardDetails.event_held_organization,
-              event_location: visitingCardDetails.event_location,
-              verified: true,
-            },
-          ]
+              {
+                event_name: visitingCardDetails.event_name,
+                event_role: visitingCardDetails.event_role,
+                event_date: visitingCardDetails.event_date,
+                event_held_organization:
+                  visitingCardDetails.event_held_organization,
+                event_location: visitingCardDetails.event_location,
+                verified: true,
+              },
+            ]
           : [],
       };
 
       console.log("Transformed data for API:", transformedData);
 
-      const response = await api.post(
-        "/api/create-contact",
-        transformedData
-      );
+      const response = await api.post("/api/create-contact", transformedData);
       const response2 = await api.post(
         `/api/verify-image/${id}`,
         transformedData
@@ -399,19 +418,23 @@ const VisitingCardDetails = () => {
 
       console.log("Contact created successfully:", response.data);
 
-      // You can add success notification here
-      alert("Contact saved successfully!");
+      // Show success notification with alert modal
+      showAlert("success", "Contact has been successfully verified and saved!");
 
-      // Optionally navigate back to records page
-      navigate("/verify-records", { view: "visitingCards" });
+      // Navigate back to records page after a short delay
+      setTimeout(() => {
+        navigate("/verify-records", {
+          state: { view: "visitingCards" },
+        });
+      }, 2000);
     } catch (error) {
       console.error("Error creating contact:", error);
 
-      // Show error message to user
+      // Show error message with alert modal
       if (error.response?.data?.message) {
-        alert(`Error: ${error.response.data.message}`);
+        showAlert("error", `Error: ${error.response.data.message}`);
       } else {
-        alert("Failed to save contact. Please try again.");
+        showAlert("error", "Failed to save contact. Please try again.");
       }
     }
   };
@@ -454,10 +477,11 @@ const VisitingCardDetails = () => {
                     type="text"
                     value={visitingCardDetails.name}
                     onChange={(e) => handleInputChange("name", e.target.value)}
-                    className={`w-full pl-10 pr-10 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${isExtracted && extractedData.name
-                      ? "bg-blue-50 border-blue-200"
-                      : "border-gray-300"
-                      }`}
+                    className={`w-full pl-10 pr-10 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
+                      isExtracted && extractedData.name
+                        ? "bg-blue-50 border-blue-200"
+                        : "border-gray-300"
+                    }`}
                     placeholder="Enter full name"
                   />
                   {isExtracted && extractedData.name && (
@@ -581,10 +605,11 @@ const VisitingCardDetails = () => {
                     onChange={(e) =>
                       handleInputChange("phone_number", e.target.value)
                     }
-                    className={`w-full pl-10 pr-10 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${isExtracted && extractedData.phone_number
-                      ? "bg-blue-50 border-blue-200"
-                      : "border-gray-300"
-                      }`}
+                    className={`w-full pl-10 pr-10 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
+                      isExtracted && extractedData.phone_number
+                        ? "bg-blue-50 border-blue-200"
+                        : "border-gray-300"
+                    }`}
                     placeholder="Enter primary phone"
                   />
                   {isExtracted && extractedData.phone_number && (
@@ -626,10 +651,11 @@ const VisitingCardDetails = () => {
                     onChange={(e) =>
                       handleInputChange("email_address", e.target.value)
                     }
-                    className={`w-full pl-10 pr-10 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${isExtracted && extractedData.email_address
-                      ? "bg-blue-50 border-blue-200"
-                      : "border-gray-300"
-                      }`}
+                    className={`w-full pl-10 pr-10 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
+                      isExtracted && extractedData.email_address
+                        ? "bg-blue-50 border-blue-200"
+                        : "border-gray-300"
+                    }`}
                     placeholder="Enter primary email"
                   />
                   {isExtracted && extractedData.email_address && (
@@ -759,10 +785,11 @@ const VisitingCardDetails = () => {
                   type="text"
                   value={visitingCardDetails.city}
                   onChange={(e) => handleInputChange("city", e.target.value)}
-                  className={`w-full py-3 px-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${isExtracted && extractedData.city
-                    ? "bg-blue-50 border-blue-200"
-                    : "border-gray-300"
-                    }`}
+                  className={`w-full py-3 px-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
+                    isExtracted && extractedData.city
+                      ? "bg-blue-50 border-blue-200"
+                      : "border-gray-300"
+                  }`}
                   placeholder="Enter city"
                 />
               </div>
@@ -775,10 +802,11 @@ const VisitingCardDetails = () => {
                   type="text"
                   value={visitingCardDetails.state}
                   onChange={(e) => handleInputChange("state", e.target.value)}
-                  className={`w-full py-3 px-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${isExtracted && extractedData.state
-                    ? "bg-blue-50 border-blue-200"
-                    : "border-gray-300"
-                    }`}
+                  className={`w-full py-3 px-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
+                    isExtracted && extractedData.state
+                      ? "bg-blue-50 border-blue-200"
+                      : "border-gray-300"
+                  }`}
                   placeholder="Enter state/province"
                 />
               </div>
@@ -791,10 +819,11 @@ const VisitingCardDetails = () => {
                   type="text"
                   value={visitingCardDetails.country}
                   onChange={(e) => handleInputChange("country", e.target.value)}
-                  className={`w-full py-3 px-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${isExtracted && extractedData.country
-                    ? "bg-blue-50 border-blue-200"
-                    : "border-gray-300"
-                    }`}
+                  className={`w-full py-3 px-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
+                    isExtracted && extractedData.country
+                      ? "bg-blue-50 border-blue-200"
+                      : "border-gray-300"
+                  }`}
                   placeholder="Enter country"
                 />
               </div>
@@ -1325,13 +1354,13 @@ const VisitingCardDetails = () => {
                   <span
                     className={
                       visitingCardDetails.phone_number &&
-                        visitingCardDetails.email_address
+                      visitingCardDetails.email_address
                         ? "text-green-600 font-medium"
                         : "text-gray-400"
                     }
                   >
                     {visitingCardDetails.phone_number &&
-                      visitingCardDetails.email_address
+                    visitingCardDetails.email_address
                       ? "✓ Complete"
                       : "Incomplete"}
                   </span>
@@ -1369,13 +1398,13 @@ const VisitingCardDetails = () => {
                   <span
                     className={
                       visitingCardDetails.ug_course_name ||
-                        visitingCardDetails.pg_course_name
+                      visitingCardDetails.pg_course_name
                         ? "text-green-600 font-medium"
                         : "text-gray-400"
                     }
                   >
                     {visitingCardDetails.ug_course_name ||
-                      visitingCardDetails.pg_course_name
+                    visitingCardDetails.pg_course_name
                       ? "✓ Complete"
                       : "Incomplete"}
                   </span>
@@ -1431,7 +1460,7 @@ const VisitingCardDetails = () => {
           <button
             onClick={() => {
               console.log("Navigating with state:", { view: "visitingCards" });
-              navigate("/verify-records", { state: { view: "visitingCards" } })
+              navigate("/verify-records", { state: { view: "visitingCards" } });
             }}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
@@ -1444,6 +1473,16 @@ const VisitingCardDetails = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Alert Component */}
+      <Alert
+        isOpen={alert.isOpen}
+        severity={alert.severity}
+        message={alert.message}
+        onClose={closeAlert}
+        position="top"
+        duration={4000}
+      />
+
       {/* Header */}
       <header className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-6 py-4">
@@ -1451,9 +1490,14 @@ const VisitingCardDetails = () => {
             <div className="flex items-center space-x-4">
               <button
                 onClick={() => {
-                  console.log("Navigating with state:", { view: "visitingCards" });
-                  navigate("/verify-records", { state: { view: "visitingCards" } })
-                }} className="p-2 hover:bg-gray-50 rounded-lg transition-colors"
+                  console.log("Navigating with state:", {
+                    view: "visitingCards",
+                  });
+                  navigate("/verify-records", {
+                    state: { view: "visitingCards" },
+                  });
+                }}
+                className="p-2 hover:bg-gray-50 rounded-lg transition-colors"
               >
                 <ArrowLeft className="w-5 h-5 text-gray-600" />
               </button>
@@ -1468,7 +1512,7 @@ const VisitingCardDetails = () => {
             </div>
           </div>
         </div>
-      </header >
+      </header>
 
       <main className="max-w-7xl mx-auto p-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -1516,12 +1560,13 @@ const VisitingCardDetails = () => {
                 <button
                   onClick={handleExtract}
                   disabled={isExtracting}
-                  className={`w-full py-3 px-4 rounded-lg font-medium transition-all duration-200 ${isExtracting
-                    ? "bg-blue-500 text-white cursor-not-allowed"
-                    : isExtracted
+                  className={`w-full py-3 px-4 rounded-lg font-medium transition-all duration-200 ${
+                    isExtracting
+                      ? "bg-blue-500 text-white cursor-not-allowed"
+                      : isExtracted
                       ? "bg-green-50 text-green-700 border border-green-200"
                       : "bg-blue-600 text-white hover:bg-blue-700"
-                    }`}
+                  }`}
                 >
                   {isExtracting ? (
                     <div className="flex items-center justify-center space-x-2">
@@ -1604,12 +1649,13 @@ const VisitingCardDetails = () => {
                         {/* Step Circle */}
                         <button
                           onClick={() => goToStep(index)}
-                          className={`relative flex items-center justify-center w-10 h-10 rounded-full text-sm font-medium transition-colors ${status === "completed"
-                            ? "bg-blue-600 text-white hover:bg-blue-700"
-                            : status === "current"
+                          className={`relative flex items-center justify-center w-10 h-10 rounded-full text-sm font-medium transition-colors ${
+                            status === "completed"
+                              ? "bg-blue-600 text-white hover:bg-blue-700"
+                              : status === "current"
                               ? "bg-blue-100 text-blue-600 border-2 border-blue-600"
                               : "bg-gray-100 text-gray-400 hover:bg-gray-200"
-                            }`}
+                          }`}
                         >
                           {status === "completed" ? (
                             <Check className="w-5 h-5" />
@@ -1621,10 +1667,11 @@ const VisitingCardDetails = () => {
                         {/* Step Connector */}
                         {index < steps.length - 1 && (
                           <div
-                            className={`h-0.5 w-8 mx-2 ${index < currentStep
-                              ? "bg-blue-600"
-                              : "bg-gray-200"
-                              }`}
+                            className={`h-0.5 w-8 mx-2 ${
+                              index < currentStep
+                                ? "bg-blue-600"
+                                : "bg-gray-200"
+                            }`}
                           ></div>
                         )}
                       </div>
@@ -1641,12 +1688,13 @@ const VisitingCardDetails = () => {
                       <div key={step.id} className="flex items-center">
                         <div className="text-center">
                           <p
-                            className={`text-xs font-medium ${status === "current"
-                              ? "text-blue-600"
-                              : status === "completed"
+                            className={`text-xs font-medium ${
+                              status === "current"
+                                ? "text-blue-600"
+                                : status === "completed"
                                 ? "text-blue-600"
                                 : "text-gray-400"
-                              }`}
+                            }`}
                           >
                             {step.shortTitle}
                           </p>
@@ -1681,10 +1729,11 @@ const VisitingCardDetails = () => {
                     type="button"
                     onClick={prevStep}
                     disabled={currentStep === 0}
-                    className={`flex items-center space-x-2 px-6 py-2.5 text-sm font-medium rounded-lg transition-colors ${currentStep === 0
-                      ? "text-gray-400 cursor-not-allowed"
-                      : "text-gray-700 hover:bg-gray-50 border border-gray-300"
-                      }`}
+                    className={`flex items-center space-x-2 px-6 py-2.5 text-sm font-medium rounded-lg transition-colors ${
+                      currentStep === 0
+                        ? "text-gray-400 cursor-not-allowed"
+                        : "text-gray-700 hover:bg-gray-50 border border-gray-300"
+                    }`}
                   >
                     <ChevronLeft className="w-4 h-4" />
                     <span>Previous</span>
@@ -1721,73 +1770,71 @@ const VisitingCardDetails = () => {
       </main>
 
       {/* Image Modal */}
-      {
-        isModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-transparent backdrop-blur-sm">
-            {/* Modal Backdrop */}
-            <div
-              className="absolute inset-0 bg-transparent"
-              onClick={() => setIsModalOpen(false)}
-            ></div>
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-transparent backdrop-blur-sm">
+          {/* Modal Backdrop */}
+          <div
+            className="absolute inset-0 bg-transparent"
+            onClick={() => setIsModalOpen(false)}
+          ></div>
 
-            {/* Modal Content */}
-            <div className="relative bg-white rounded-lg shadow-2xl max-w-4xl max-h-[90vh] w-full overflow-hidden">
-              {/* Modal Header */}
-              <div className="flex items-center justify-between p-4 border-b border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900">
-                  Visiting Card - Enlarged View
-                </h3>
+          {/* Modal Content */}
+          <div className="relative bg-white rounded-lg shadow-2xl max-w-4xl max-h-[90vh] w-full overflow-hidden">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Visiting Card - Enlarged View
+              </h3>
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6">
+              <div className="flex justify-center">
+                {currentCard?.file_path ? (
+                  <img
+                    src={`http://localhost:8000/${currentCard.file_path.replace(
+                      /\\/g,
+                      "/"
+                    )}`}
+                    alt="Visiting Card - Enlarged"
+                    className="max-w-full max-h-[70vh] object-contain rounded-lg shadow-lg"
+                    onError={(e) => {
+                      e.target.src =
+                        "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 240'%3E%3Crect width='400' height='240' fill='%23f5f5f5'/%3E%3Ctext x='200' y='120' text-anchor='middle' fill='%23999' font-family='Arial' font-size='14'%3EImage not found%3C/text%3E%3C/svg%3E";
+                    }}
+                  />
+                ) : (
+                  <div className="flex items-center justify-center h-64 bg-gray-100 rounded-lg">
+                    <p className="text-gray-500">No card image available</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex items-center justify-between p-4 border-t border-gray-200 bg-gray-50">
+              <p className="text-sm text-gray-600">
+                Card ID: {id} • Click outside or press X to close
+              </p>
+              <div className="flex space-x-2">
                 <button
                   onClick={() => setIsModalOpen(false)}
-                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                 >
-                  <X className="w-5 h-5 text-gray-500" />
+                  Close
                 </button>
-              </div>
-
-              {/* Modal Body */}
-              <div className="p-6">
-                <div className="flex justify-center">
-                  {currentCard?.file_path ? (
-                    <img
-                      src={`http://localhost:8000/${currentCard.file_path.replace(
-                        /\\/g,
-                        "/"
-                      )}`}
-                      alt="Visiting Card - Enlarged"
-                      className="max-w-full max-h-[70vh] object-contain rounded-lg shadow-lg"
-                      onError={(e) => {
-                        e.target.src =
-                          "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 240'%3E%3Crect width='400' height='240' fill='%23f5f5f5'/%3E%3Ctext x='200' y='120' text-anchor='middle' fill='%23999' font-family='Arial' font-size='14'%3EImage not found%3C/text%3E%3C/svg%3E";
-                      }}
-                    />
-                  ) : (
-                    <div className="flex items-center justify-center h-64 bg-gray-100 rounded-lg">
-                      <p className="text-gray-500">No card image available</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Modal Footer */}
-              <div className="flex items-center justify-between p-4 border-t border-gray-200 bg-gray-50">
-                <p className="text-sm text-gray-600">
-                  Card ID: {id} • Click outside or press X to close
-                </p>
-                <div className="flex space-x-2">
-                  <button
-                    onClick={() => setIsModalOpen(false)}
-                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                  >
-                    Close
-                  </button>
-                </div>
               </div>
             </div>
           </div>
-        )
-      }
-    </div >
+        </div>
+      )}
+    </div>
   );
 };
 
