@@ -769,7 +769,7 @@ function DetailsInput() {
         if (source === 'middleman') {
           // For MiddleManRecords - approve contact
           response = await axios.put(
-            `http://localhost:8000/api/update-contact/${apiPayload.contact_id}?contact_status=approved&event_verified=true`,
+            `http://localhost:8000/api/update-contact/${apiPayload.contact_id}?contact_status=approved&event_verified=true&userId=${id}`,
             apiPayload
           );
           successMessage = `${apiPayload.name || initialData.name} has been successfully verified and added to contacts.`;
@@ -777,7 +777,7 @@ function DetailsInput() {
         } else if (source === 'userassignments') {
           // For UserAssignments - update as pending
           response = await axios.put(
-            `http://localhost:8000/api/update-contact/${apiPayload.contact_id}?event_verified=false&contact_status=pending`,
+            `http://localhost:8000/api/update-contact/${apiPayload.contact_id}?event_verified=false&contact_status=pending&userId=${id}`,
             apiPayload
           );
           successMessage = successCallback?.message || `${apiPayload.name || initialData.name} has been successfully updated.`;
@@ -802,7 +802,7 @@ function DetailsInput() {
           } else {
             navigate(-1);
           }
-        }, 1500);
+        }, 500);
 
       } else if (isAddMode && !initialData || isAddMode && initialData == null) {
         if (source == "admin") {
@@ -832,7 +832,7 @@ function DetailsInput() {
       try {
         const response = await axios.post(`http://localhost:8000/api/assign/`, {
           assigned_by: currentUserId,
-          assigned_to: initialData.created_by,
+          assigned_to: initialData.events[0]?.created_by,
           event_id: initialData.events[0]?.event_id,
         });
         console.log("Assign to user response:", response.data);

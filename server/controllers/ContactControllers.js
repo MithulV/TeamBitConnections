@@ -301,6 +301,13 @@ export const CreateContact = async (req, res) => {
                 }
             }
 
+            try {
+                logContactModification(db, contactId, created_by, "CREATE", t);
+            } catch (err) {
+                console.warn("Contact modification logging failed, but continuing operation:", err.message);
+                // Execution continues
+            }
+
             return {
                 contact,
                 address: createdAddress,
@@ -365,7 +372,6 @@ ORDER BY
         });
     }
 };
-
 
 export const GetContactsByCategory = async (req, res) => {
     try {
@@ -433,7 +439,7 @@ export const GetUnVerifiedContacts = async (req, res) => {
 };
 
 export const UpdateContactAndEvents = async (req, res) => {
-    const { id } = req.params;
+    const { id, userId } = req.params;
     const { name, phone_number, email_address, events } = req.body;
 
     if (!id) {
@@ -513,6 +519,13 @@ export const UpdateContactAndEvents = async (req, res) => {
                 updatedEvents.push(eventResults[0]);
             }
 
+            try {
+                logContactModification(db, id, userId, "UPDATE", t);
+            } catch (err) {
+                console.warn("Contact modification logging failed, but continuing operation:", err.message);
+                // Execution continues
+            }
+
             return {
                 contact: updatedContact,
                 events: updatedEvents,
@@ -550,7 +563,7 @@ export const UpdateContactAndEvents = async (req, res) => {
 
 export const UpdateContact = async (req, res) => {
     const { contact_id } = req.params || {};
-    const { event_verified, contact_status } = req.query;
+    const { event_verified, contact_status, userId } = req.query;
     const isVerified = event_verified === "true";
 
     const {
@@ -783,10 +796,44 @@ export const UpdateContact = async (req, res) => {
                     if (updatedEvent) updatedEvents.push(updatedEvent);
                 }
             }
+            // Check if the event_id has an assignment first
+            const [eventAssignment] = await db`
+    SELECT * FROM user_assignments 
+    WHERE event_id = ${event_id} 
+    LIMIT 1
+`;
+            console.log(eventAssignment)
 
             if (assignment_id) {
+                console.log(`Event ID ${event_id} has an active assignment - updating as assigned user`);
                 console.log("Marking assignment as completed:", assignment_id);
                 await t`UPDATE user_assignments SET completed = TRUE WHERE id = ${assignment_id}`;
+
+                try {
+                    console.log(userId);
+                    logContactModification(db, activeContactId, userId, "USER UPDATE", t, null);
+                } catch (err) {
+                    console.warn("Contact modification logging failed, but continuing operation:", err.message);
+                    // Execution continues
+                }
+            } else {
+                if (eventAssignment) {
+                    try {
+                        console.log(userId);
+                        logContactModification(db, activeContactId, userId, "USER VERIFY", t, null);
+                    } catch (err) {
+                        console.warn("Contact modification logging failed, but continuing operation:", err.message);
+                    }
+                } else {
+                    console.log(`Event ID ${event_id} has no assignment - regular update`);
+                    try {
+                        console.log(userId);
+                        logContactModification(db, activeContactId, userId, "UPDATE", t, null);
+                    } catch (err) {
+                        console.warn("Contact modification logging failed, but continuing operation:", err.message);
+                        // Execution continues
+                    }
+                }
             }
 
             return {
@@ -911,7 +958,7 @@ const performCompleteDeletion = async (transaction, contactId) => {
 };
 
 export const AddEventToExistingContact = async (req, res) => {
-    const { contactId } = req.params;
+    const { contactId, userId } = req.params;
     const { eventName, eventRole, eventDate, eventHeldOrganization, eventLocation, verified } = req.body;
 
     if (!eventName || !eventRole || !eventDate) {
@@ -929,6 +976,13 @@ export const AddEventToExistingContact = async (req, res) => {
         })
       RETURNING *
     `;
+
+        try {
+            logContactModification(db, contactId, userId, "UPDATE");
+        } catch (err) {
+            console.warn("Contact modification logging failed, but continuing operation:", err.message);
+            // Execution continues
+        }
         return res.status(201).json({
             success: true,
             message: "New event added successfully!",
@@ -962,7 +1016,7 @@ export const SearchContacts = async (req, res) => {
     const searchTerm = `%${q}%`;
 
     try {
-const contacts = await db`
+        const contacts = await db`
   SELECT
     contact_id,
     name,
@@ -984,7 +1038,6 @@ const contacts = await db`
     name
   LIMIT 10
 `;
-
 
         return res.status(200).json({
             success: true,
@@ -1392,6 +1445,49 @@ export const GetFilterOptions = async (req, res) => {
         return res.status(500).json({
             success: false,
             error: err.message,
+        });
+    }
+};
+
+import { getModificationHistory } from "./ModificationHistoryControllers.js";
+
+// Get contact modification history
+export const getContactModificationHistory = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Validate contact ID
+        if (!id || isNaN(parseInt(id))) {
+            return res.status(400).json({
+                success: false,
+                message: "Valid contact ID is required",
+            });
+        }
+
+        const contactId = parseInt(id);
+
+        // Fetch modification history
+        const history = await getModificationHistory(db, contactId);
+
+        if (!history || history.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "No modification history found for this contact",
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: "Contact modification history retrieved successfully",
+            data: history,
+            count: history.length,
+        });
+    } catch (error) {
+        console.error("Error in getContactModificationHistory controller:", error);
+        res.status(500).json({
+            success: false,
+            message: "Internal server error while fetching modification history",
+            error: process.env.NODE_ENV === "development" ? error.message : undefined,
         });
     }
 };

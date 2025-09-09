@@ -1,6 +1,7 @@
 // controllers/assignmentController.js
 
 import db from "../src/config/db.js"; // Adjust the path if necessary
+import { logContactModification } from "./ModificationHistoryControllers.js";
 
 /**
  * @description Assign an event to a user. An event can only be assigned to one user.
@@ -30,6 +31,15 @@ export const createAssignment = async (req, res) => {
             return res.status(409).json({ message: "This event has already been assigned to another user." });
         }
 
+        // --- Get contact_id from event table ---
+        const [eventRecord] = await db`
+            SELECT contact_id FROM event WHERE event_id = ${event_id} LIMIT 1
+        `;
+
+        if (!eventRecord) {
+            return res.status(404).json({ message: "The specified event does not exist." });
+        }
+
         // --- Create new assignment ---
         const [newAssignment] = await db`
             INSERT INTO user_assignments (assigned_by, assigned_to, event_id)
@@ -37,9 +47,20 @@ export const createAssignment = async (req, res) => {
             RETURNING *
         `;
 
-        return res.status(201).json({ message: "Event assigned successfully!", data: newAssignment });
+        // --- Log contact modification with ASSIGN type ---
+        if (eventRecord.contact_id) {
+            await logContactModification(db, eventRecord.contact_id, assigned_by, "ASSIGN", db  , assigned_to);
+            console.log(`Logged ASSIGN modification for contact_id: ${eventRecord.contact_id} by user: ${assigned_by}`);
+        }
+
+        return res.status(201).json({ 
+            message: "Event assigned successfully!", 
+            data: newAssignment,
+            contact_id: eventRecord.contact_id 
+        });
+
     } catch (err) {
-        console.error("Error creating assignment:", err.message);
+        console.error("Error creating assignment:", err);
 
         // Handle unique constraint violation (race condition)
         if (err.code === "23505") {
@@ -56,6 +77,7 @@ export const createAssignment = async (req, res) => {
         return res.status(500).json({ message: "Internal Server Error", error: err.message });
     }
 };
+
 
 /**
  * @description Get all events assigned TO a specific user.
