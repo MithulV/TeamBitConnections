@@ -12,6 +12,7 @@ import {
   GetFilteredContacts,
   GetFilterOptions,
   GetAllContact,
+  getContactModificationHistory,
 } from "../controllers/ContactControllers.js";
 
 import {
@@ -63,7 +64,7 @@ router.put("/complete-task/:id", CompleteTask);
 router.get("/get-filter-options", GetFilterOptions);
 router.post("/create-task",CreateTask);
 router.get("/searchContacts", SearchContacts)
-router.get("/get-modification-history/", getModificationHistory)
+router.get("/get-modification-history/:id", getContactModificationHistory)
 //csv file upload
 router.post('/import-csv', uploadCSV, ImportContactsFromCSV);
 export default router;
