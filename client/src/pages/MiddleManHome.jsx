@@ -708,8 +708,8 @@ const MiddleManHome = () => {
         const category = rolesDict[role];
 
         const url = category
-          ? `/api/get-filter-options?category=${category}`
-          : "/api/get-filter-options";
+          ? `/api/get-filter-options?category=${role}`
+          : `/api/get-filter-options?category=${role}`;
 
         const response = await api.get(url);
         console.log("Filter Options: ", response.data)
@@ -1038,7 +1038,7 @@ const MiddleManHome = () => {
                 </div>
               )}
             </>
-          }
+          )}
         </div>
       </div>
 
