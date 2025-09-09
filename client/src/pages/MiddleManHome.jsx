@@ -354,14 +354,11 @@ const FilterModal = ({
                 <h2 className="text-2xl font-bold">Advanced Filters</h2>
                 <p className="text-blue-100 text-sm">
                   {getActiveFilterCount() > 0
-                    ? `${getActiveFilterCount()} active filters • ${
-                        contacts.length
-                      } contacts found`
-                    : `Filter from ${
-                        filterOptions.skills?.length || 0
-                      }+ skills, ${
-                        filterOptions.companies?.length || 0
-                      }+ companies, and more`}
+                    ? `${getActiveFilterCount()} active filters • ${contacts.length
+                    } contacts found`
+                    : `Filter from ${filterOptions.skills?.length || 0
+                    }+ skills, ${filterOptions.companies?.length || 0
+                    }+ companies, and more`}
                 </p>
               </div>
             </div>
@@ -715,7 +712,7 @@ const MiddleManHome = () => {
           : "/api/get-filter-options";
 
         const response = await api.get(url);
-        console.log("Filter Options: ", response.data);
+        console.log("Filter Options: ", response.data)
         setFilterOptions(response.data.data);
       } catch (error) {
         console.error("Failed to fetch filter options:", error);
@@ -847,18 +844,18 @@ const MiddleManHome = () => {
   const handleEditClick = (user) => {
     // setEditingUser(user || null);
     // setIsEditing(true);
-    navigate("/details-input", {
+    navigate('/details-input', {
       state: {
         contact: user,
         isAddMode: true,
-        source: "middleman",
+        source: 'middleman',
         currentUserId: id,
         userRole: role,
         successCallback: {
           message: `${user.name} has been successfully verified and added to contacts.`,
-          refreshData: true,
-        },
-      },
+          refreshData: true
+        }
+      }
     });
   };
 
@@ -971,7 +968,7 @@ const MiddleManHome = () => {
       <Header />
       <div className="p-6">
         <div className="max-w-7xl mx-auto">
-          {
+          {(
             <>
               {/* Search and Filter Controls */}
               <div className="flex flex-col md:flex-row gap-4 items-center mb-6">
@@ -992,11 +989,10 @@ const MiddleManHome = () => {
                 {/* Filter Button */}
                 <button
                   onClick={() => setIsFilterModalOpen(true)}
-                  className={`flex items-center gap-2 px-4 py-3 border rounded-lg transition-colors ${
-                    getActiveFilterCount() > 0
-                      ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700"
-                      : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-                  }`}
+                  className={`flex items-center gap-2 px-4 py-3 border rounded-lg transition-colors ${getActiveFilterCount() > 0
+                    ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700"
+                    : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                    }`}
                   title="Open Filters"
                 >
                   <Filter size={20} />
