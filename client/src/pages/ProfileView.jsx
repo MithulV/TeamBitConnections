@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   ArrowLeft,
   Briefcase,
@@ -18,6 +18,10 @@ import {
   ChevronUp,
   ChevronDown,
   X,
+  UserCheck,
+  UserPlus,
+  Trash2,
+  Settings,
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../store/AuthStore";
@@ -25,6 +29,9 @@ import { useAuthStore } from "../store/AuthStore";
 function ProfileView() {
   const [showFullHistory, setShowFullHistory] = useState(false);
   const [showExpandedHierarchy, setShowExpandedHierarchy] = useState(false);
+  const [modificationHistory, setModificationHistory] = useState([]);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(true);
+  
   const navigate = useNavigate();
   const location = useLocation();
   const { role, id } = useAuthStore();
@@ -32,6 +39,32 @@ function ProfileView() {
   // Access the state object passed during navigation
   const contact = location.state || {};
   console.log(contact);
+
+  // Fetch modification history from API
+  useEffect(() => {
+    const fetchModificationHistory = async () => {
+      try {
+        const contactId = contact.contact_id || contact.id;
+        if (!contactId) {
+          setIsLoadingHistory(false);
+          return;
+        }
+
+        const response = await fetch(`http://localhost:8000/api/get-modification-history/${contactId}`);
+        const data = await response.json();
+
+        if (data.success && data.data) {
+          setModificationHistory(data.data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch modification history:", error);
+      } finally {
+        setIsLoadingHistory(false);
+      }
+    };
+
+    fetchModificationHistory();
+  }, [contact]);
 
   const handleCloseProfile = () => {
     navigate("/contacts");
@@ -71,6 +104,50 @@ function ProfileView() {
       .map((n) => n[0])
       .join("")
       .toUpperCase();
+  };
+
+  // Updated function to get modification type icon
+  const getModificationTypeIcon = (modificationType) => {
+    switch (modificationType) {
+      case "CREATE":
+        return <UserPlus className="w-4 h-4" />;
+      case "UPDATE":
+        return <Settings className="w-4 h-4" />;
+      case "USER UPDATE":
+        return <Edit3 className="w-4 h-4" />;
+      case "USER VERIFY":
+        return <UserCheck className="w-4 h-4" />;
+      case "ASSIGN":
+        return <Users className="w-4 h-4" />;
+      case "DELETE":
+        return <Trash2 className="w-4 h-4" />;
+      case "CONTACT":
+        return <Phone className="w-4 h-4" />;
+      default:
+        return <MessageCircle className="w-4 h-4" />;
+    }
+  };
+
+  // Updated function to get modification type color
+  const getModificationTypeColor = (modificationType) => {
+    switch (modificationType) {
+      case "CREATE":
+        return "from-green-100 to-emerald-100 border-green-200 text-green-700";
+      case "UPDATE":
+        return "from-blue-100 to-sky-100 border-blue-200 text-blue-700";
+      case "USER UPDATE":
+        return "from-orange-100 to-amber-100 border-orange-200 text-orange-700";
+      case "USER VERIFY":
+        return "from-purple-100 to-indigo-100 border-purple-200 text-purple-700";
+      case "ASSIGN":
+        return "from-cyan-100 to-teal-100 border-cyan-200 text-cyan-700";
+      case "DELETE":
+        return "from-red-100 to-rose-100 border-red-200 text-red-700";
+      case "CONTACT":
+        return "from-pink-100 to-fuchsia-100 border-pink-200 text-pink-700";
+      default:
+        return "from-gray-100 to-slate-100 border-gray-200 text-gray-700";
+    }
   };
 
   const getContactTypeIcon = (type) => {
@@ -184,20 +261,24 @@ function ProfileView() {
     linkedinUrl: contact.linkedin_url || null,
     initials: contact.initials || getInitials(contact.name),
     avatarColor: contact.avatarColor || "#DB2777",
-    // Dummy data for features not yet implemented
-    contactHistory: [
-      {
-        id: 1,
-        type: "email",
-        initiator: "System",
-        date: formatDate(contact.created_at),
-        time: new Date(contact.created_at).toLocaleTimeString(),
-        title: "Contact Added",
-        description: `Contact was added to the system by user ${contact.created_by}`,
-      },
-    ],
     notes: contact.logger || "No notes available",
   };
+
+  // Combine modification history with any existing dummy data
+  const combinedContactHistory = [
+    ...modificationHistory.map(item => ({
+      id: item.id,
+      type: "modification",
+      modificationType: item.modification_type,
+      initiator: item.username,
+      assignedTo: item.assigned_to_username,
+      date: formatDate(item.created_at),
+      time: new Date(item.created_at).toLocaleTimeString(),
+      title: item.modification_type.replace("_", " "),
+      description: item.description,
+      created_at: item.created_at,
+    })),
+  ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
   // Full History Modal Component
   const FullHistoryModal = () => (
@@ -208,8 +289,7 @@ function ProfileView() {
             <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
               <Clock className="text-white w-4 h-4" />
             </div>
-            Complete Contact History ({contactData.contactHistory.length}{" "}
-            interactions)
+            Complete Contact History ({combinedContactHistory.length} interactions)
           </h2>
           <button
             onClick={() => setShowFullHistory(false)}
@@ -219,36 +299,57 @@ function ProfileView() {
           </button>
         </div>
         <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)] bg-gray-50">
-          <div className="space-y-4">
-            {contactData.contactHistory.map((contactHistoryItem, index) => (
-              <div
-                key={contactHistoryItem.id}
-                className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm hover:shadow-md transition-all duration-200"
-              >
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center text-xl">
-                    {getContactTypeIcon(contactHistoryItem.type)}
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-gray-600">
-                        {contactHistoryItem.initiator}
-                      </span>
-                      <span className="text-sm text-gray-500">
-                        {contactHistoryItem.date} • {contactHistoryItem.time}
-                      </span>
+          {isLoadingHistory ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <span className="ml-2 text-gray-600">Loading history...</span>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {combinedContactHistory.map((historyItem, index) => (
+                <div
+                  key={`${historyItem.type}-${historyItem.id}`}
+                  className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm hover:shadow-md transition-all duration-200"
+                >
+                  <div className="flex items-start gap-4">
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center text-xl bg-gradient-to-br ${
+                      historyItem.type === 'modification' 
+                        ? getModificationTypeColor(historyItem.modificationType)
+                        : getContactTypeColor(historyItem.type)
+                    }`}>
+                      {historyItem.type === 'modification' 
+                        ? getModificationTypeIcon(historyItem.modificationType)
+                        : getContactTypeIcon(historyItem.type)
+                      }
                     </div>
-                    <h4 className="font-semibold text-gray-900 mb-2">
-                      {contactHistoryItem.title}
-                    </h4>
-                    <p className="text-gray-700 text-sm">
-                      {contactHistoryItem.description}
-                    </p>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-gray-600">
+                            {historyItem.initiator}
+                          </span>
+                          {historyItem.assignedTo && (
+                            <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-full">
+                              → {historyItem.assignedTo}
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-sm text-gray-500">
+                          {historyItem.date} • {historyItem.time}
+                        </span>
+                      </div>
+                      <h4 className="font-semibold text-gray-900 mb-2 capitalize">
+                        {historyItem.title}
+                      </h4>
+                      <p className="text-gray-700 text-sm">
+                        {historyItem.description}
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -407,43 +508,60 @@ function ProfileView() {
                 </h2>
               </div>
               <div className="p-6">
-                <div className="space-y-4">
-                  {contactData.contactHistory
-                    .slice(0, 3)
-                    .map((contactHistoryItem, index) => (
+                {isLoadingHistory ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600"></div>
+                    <span className="ml-2 text-gray-600">Loading recent history...</span>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {combinedContactHistory.slice(0, 3).map((historyItem, index) => (
                       <div
-                        key={contactHistoryItem.id}
+                        key={`recent-${historyItem.type}-${historyItem.id}`}
                         className="flex items-start gap-4 p-4 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors"
                       >
-                        <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center text-lg flex-shrink-0">
-                          {getContactTypeIcon(contactHistoryItem.type)}
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg flex-shrink-0 bg-gradient-to-br ${
+                          historyItem.type === 'modification' 
+                            ? getModificationTypeColor(historyItem.modificationType)
+                            : getContactTypeColor(historyItem.type)
+                        }`}>
+                          {historyItem.type === 'modification' 
+                            ? getModificationTypeIcon(historyItem.modificationType)
+                            : getContactTypeIcon(historyItem.type)
+                          }
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between mb-1">
-                            <span className="text-sm font-medium text-gray-600">
-                              {contactHistoryItem.initiator}
-                            </span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-medium text-gray-600">
+                                {historyItem.initiator}
+                              </span>
+                              {historyItem.assignedTo && (
+                                <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-full">
+                                  → {historyItem.assignedTo}
+                                </span>
+                              )}
+                            </div>
                             <span className="text-sm text-gray-500">
-                              {contactHistoryItem.date} •{" "}
-                              {contactHistoryItem.time}
+                              {historyItem.date} • {historyItem.time}
                             </span>
                           </div>
-                          <h4 className="font-medium text-gray-900 mb-1">
-                            {contactHistoryItem.title}
+                          <h4 className="font-medium text-gray-900 mb-1 capitalize">
+                            {historyItem.title}
                           </h4>
                           <p className="text-gray-600 text-sm">
-                            {contactHistoryItem.description}
+                            {historyItem.description}
                           </p>
                         </div>
                       </div>
                     ))}
-                </div>
+                  </div>
+                )}
                 <button
                   onClick={() => setShowFullHistory(true)}
                   className="w-full mt-4 py-2 text-center bg-indigo-50 hover:bg-indigo-100 transition-colors rounded-lg font-medium text-indigo-700 border border-indigo-200"
                 >
-                  View Full History ({contactData.contactHistory.length}{" "}
-                  interactions)
+                  View Full History ({combinedContactHistory.length} interactions)
                 </button>
               </div>
             </div>
@@ -545,12 +663,10 @@ function ProfileView() {
                               {event.event_name}
                             </h3>
                             <p className="text-amber-700 font-medium mb-1">
-                              {event.event_role} •{" "}
-                              {event.event_held_organization}
+                              {event.event_role} • {event.event_held_organization}
                             </p>
                             <p className="text-gray-600 text-sm">
-                              {formatDate(event.event_date)} •{" "}
-                              {event.event_location}
+                              {formatDate(event.event_date)} • {event.event_location}
                             </p>
                             {event.verified && (
                               <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 mt-2">
@@ -596,21 +712,19 @@ function ProfileView() {
               </div>
               <div className="p-6">
                 <div className="space-y-4">
-                  {Object.entries(contactData.contactInfo).map(
-                    ([key, value]) => (
-                      <div
-                        key={key}
-                        className="flex justify-between items-center py-2 border-b border-gray-100 last:border-b-0"
-                      >
-                        <p className="text-sm text-gray-600 capitalize">
-                          {key.replace(/([A-Z])/g, " $1").trim()}
-                        </p>
-                        <p className="font-medium text-gray-900 text-right">
-                          {value}
-                        </p>
-                      </div>
-                    )
-                  )}
+                  {Object.entries(contactData.contactInfo).map(([key, value]) => (
+                    <div
+                      key={key}
+                      className="flex justify-between items-center py-2 border-b border-gray-100 last:border-b-0"
+                    >
+                      <p className="text-sm text-gray-600 capitalize">
+                        {key.replace(/([A-Z])/g, " $1").trim()}
+                      </p>
+                      <p className="font-medium text-gray-900 text-right">
+                        {value}
+                      </p>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
@@ -627,9 +741,7 @@ function ProfileView() {
                 <div className="p-6">
                   <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
                     <div className="space-y-2 text-gray-700">
-                      <p className="font-medium">
-                        {contactData.address.street}
-                      </p>
+                      <p className="font-medium">{contactData.address.street}</p>
                       <p>
                         {contactData.address.city}, {contactData.address.state}
                       </p>
