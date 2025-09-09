@@ -439,6 +439,7 @@ export const GetUnVerifiedContacts = async (req, res) => {
 };
 
 export const UpdateContactAndEvents = async (req, res) => {
+    console.log("here")
     const { id, userId } = req.params;
     const { name, phone_number, email_address, events } = req.body;
 
