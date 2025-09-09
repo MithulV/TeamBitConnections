@@ -2857,7 +2857,7 @@ function Admin() {
                 </div>
               </div>
               <p className="text-gray-600 mt-1">
-                Comprehensive platform analytics & management • Last updated: {format(new Date(), 'HH:mm')}
+                Data Analytics of Contacts • Last updated: {format(new Date(), 'HH:mm')}
               </p>
             </div>
             <div className="flex gap-3">
