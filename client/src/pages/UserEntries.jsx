@@ -156,8 +156,8 @@ function UserEntries() {
         console.log(userToDelete);
 
         if (userToDelete.type === "image") {
-          const response = await axios.delete(
-            `http://localhost:8000/api/delete-image/${userToDelete.id}?userType=${role}`
+          const response = await api.delete(
+            `/api/delete-image/${userToDelete.id}?userType=${role}`
           );
 
           setImageData((prevData) => ({
@@ -170,8 +170,8 @@ function UserEntries() {
             `${userToDelete.name} has been successfully deleted.`
           );
         } else {
-          const response = await axios.delete(
-            `http://localhost:8000/api/delete-contact/${userToDelete.id}?userType=${role}`
+          const response = await api.delete(
+            `/api/delete-contact/${userToDelete.id}?userType=${role}`
           );
 
           if (response.data.action === "deleted") {
