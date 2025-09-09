@@ -712,8 +712,8 @@ const MiddleManHome = () => {
 
         // For admin users, fetch all filter options without category filter
         const url = category
-          ? `/api/get-filter-options?category=${category}`
-          : "/api/get-filter-options";
+          ? `/api/get-filter-options?category=${role}`
+          : `/api/get-filter-options?category=${role}`;
 
         const response = await api.get(url);
         console.log("Filter Options: ", response.data);
@@ -1105,7 +1105,7 @@ const MiddleManHome = () => {
                 </div>
               )}
             </>
-          }
+          )}
         </div>
       </div>
 
