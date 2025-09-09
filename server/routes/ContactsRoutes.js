@@ -15,6 +15,13 @@ import {
   getContactModificationHistory,
 } from "../controllers/ContactControllers.js";
 
+// Import online status functions
+import { 
+  updateUserPing, 
+  getOnlineUsers, 
+  startOnlineStatusTask 
+} from "../controllers/OnlineController.js";
+
 import {
   createAssignment,
   getAssignedByUser,
@@ -37,7 +44,9 @@ import { ImportContactsFromCSV,uploadCSV } from "../controllers/CsvImportControl
 import verifyToken from "../middlewares/AuthMiddleware.js";
 import { getModificationHistory } from "../controllers/ModificationHistoryControllers.js";
 const router = express.Router();
-router.get("/get-all-contact/",GetAllContact)
+
+// Existing routes
+router.get("/get-all-contact/", GetAllContact);
 router.get("/contacts/filter/", GetFilteredContacts);
 router.get("/contacts/:userId", GetContacts);
 router.get("/get-unverified-contacts/", GetUnVerifiedContacts);
@@ -48,7 +57,7 @@ router.post("/create-contact", CreateContact);
 router.post("/upload-contact/", upload.single("image"), UploadImage);
 router.get("/get-contact-images/:userId", GetPicturesByUserId);
 router.put("/update-contact/:contact_id", UpdateContact);
-router.post("/create-contact-by-admin",UpdateContact);
+router.post("/create-contact-by-admin", UpdateContact);
 router.delete("/delete-contact/:id", DeleteContact);
 router.post("/add-event-existing-contact/:contactId/:userId",AddEventToExistingContact);
 router.put("/update-contacts-and-events/:id/:userId", UpdateContactAndEvents);
@@ -67,4 +76,11 @@ router.get("/searchContacts", SearchContacts)
 router.get("/get-modification-history/:id", getContactModificationHistory)
 //csv file upload
 router.post('/import-csv', uploadCSV, ImportContactsFromCSV);
+
+router.post("/user/ping/:id", updateUserPing);
+router.get("/users/online", getOnlineUsers);
+
+// Start the background task when routes are loaded
+startOnlineStatusTask();
+
 export default router;
