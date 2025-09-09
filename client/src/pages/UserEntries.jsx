@@ -285,8 +285,8 @@ function UserEntries() {
       const response = await api.get(
         `/api/contacts/${id}`
       );
-      console.log("Contacts fetched successfully:", response.data);
-      setProfileData(response.data);
+      console.log("Contacts fetched successfully:", response.data.data);
+      setProfileData(response.data.data);
     } catch (error) {
       console.error("Error fetching contacts:", error);
     }
@@ -368,7 +368,7 @@ function UserEntries() {
         {/* Contact Cards */}
         {activeView === "formDetails" ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
-            {profileData.map((participant, index) => {
+            {profileData?.map((participant, index) => {
               return (
                 <BasicDetailCard
                   key={participant.contact_id || index}
