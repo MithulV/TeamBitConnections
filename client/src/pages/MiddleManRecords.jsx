@@ -223,6 +223,7 @@ function MiddleManRecords() {
         id: contact_id,
         name: user?.name || "this user",
         type: "contact",
+        event_id: user.events[0].event_id
       });
       setShowDeleteModal(true);
     }
@@ -258,12 +259,18 @@ function MiddleManRecords() {
         switch (userToDelete.type) {
           case "contact":
             await api.delete(
-              `/api/delete-contact/${userToDelete.id}?userType=${role}`
+              `/api/delete-contact/${userToDelete.id}?userType=${role}&eventId=${userToDelete.event_id}`
             );
 
-            setData((prevData) =>
-              prevData.filter((item) => item.contact_id !== userToDelete.id)
-            );
+            setData((prevData) => {
+              return prevData.filter((item) => {
+                const hasMatchingEvent = item.events && item.events[0] && item.events[0].event_id === userToDelete.event_id;
+                const shouldRemove = item.contact_id === userToDelete.id && hasMatchingEvent;
+
+                return !shouldRemove; 
+              });
+            });
+
             showAlert(
               "success",
               `${userToDelete.name} has been successfully deleted.`
@@ -367,31 +374,28 @@ function MiddleManRecords() {
           <div className="flex gap-4 mb-6">
             <button
               onClick={() => setActiveView("formData")}
-              className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
-                activeView === "formData"
+              className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${activeView === "formData"
                   ? "bg-blue-600 text-white shadow-md"
                   : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
-              }`}
+                }`}
             >
               Form Data
             </button>
             <button
               onClick={() => setActiveView("visitingCards")}
-              className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
-                activeView === "visitingCards"
+              className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${activeView === "visitingCards"
                   ? "bg-blue-600 text-white shadow-md"
                   : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
-              }`}
+                }`}
             >
               Visiting Cards
             </button>
             <button
               onClick={() => setActiveView("AssignedToUser")}
-              className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
-                activeView === "AssignedToUser"
+              className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${activeView === "AssignedToUser"
                   ? "bg-blue-600 text-white shadow-md"
                   : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
-              }`}
+                }`}
             >
               Assigned By Me
             </button>
@@ -654,9 +658,9 @@ function MiddleManRecords() {
                       assignedOn={
                         participant.assigned_on
                           ? format(
-                              parseISO(participant.assigned_on),
-                              "MMMM dd, yyyy"
-                            )
+                            parseISO(participant.assigned_on),
+                            "MMMM dd, yyyy"
+                          )
                           : "N/A"
                       }
                     />
