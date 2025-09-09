@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Route, Routes, Navigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Login from '../pages/Login';
@@ -15,9 +15,10 @@ import DetailsInput from '../components/DetailsInput';
 import VisitingCardDetails from '../pages/VisitingCardDetails';
 import UserAssignments from '../pages/UserAssignments';
 import TaskAssignments from '../pages/TaskAssignments';
-// Import the new components
 import CameraInput from '../components/CameraInput';
 import FormInput from '../components/FormInput';
+import axios from 'axios';
+
 // A helper component to render the correct home page based on role
 const RoleBasedHome = () => {
     const { role } = useAuthStore();
@@ -32,35 +33,16 @@ const RoleBasedHome = () => {
         case 'admin':
             return <Admin />;
         default:
-            // If role is not matched, redirect to login
             return <Navigate to="/login" />;
     }
-};
-
-// A helper component for routes accessible only by 'cata', 'catb', 'catc'
-const MiddleManRoutes = () => {
-    const { role } = useAuthStore();
-    const allowedRoles = ['cata', 'catb', 'catc'];
-
-    if (!allowedRoles.includes(role)) {
-        return <Navigate to="/" />; // Redirect if not the correct role
-    }
-
-    return (
-        <Routes>
-            <Route path="/verify-records" element={<MiddleManRecords />} />
-        </Routes>
-    );
 };
 
 // Admin-only route wrapper
 const AdminRouteWrapper = ({ children }) => {
     const { role } = useAuthStore();
-
     if (role !== 'admin') {
         return <Navigate to="/" />;
     }
-
     return children;
 };
 
@@ -70,13 +52,36 @@ const MiddleManRoutesWrapper = ({ children }) => {
     const allowedRoles = ['cata', 'catb', 'catc'];
 
     if (!allowedRoles.includes(role)) {
-        // Redirect to their respective home page if they try to access a forbidden URL
         return <Navigate to="/" />;
     }
     return children;
 };
 
 function Applayout() {
+    const {id} = useAuthStore();
+    
+    // Online status tracking - ping server every 10 seconds
+    useEffect(() => {
+        if (!id) return;
+
+        const pingInterval = setInterval(async () => {
+            if (navigator.onLine) {
+                try {
+                    await axios.post(`http://localhost:8000/api/user/ping/${id}`, {}, {
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    console.log('Ping successful for user:', id);
+                } catch (error) {
+                    console.error('Ping failed:', error);
+                }
+            }
+        }, 10000); // 10 seconds
+
+        return () => clearInterval(pingInterval);
+    }, []); // Added id to dependencies
+
     return (
         <div className='h-screen flex'>
             <Navbar />
@@ -112,7 +117,7 @@ function Applayout() {
                         <Route path="/details-input" element={<DetailsInput />} />
                     </Route>
 
-                    {/* Fallback route to redirect to home if logged in, or login if not */}
+                    {/* Fallback route */}
                     <Route path="*" element={<Navigate to="/" />} />
                 </Routes>
             </main>
