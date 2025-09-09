@@ -14,6 +14,13 @@ import {
   GetAllContact,
 } from "../controllers/ContactControllers.js";
 
+// Import online status functions
+import { 
+  updateUserPing, 
+  getOnlineUsers, 
+  startOnlineStatusTask 
+} from "../controllers/OnlineController.js";
+
 import {
   createAssignment,
   getAssignedByUser,
@@ -30,11 +37,15 @@ import {
   DeleteImage,
   VerifyImages,
 } from "../controllers/PhotoControllers.js";
-import { GetTasks, CompleteTask,CreateTask } from "../controllers/TaskControllers.js";
-import { createTask } from "node-cron";
-import { ImportContactsFromCSV,uploadCSV } from "../controllers/CsvImportControllers.js";
+
+import { GetTasks, CompleteTask, CreateTask } from "../controllers/TaskControllers.js";
+import { ImportContactsFromCSV, uploadCSV } from "../controllers/CsvImportControllers.js";
+import verifyToken from "../middlewares/AuthMiddleware.js";
+
 const router = express.Router();
-router.get("/get-all-contact/",GetAllContact)
+
+// Existing routes
+router.get("/get-all-contact/", GetAllContact);
 router.get("/contacts/filter/", GetFilteredContacts);
 router.get("/contacts/:userId", GetContacts);
 router.get("/get-unverified-contacts/", GetUnVerifiedContacts);
@@ -45,9 +56,9 @@ router.post("/create-contact", CreateContact);
 router.post("/upload-contact/", upload.single("image"), UploadImage);
 router.get("/get-contact-images/:userId", GetPicturesByUserId);
 router.put("/update-contact/:contact_id", UpdateContact);
-router.post("/create-contact-by-admin",UpdateContact);
+router.post("/create-contact-by-admin", UpdateContact);
 router.delete("/delete-contact/:id", DeleteContact);
-router.post("/add-event-existing-contact/:contactId",AddEventToExistingContact);
+router.post("/add-event-existing-contact/:contactId", AddEventToExistingContact);
 router.put("/update-contacts-and-events/:id", UpdateContactAndEvents);
 router.delete("/delete-image/:id", DeleteImage);
 router.post("/verify-image/:id", VerifyImages);
@@ -59,7 +70,13 @@ router.delete("/delete-assignment/:assignmentId", revokeAssignment);
 router.get("/get-tasks/", GetTasks);
 router.put("/complete-task/:id", CompleteTask);
 router.get("/get-filter-options", GetFilterOptions);
-router.post("/create-task",CreateTask);
-//csv file upload
+router.post("/create-task", CreateTask);
 router.post('/import-csv', uploadCSV, ImportContactsFromCSV);
+
+router.post("/user/ping/:id", updateUserPing);
+router.get("/users/online", getOnlineUsers);
+
+// Start the background task when routes are loaded
+startOnlineStatusTask();
+
 export default router;

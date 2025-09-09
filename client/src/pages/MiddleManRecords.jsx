@@ -6,7 +6,7 @@ import Header from "../components/Header";
 import { useAuthStore } from "../store/AuthStore";
 import api from '../utils/axios';
 import { format, parseISO } from "date-fns";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 const DeleteConfirmationModal = ({
   isOpen,
@@ -114,7 +114,9 @@ function MiddleManRecords() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [userToDelete, setUserToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [activeView, setActiveView] = useState("formData");
+  const location = useLocation();
+  console.log(location.pathname)
+  const [activeView, setActiveView] = useState(location.state?.view || "formData");
   const [loading, setLoading] = useState(false);
   const [alert, setAlert] = useState({
     isOpen: false,
@@ -132,8 +134,8 @@ function MiddleManRecords() {
     api
       .get(`/api/get-unverified-contacts/`)
       .then((response) => {
-        console.log("Contacts fetched successfully:", response.data);
-        setData(response.data);
+        console.log("Contacts fetched successfully:", response.data.data);
+        setData(response.data.data);
       })
       .catch((error) => {
         console.error("Error fetching contacts:", error);
@@ -324,8 +326,8 @@ function MiddleManRecords() {
       const user = data.find((user) => user.contact_id === contact_id);
       console.log("Adding user:", user);
       if (user) {
-        navigate('/details-input', { 
-          state: { 
+        navigate('/details-input', {
+          state: {
             contact: user,
             isAddMode: true,
             source: 'middleman',
@@ -335,7 +337,7 @@ function MiddleManRecords() {
               message: `${user.name} has been successfully verified and added to contacts.`,
               refreshData: true
             }
-          } 
+          }
         });
       }
     } catch (error) {
@@ -363,31 +365,28 @@ function MiddleManRecords() {
           <div className="flex gap-4 mb-6">
             <button
               onClick={() => setActiveView("formData")}
-              className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
-                activeView === "formData"
-                  ? "bg-blue-600 text-white shadow-md"
-                  : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
-              }`}
+              className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${activeView === "formData"
+                ? "bg-blue-600 text-white shadow-md"
+                : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
+                }`}
             >
               Form Data
             </button>
             <button
               onClick={() => setActiveView("visitingCards")}
-              className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
-                activeView === "visitingCards"
-                  ? "bg-blue-600 text-white shadow-md"
-                  : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
-              }`}
+              className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${activeView === "visitingCards"
+                ? "bg-blue-600 text-white shadow-md"
+                : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
+                }`}
             >
               Visiting Cards
             </button>
             <button
               onClick={() => setActiveView("AssignedToUser")}
-              className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
-                activeView === "AssignedToUser"
-                  ? "bg-blue-600 text-white shadow-md"
-                  : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
-              }`}
+              className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${activeView === "AssignedToUser"
+                ? "bg-blue-600 text-white shadow-md"
+                : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
+                }`}
             >
               Assigned By Me
             </button>
@@ -658,9 +657,9 @@ function MiddleManRecords() {
                       assignedOn={
                         participant.assigned_on
                           ? format(
-                              parseISO(participant.assigned_on),
-                              "MMMM dd, yyyy"
-                            )
+                            parseISO(participant.assigned_on),
+                            "MMMM dd, yyyy"
+                          )
                           : "N/A"
                       }
                     />
