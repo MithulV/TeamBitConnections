@@ -17,10 +17,10 @@ import {
 } from "../controllers/ContactControllers.js";
 
 // Import online status functions
-import { 
-  updateUserPing, 
-  getOnlineUsers, 
-  startOnlineStatusTask 
+import {
+  updateUserPing,
+  getOnlineUsers,
+  startOnlineStatusTask
 } from "../controllers/OnlineController.js";
 
 import {
@@ -39,11 +39,14 @@ import {
   DeleteImage,
   VerifyImages,
 } from "../controllers/PhotoControllers.js";
-import { GetTasks, CompleteTask,CreateTask } from "../controllers/TaskControllers.js";
+import { GetTasks, CompleteTask, CreateTask } from "../controllers/TaskControllers.js";
 import { createTask } from "node-cron";
-import { ImportContactsFromCSV,uploadCSV } from "../controllers/CsvImportControllers.js";
+import { ImportContactsFromCSV, uploadCSV } from "../controllers/CsvImportControllers.js";
 import verifyToken from "../middlewares/AuthMiddleware.js";
 import { getModificationHistory } from "../controllers/ModificationHistoryControllers.js";
+import {
+  sendReferralInvitation, validateReferralLink, completeRegistration, invalidateInvitation, invitationHeartbeat
+} from '../controllers/referralControllers.js';
 const router = express.Router();
 
 // Existing routes
@@ -60,7 +63,7 @@ router.get("/get-contact-images/:userId", GetPicturesByUserId);
 router.put("/update-contact/:contact_id", UpdateContact);
 router.post("/create-contact-by-admin", UpdateContact);
 router.delete("/delete-contact/:contactId", DeleteContact);
-router.post("/add-event-existing-contact/:contactId/:userId",AddEventToExistingContact);
+router.post("/add-event-existing-contact/:contactId/:userId", AddEventToExistingContact);
 router.put("/update-contacts-and-events/:id/:userId", UpdateContactAndEvents);
 router.delete("/delete-image/:id", DeleteImage);
 router.post("/verify-image/:id", VerifyImages);
@@ -72,7 +75,7 @@ router.delete("/delete-assignment/:assignmentId", revokeAssignment);
 router.get("/get-tasks/", GetTasks);
 router.put("/complete-task/:id", CompleteTask);
 router.get("/get-filter-options", GetFilterOptions);
-router.post("/create-task",CreateTask);
+router.post("/create-task", CreateTask);
 router.get("/searchContacts", SearchContacts)
 router.get("/get-modification-history/:id", getContactModificationHistory)
 router.get("/get-all-modification-history/", getAllContactModificationHistory)
@@ -82,6 +85,13 @@ router.post('/import-csv', uploadCSV, ImportContactsFromCSV);
 
 router.post("/user/ping/:id", updateUserPing);
 router.get("/users/online", getOnlineUsers);
+
+
+router.post('/send-referral', sendReferralInvitation);
+router.get('/validate-referral/:token', validateReferralLink);
+router.post('/complete-registration', completeRegistration);
+router.post('/invalidate-invitation', invalidateInvitation);
+router.post('/invitation-heartbeat', invitationHeartbeat);
 
 // Start the background task when routes are loaded
 startOnlineStatusTask();
