@@ -989,7 +989,7 @@ export const AddEventToExistingContact = async (req, res) => {
     `;
 
     try {
-      logContactModification(db, contactId, userId, "UPDATE");
+      logContactModification(db, contactId, userId, "UPDATE USER EVENT");
     } catch (err) {
       console.warn("Contact modification logging failed, but continuing operation:", err.message);
       // Execution continues
@@ -1495,7 +1495,7 @@ export const GetFilterOptions = async (req, res) => {
 };
 
 
-import { getModificationHistory } from "./ModificationHistoryControllers.js";
+import { getModificationHistory, getAllModificationHistory, getTotalModificationHistoryCount } from "./ModificationHistoryControllers.js";
 
 // Get contact modification history
 export const getContactModificationHistory = async (req, res) => {
@@ -1530,6 +1530,65 @@ export const getContactModificationHistory = async (req, res) => {
     });
   } catch (error) {
     console.error("Error in getContactModificationHistory controller:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error while fetching modification history",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+};
+
+export const getAllContactModificationHistory = async (req, res) => {
+  try {
+    const { limit = 50, offset = 0 } = req.query;
+
+    // Validate pagination parameters
+    const limitValue = parseInt(limit);
+    const offsetValue = parseInt(offset);
+
+    if (isNaN(limitValue) || limitValue < 0 || limitValue > 1000) {
+      return res.status(400).json({
+        success: false,
+        message: "Limit must be a number between 0 and 1000",
+      });
+    }
+
+    if (isNaN(offsetValue) || offsetValue < 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Offset must be a non-negative number",
+      });
+    }
+
+    // Fetch all modification history
+    const history = await getAllModificationHistory(db, limitValue, offsetValue);
+
+    if (!history || history.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No modification history found",
+        data: [],
+        count: 0,
+      });
+    }
+
+    // Get total count for pagination
+    const totalCount = await getTotalModificationHistoryCount(db);
+
+    res.status(200).json({
+      success: true,
+      message: "All contact modification history retrieved successfully",
+      data: history,
+      count: history.length,
+      totalCount: totalCount,
+      pagination: {
+        limit: limitValue,
+        offset: offsetValue,
+        hasMore: offsetValue + history.length < totalCount,
+      },
+    });
+  } catch (error) {
+    console.error("Error in getAllContactModificationHistory controller:", error);
     res.status(500).json({
       success: false,
       message: "Internal server error while fetching modification history",

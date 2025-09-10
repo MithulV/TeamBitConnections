@@ -13,6 +13,7 @@ import {
   GetFilterOptions,
   GetAllContact,
   getContactModificationHistory,
+  getAllContactModificationHistory,
 } from "../controllers/ContactControllers.js";
 
 // Import online status functions
@@ -74,6 +75,8 @@ router.get("/get-filter-options", GetFilterOptions);
 router.post("/create-task",CreateTask);
 router.get("/searchContacts", SearchContacts)
 router.get("/get-modification-history/:id", getContactModificationHistory)
+router.get("/get-all-modification-history/", getAllContactModificationHistory)
+
 //csv file upload
 router.post('/import-csv', uploadCSV, ImportContactsFromCSV);
 
