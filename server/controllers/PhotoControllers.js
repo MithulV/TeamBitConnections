@@ -42,11 +42,6 @@ export const GetPicturesByUserId = async (req, res) => {
     const pictures =
       await db`SELECT * FROM photos WHERE created_by = ${userId}`;
 
-    if (!pictures || pictures.length === 0) {
-      return res
-        .status(404)
-        .json({ success: false, message: "No pictures found for this user." });
-    }
 
     return res.status(200).json({ success: true, data: pictures });
   } catch (err) {

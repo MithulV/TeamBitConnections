@@ -437,7 +437,7 @@ function FormInput() {
 
         <div className="flex-1 overflow-hidden">
           <div
-            className={`h-full flex flex-col p-8 rounded-lg transition-all duration-300 relative
+            className={`h-full flex flex-col p-8 transition-all duration-300 relative
               ${isFixed ? 'bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 border-2 border-blue-400 shadow-xl' : 'bg-white border border-gray-200 shadow-sm'}`}
           >
             {isFixed && (
