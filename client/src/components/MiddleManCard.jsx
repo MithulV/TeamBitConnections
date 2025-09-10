@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   Edit,
   ExternalLink,
@@ -11,20 +11,20 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-// Remove the DeleteConfirmationModal from here since we're using the parent's modal
 const MiddleManCard = ({ contact, onDelete, onEdit }) => {
   const navigate = useNavigate();
-  // Remove local modal state since parent handles the modal
+  const skillsContainerRef = useRef(null);
+  const [visibleSkillsCount, setVisibleSkillsCount] = useState(2);
+
   console.log(contact);
 
   const handleViewProfile = () => {
     navigate(`/profile/${contact.id}`, { state: contact });
   };
 
-  // Simply call the parent's onDelete function with the contact
   const handleDeleteClick = () => {
     if (onDelete) {
-      onDelete(contact); // Pass the entire contact object to parent
+      onDelete(contact);
     }
   };
 
@@ -48,6 +48,28 @@ const MiddleManCard = ({ contact, onDelete, onEdit }) => {
       .join("")
       .toUpperCase();
   };
+
+  // Calculate how many skills can fit based on available space
+  useEffect(() => {
+    const calculateVisibleSkills = () => {
+      if (skillsContainerRef.current && contact.skills?.length > 0) {
+        const containerWidth = skillsContainerRef.current.offsetWidth;
+        // Estimate: each skill takes roughly 80-120px, +N counter takes 40px
+        // Leave some buffer space
+        if (containerWidth < 250) {
+          setVisibleSkillsCount(1);
+        } else if (containerWidth < 350) {
+          setVisibleSkillsCount(2);
+        } else {
+          setVisibleSkillsCount(3);
+        }
+      }
+    };
+
+    calculateVisibleSkills();
+    window.addEventListener('resize', calculateVisibleSkills);
+    return () => window.removeEventListener('resize', calculateVisibleSkills);
+  }, [contact.skills]);
 
   return (
     <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
@@ -155,36 +177,49 @@ const MiddleManCard = ({ contact, onDelete, onEdit }) => {
         </div>
       </div>
 
-      {/* Skills/Tags with View Profile Button */}
-      <div className="flex justify-between items-center">
-        <div className="flex flex-wrap gap-2 flex-1 mr-3">
-          {contact.skills?.slice(0, 2).map((skill, index) => (
-            <span
-              key={index}
-              className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs font-medium truncate max-w-[100px] inline-block"
-              title={skill}
-            >
-              {skill}
-            </span>
-          ))}
-          {contact.skills && contact.skills.length > 2 && (
-            <span
-              className="px-2 py-1 bg-gray-200 text-gray-600 rounded text-xs font-medium"
-              title={`+${
-                contact.skills.length - 2
-              } more skills: ${contact.skills.slice(2).join(", ")}`}
-            >
-              +{contact.skills.length - 2}
-            </span>
+      {/* Skills/Tags with View Profile Button - Better Layout */}
+      <div className="flex items-center gap-3">
+        {/* Skills Section - Dynamic based on available space */}
+        <div 
+          ref={skillsContainerRef}
+          className="flex items-center gap-2 min-w-0 flex-1 overflow-hidden"
+        >
+          {contact.skills && contact.skills.length > 0 ? (
+            <>
+              {/* Render skills based on available space */}
+              {contact.skills.slice(0, visibleSkillsCount).map((skill, index) => (
+                <span
+                  key={index}
+                  className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs font-medium whitespace-nowrap flex-shrink-0 max-w-[120px] truncate"
+                  title={skill}
+                >
+                  {skill}
+                </span>
+              ))}
+              
+              {/* Show remaining count if there are more skills */}
+              {contact.skills.length > visibleSkillsCount && (
+                <span
+                  className="px-2 py-1 bg-gray-200 text-gray-600 rounded text-xs font-medium whitespace-nowrap flex-shrink-0"
+                  title={`${contact.skills.length - visibleSkillsCount} more skills: ${contact.skills.slice(visibleSkillsCount).join(", ")}`}
+                >
+                  +{contact.skills.length - visibleSkillsCount}
+                </span>
+              )}
+            </>
+          ) : (
+            <span className="text-xs text-gray-400 flex-shrink-0">No skills listed</span>
           )}
         </div>
 
+        {/* View Profile Button - Compact version */}
         <button
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors flex items-center gap-2 flex-shrink-0"
+          className="bg-blue-600 text-white px-3 py-2 rounded-lg text-xs font-medium hover:bg-blue-700 transition-colors flex items-center gap-1 flex-shrink-0 whitespace-nowrap"
           onClick={handleViewProfile}
         >
-          <ExternalLink size={14} />
-          View Profile
+          <ExternalLink size={12} />
+          <span className="hidden sm:inline">View Profile</span>
+          <span className="sm:hidden">View</span>
         </button>
       </div>
     </div>
