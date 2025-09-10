@@ -10,6 +10,7 @@ import {
   Handshake,
   ClipboardList,
   Waypoints,
+  Microscope,
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../store/AuthStore";
@@ -58,6 +59,7 @@ function Navbar() {
       { name: "Admin Panel", icon: <Shield size={20} />, path: "/" },
       { name: "Task Assignments", icon: <ClipboardList size={20} />, path: "/task-assignments" },
       { name: "Records", icon: <NotebookText size={20} />, path: "/all-entries" },
+      { name: "Analysis", icon: <Microscope size={20} />, path: "/analysis" },
     ],
   };
 
