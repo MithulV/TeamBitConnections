@@ -47,7 +47,7 @@ import {
   sendReferralInvitation, validateReferralLink, completeRegistration, invalidateInvitation, invitationHeartbeat
 } from '../controllers/referralControllers.js';
 const router = express.Router();
-
+import { analyzeContactNetwork } from "../controllers/aiNetworkControllers.js";
 // Existing routes
 router.get("/get-all-contact/", GetAllContact);
 router.get("/contacts/filter/", GetFilteredContacts);
@@ -89,6 +89,9 @@ router.get('/validate-referral/:token', validateReferralLink);
 router.post('/complete-registration', completeRegistration);
 router.post('/invalidate-invitation', invalidateInvitation);
 router.post('/invitation-heartbeat', invitationHeartbeat);
+
+//ai
+router.get('/analyze-contact-network', analyzeContactNetwork);
 
 // Start the background task when routes are loaded
 startOnlineStatusTask();
