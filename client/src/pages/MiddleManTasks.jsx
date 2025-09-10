@@ -11,10 +11,10 @@ import {
 } from "lucide-react";
 import Header from "../components/Header";
 import { useAuthStore } from "../store/AuthStore";
-import api from '../utils/axios';
+import api from "../utils/axios";
 
 const TasksPage = () => {
-  const { id } = useAuthStore()
+  const { id } = useAuthStore();
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -86,9 +86,9 @@ const TasksPage = () => {
       // Find the task being completed to know its type
       const taskToComplete = tasks.find((task) => task.id === taskId);
 
-      const response = await api.put(
-        `/api/complete-task/${taskId}`, { modified_by: id }
-      );
+      const response = await api.put(`/api/complete-task/${taskId}`, {
+        modified_by: id,
+      });
 
       if (response.data.success) {
         // Remove the completed task from the current tasks list
@@ -182,14 +182,16 @@ const TasksPage = () => {
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     const today = new Date();
+    // Remove time part for accurate day comparison
+    date.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0);
     const diffTime = date - today;
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
     if (diffDays === 0) return "Today";
+    if (diffDays < 0) return "Overdue";
     if (diffDays === 1) return "Tomorrow";
-    if (diffDays === -1) return "Yesterday";
-    if (diffDays > 0) return `In ${diffDays} days`;
-    return `${Math.abs(diffDays)} days ago`;
+    return `In ${diffDays} days`;
   };
 
   const getDueDateColor = (dueDate, status) => {
@@ -205,26 +207,27 @@ const TasksPage = () => {
   };
 
   const TaskCard = ({ task }) => (
-    <div className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg transition-all duration-200 hover:border-gray-300">
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex-1">
-          <h3 className="font-semibold text-gray-900 text-lg mb-2 line-clamp-1">
+    <div className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg transition-all duration-200 hover:border-gray-300 min-w-0">
+      <div className="flex items-start justify-between mb-4 min-w-0">
+        <div className="flex-1 min-w-0">
+          <h3 className="font-semibold text-gray-900 text-lg mb-2 line-clamp-1 truncate min-w-0">
             {task.task_title}
           </h3>
           <div className="flex items-center gap-3 mb-3">
             <span
-              className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${task.task_type === "assigned"
-                ? "bg-blue-100 text-blue-700"
-                : task.task_type === "automated"
+              className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                task.task_type === "assigned"
+                  ? "bg-blue-100 text-blue-700"
+                  : task.task_type === "automated"
                   ? "bg-purple-100 text-purple-700"
                   : "bg-gray-100 text-gray-700"
-                }`}
+              }`}
             >
               {task.task_type === "assigned"
                 ? "👤 Assigned"
                 : task.task_type === "automated"
-                  ? "🤖 Automated"
-                  : `📋 ${task.task_type}`}
+                ? "🤖 Automated"
+                : `📋 ${task.task_type}`}
             </span>
           </div>
           <div className="flex items-center gap-4 text-sm text-gray-600 mb-3">
@@ -245,7 +248,18 @@ const TasksPage = () => {
         </div>
       </div>
       <div className="flex h-19 flex-1">
-        <p className="text-gray-600 text-sm mb-4 line-clamp-3">
+        <p
+          className="text-gray-600 text-sm mb-4 min-w-0"
+          style={{
+            display: "-webkit-box",
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: "vertical",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "normal",
+            maxHeight: "2.8em", // ~2 lines for most fonts
+          }}
+        >
           {task.task_description}
         </p>
       </div>
@@ -390,18 +404,19 @@ const TasksPage = () => {
               {/* Task Type and Category */}
               <div className="flex items-center gap-3 mb-4">
                 <span
-                  className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${selectedTask.task_type === "assigned"
-                    ? "bg-blue-100 text-blue-700"
-                    : selectedTask.task_type === "automated"
+                  className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                    selectedTask.task_type === "assigned"
+                      ? "bg-blue-100 text-blue-700"
+                      : selectedTask.task_type === "automated"
                       ? "bg-purple-100 text-purple-700"
                       : "bg-gray-100 text-gray-700"
-                    }`}
+                  }`}
                 >
                   {selectedTask.task_type === "assigned"
                     ? "👤 Assigned"
                     : selectedTask.task_type === "automated"
-                      ? "🤖 Automated"
-                      : `📋 ${selectedTask.task_type}`}
+                    ? "🤖 Automated"
+                    : `📋 ${selectedTask.task_type}`}
                 </span>
                 <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-700">
                   Category: {selectedTask.task_assigned_category}
