@@ -383,7 +383,7 @@ function UserEntries() {
                   event={participant.events?.[0]?.event_name || "N/A"}
                   role={participant.events?.[0]?.event_role || "N/A"}
                   date={format(
-                    parseISO(participant.created_at),
+                    parseISO(participant.events[0].created_at),
                     "MMMM dd, yyyy"
                   )}
                   org={
