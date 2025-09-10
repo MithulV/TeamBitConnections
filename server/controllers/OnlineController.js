@@ -13,7 +13,6 @@ export const updateUserPing = async (req, res) => {
             WHERE id = ${userId}
         `;
         
-        console.log('Update result:', result); // Debug log
         res.json({ success: true });
     } catch (error) {
         console.error('Error updating user ping:', error);
