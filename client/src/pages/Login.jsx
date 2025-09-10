@@ -45,7 +45,7 @@ const LoginPage = () => {
     if (role) {
       navigate("/");
     }
-  }, [role, navigate]);
+  }, []);
 
   const handleLogin = async () => {
     try {

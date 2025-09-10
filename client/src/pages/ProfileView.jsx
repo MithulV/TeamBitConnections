@@ -22,6 +22,9 @@ import {
   UserPlus,
   Trash2,
   Settings,
+  FileText,
+  Activity,
+  Star,
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../store/AuthStore";
@@ -106,47 +109,75 @@ function ProfileView() {
       .toUpperCase();
   };
 
-  // Updated function to get modification type icon
+  // Updated function to get modification type icon with the new case
   const getModificationTypeIcon = (modificationType) => {
     switch (modificationType) {
       case "CREATE":
         return <UserPlus className="w-4 h-4" />;
       case "UPDATE":
-        return <Settings className="w-4 h-4" />;
-      case "USER UPDATE":
         return <Edit3 className="w-4 h-4" />;
+      case "USER UPDATE":
+        return <FileText className="w-4 h-4" />;
       case "USER VERIFY":
-        return <UserCheck className="w-4 h-4" />;
+        return <CheckCircle className="w-4 h-4" />;
       case "ASSIGN":
         return <Users className="w-4 h-4" />;
       case "DELETE":
         return <Trash2 className="w-4 h-4" />;
       case "CONTACT":
         return <Phone className="w-4 h-4" />;
+      case "UPDATE USER EVENT": // New case for adding events
+        return <Calendar className="w-4 h-4" />;
       default:
-        return <MessageCircle className="w-4 h-4" />;
+        return <Activity className="w-4 h-4" />;
     }
   };
 
-  // Updated function to get modification type color
+  // Updated function to get user-friendly titles with the new case
+  const getModificationTypeTitle = (modificationType) => {
+    switch (modificationType) {
+      case "CREATE":
+        return "Contact Created";
+      case "UPDATE":
+        return "Profile Updated";
+      case "USER UPDATE":
+        return "Information Modified";
+      case "USER VERIFY":
+        return "Profile Verified";
+      case "ASSIGN":
+        return "Contact Assigned";
+      case "DELETE":
+        return "Contact Removed";
+      case "CONTACT":
+        return "Contact Activity";
+      case "UPDATE USER EVENT": // New case for adding events
+        return "Event Added";
+      default:
+        return "Activity Logged";
+    }
+  };
+
+  // Updated function to get modification type color with the new case
   const getModificationTypeColor = (modificationType) => {
     switch (modificationType) {
       case "CREATE":
-        return "from-green-100 to-emerald-100 border-green-200 text-green-700";
+        return "from-emerald-50 to-green-100 border-emerald-200 text-emerald-700";
       case "UPDATE":
-        return "from-blue-100 to-sky-100 border-blue-200 text-blue-700";
+        return "from-blue-50 to-indigo-100 border-blue-200 text-blue-700";
       case "USER UPDATE":
-        return "from-orange-100 to-amber-100 border-orange-200 text-orange-700";
+        return "from-amber-50 to-orange-100 border-amber-200 text-amber-700";
       case "USER VERIFY":
-        return "from-purple-100 to-indigo-100 border-purple-200 text-purple-700";
+        return "from-violet-50 to-purple-100 border-violet-200 text-violet-700";
       case "ASSIGN":
-        return "from-cyan-100 to-teal-100 border-cyan-200 text-cyan-700";
+        return "from-cyan-50 to-teal-100 border-cyan-200 text-cyan-700";
       case "DELETE":
-        return "from-red-100 to-rose-100 border-red-200 text-red-700";
+        return "from-rose-50 to-red-100 border-rose-200 text-rose-700";
       case "CONTACT":
-        return "from-pink-100 to-fuchsia-100 border-pink-200 text-pink-700";
+        return "from-pink-50 to-fuchsia-100 border-pink-200 text-pink-700";
+      case "UPDATE USER EVENT": // New case for adding events
+        return "from-yellow-50 to-amber-100 border-yellow-200 text-yellow-700";
       default:
-        return "from-gray-100 to-slate-100 border-gray-200 text-gray-700";
+        return "from-slate-50 to-gray-100 border-slate-200 text-slate-700";
     }
   };
 
@@ -274,45 +305,56 @@ function ProfileView() {
       assignedTo: item.assigned_to_username,
       date: formatDate(item.created_at),
       time: new Date(item.created_at).toLocaleTimeString(),
-      title: item.modification_type.replace("_", " "),
+      title: getModificationTypeTitle(item.modification_type),
       description: item.description,
       created_at: item.created_at,
     })),
   ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
-  // Full History Modal Component
+  // Full History Modal Component with improved design
   const FullHistoryModal = () => (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
-        <div className="bg-slate-900 px-6 py-4 border-b flex items-center justify-between">
-          <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
-              <Clock className="text-white w-4 h-4" />
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden">
+        {/* Enhanced Header */}
+        <div className="bg-gradient-to-r from-slate-800 to-slate-900 px-6 py-5 border-b flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center shadow-lg">
+              <Clock className="text-white w-5 h-5" />
             </div>
-            Complete Contact History ({combinedContactHistory.length} interactions)
-          </h2>
+            <div>
+              <h2 className="text-xl font-bold text-white">
+                Contact Activity Timeline
+              </h2>
+              <p className="text-slate-300 text-sm">
+                {combinedContactHistory.length} interactions tracked
+              </p>
+            </div>
+          </div>
           <button
             onClick={() => setShowFullHistory(false)}
-            className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+            className="p-2 hover:bg-slate-700 rounded-xl transition-colors group"
           >
-            <X className="w-5 h-5 text-white" />
+            <X className="w-5 h-5 text-slate-300 group-hover:text-white" />
           </button>
         </div>
-        <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)] bg-gray-50">
+        
+        {/* Enhanced Content */}
+        <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)] bg-gradient-to-br from-slate-50 to-gray-100">
           {isLoadingHistory ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-              <span className="ml-2 text-gray-600">Loading history...</span>
+            <div className="flex flex-col items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-10 w-10 border-3 border-blue-600 border-t-transparent"></div>
+              <span className="mt-4 text-gray-600 font-medium">Loading activity history...</span>
             </div>
           ) : (
             <div className="space-y-4">
               {combinedContactHistory.map((historyItem, index) => (
                 <div
                   key={`${historyItem.type}-${historyItem.id}`}
-                  className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm hover:shadow-md transition-all duration-200"
+                  className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm hover:shadow-lg hover:border-gray-300 transition-all duration-300 group"
                 >
                   <div className="flex items-start gap-4">
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center text-xl bg-gradient-to-br ${
+                    {/* Enhanced Icon */}
+                    <div className={`w-14 h-14 rounded-xl flex items-center justify-center shadow-sm bg-gradient-to-br ${
                       historyItem.type === 'modification' 
                         ? getModificationTypeColor(historyItem.modificationType)
                         : getContactTypeColor(historyItem.type)
@@ -322,28 +364,45 @@ function ProfileView() {
                         : getContactTypeIcon(historyItem.type)
                       }
                     </div>
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium text-gray-600">
+                    
+                    <div className="flex-1 min-w-0">
+                      {/* Enhanced Header */}
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm font-semibold text-gray-800 bg-gray-100 px-3 py-1 rounded-full">
                             {historyItem.initiator}
                           </span>
                           {historyItem.assignedTo && (
-                            <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-full">
-                              → {historyItem.assignedTo}
-                            </span>
+                            <div className="flex items-center gap-1 text-xs px-2 py-1 bg-blue-50 text-blue-700 rounded-full border border-blue-200">
+                              <span>assigned to</span>
+                              <span className="font-semibold">{historyItem.assignedTo}</span>
+                            </div>
                           )}
                         </div>
-                        <span className="text-sm text-gray-500">
-                          {historyItem.date} • {historyItem.time}
-                        </span>
+                        <div className="text-right text-xs text-gray-500">
+                          <div className="font-medium">{historyItem.date}</div>
+                          <div>{historyItem.time}</div>
+                        </div>
                       </div>
-                      <h4 className="font-semibold text-gray-900 mb-2 capitalize">
+                      
+                      {/* Enhanced Title and Description */}
+                      <h4 className="font-bold text-gray-900 mb-2 text-lg group-hover:text-blue-700 transition-colors">
                         {historyItem.title}
                       </h4>
-                      <p className="text-gray-700 text-sm">
+                      <p className="text-gray-700 leading-relaxed">
                         {historyItem.description}
                       </p>
+                      
+                      {/* Activity Badge */}
+                      <div className="mt-3 flex items-center gap-2">
+                        <span className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gradient-to-r ${
+                          historyItem.type === 'modification' 
+                            ? getModificationTypeColor(historyItem.modificationType)
+                            : getContactTypeColor(historyItem.type)
+                        }`}>
+                          Activity #{combinedContactHistory.length - index}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -499,28 +558,29 @@ function ProfileView() {
               </div>
             </div>
 
-            {/* Recent Contact History - Timeline Style */}
+            {/* Enhanced Recent Contact History - Timeline Style */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-              <div className="px-6 py-4 bg-indigo-50 border-b border-indigo-100">
+              <div className="px-6 py-4 bg-gradient-to-r from-indigo-50 to-purple-50 border-b border-indigo-100">
                 <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                  <Clock className="w-5 h-5 text-indigo-600" />
-                  Recent Contact History
+                  <Activity className="w-5 h-5 text-indigo-600" />
+                  Recent Activity Timeline
                 </h2>
+                <p className="text-sm text-gray-600 mt-1">Latest contact interactions and updates</p>
               </div>
               <div className="p-6">
                 {isLoadingHistory ? (
                   <div className="flex items-center justify-center py-8">
                     <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600"></div>
-                    <span className="ml-2 text-gray-600">Loading recent history...</span>
+                    <span className="ml-2 text-gray-600">Loading recent activity...</span>
                   </div>
                 ) : (
                   <div className="space-y-4">
                     {combinedContactHistory.slice(0, 3).map((historyItem, index) => (
                       <div
                         key={`recent-${historyItem.type}-${historyItem.id}`}
-                        className="flex items-start gap-4 p-4 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors"
+                        className="flex items-start gap-4 p-4 border border-gray-100 rounded-xl hover:bg-gray-50 hover:border-gray-200 transition-all duration-200 group"
                       >
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg flex-shrink-0 bg-gradient-to-br ${
+                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-lg flex-shrink-0 shadow-sm bg-gradient-to-br ${
                           historyItem.type === 'modification' 
                             ? getModificationTypeColor(historyItem.modificationType)
                             : getContactTypeColor(historyItem.type)
@@ -531,9 +591,9 @@ function ProfileView() {
                           }
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between mb-1">
+                          <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center gap-2">
-                              <span className="text-sm font-medium text-gray-600">
+                              <span className="text-sm font-semibold text-gray-800 bg-gray-100 px-2 py-1 rounded-full">
                                 {historyItem.initiator}
                               </span>
                               {historyItem.assignedTo && (
@@ -542,14 +602,14 @@ function ProfileView() {
                                 </span>
                               )}
                             </div>
-                            <span className="text-sm text-gray-500">
+                            <span className="text-xs text-gray-500">
                               {historyItem.date} • {historyItem.time}
                             </span>
                           </div>
-                          <h4 className="font-medium text-gray-900 mb-1 capitalize">
+                          <h4 className="font-semibold text-gray-900 mb-1 group-hover:text-indigo-700 transition-colors">
                             {historyItem.title}
                           </h4>
-                          <p className="text-gray-600 text-sm">
+                          <p className="text-gray-600 text-sm leading-relaxed">
                             {historyItem.description}
                           </p>
                         </div>
@@ -559,9 +619,10 @@ function ProfileView() {
                 )}
                 <button
                   onClick={() => setShowFullHistory(true)}
-                  className="w-full mt-4 py-2 text-center bg-indigo-50 hover:bg-indigo-100 transition-colors rounded-lg font-medium text-indigo-700 border border-indigo-200"
+                  className="w-full mt-6 py-3 text-center bg-gradient-to-r from-indigo-50 to-purple-50 hover:from-indigo-100 hover:to-purple-100 transition-all duration-200 rounded-xl font-semibold text-indigo-700 border border-indigo-200 hover:border-indigo-300 flex items-center justify-center gap-2"
                 >
-                  View Full History ({combinedContactHistory.length} interactions)
+                  <Clock className="w-4 h-4" />
+                  View Complete Timeline ({combinedContactHistory.length} activities)
                 </button>
               </div>
             </div>
