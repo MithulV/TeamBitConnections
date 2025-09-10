@@ -20,7 +20,7 @@ import FormInput from "../components/FormInput";
 import axios from "axios";
 import Referral from "../pages/Referral";
 import ReferralSignup from "../pages/ReferralSignup";
-
+import ContactNetworkAnalysis from "../pages/ContactNetworkAnalysis";
 // A helper component to render the correct home page based on role
 const RoleBasedHome = () => {
   const { role } = useAuthStore();
@@ -62,7 +62,7 @@ const MiddleManRoutesWrapper = ({ children }) => {
 function Applayout() {
   const { id } = useAuthStore();
   const location = useLocation();
-  
+
   // Define routes where navbar should be hidden
   const hideNavbarRoutes = ['/login', '/register'];
   const shouldShowNavbar = !hideNavbarRoutes.includes(location.pathname);
@@ -100,7 +100,7 @@ function Applayout() {
           {/* Public Route */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<ReferralSignup />} />
-          
+
           {/* Protected Routes */}
           <Route element={<PrivateRoute />}>
             <Route path="/" element={<RoleBasedHome />} />
@@ -112,6 +112,11 @@ function Applayout() {
                 </MiddleManRoutesWrapper>
               }
             />
+            <Route path="/analysis" element={
+              <AdminRouteWrapper>
+                <ContactNetworkAnalysis />
+              </AdminRouteWrapper>
+            } />
             <Route path="/tasks" element={<MiddleManTasks />} />
             <Route path="/profile/:id" element={<ProfileView />} />
             <Route path="/edit/:id" element={<DetailsInput />} />
