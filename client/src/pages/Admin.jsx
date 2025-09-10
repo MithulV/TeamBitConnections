@@ -1439,7 +1439,6 @@ const ContactDiversityOverview = ({ contacts }) => {
   );
 };
 
-// NEW: Online Users Card Component
 const OnlineUsersCard = () => {
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [totalUsers, setTotalUsers] = useState(0);
