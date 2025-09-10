@@ -372,7 +372,7 @@ FROM
 INNER JOIN 
     event e ON e.contact_id = c.contact_id
 WHERE 
-    e.created_by = 1
+    e.created_by = ${userId}
 ORDER BY
     c.contact_id DESC, e.event_id DESC
 
