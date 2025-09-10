@@ -1048,7 +1048,7 @@ const MiddleManHome = () => {
               {!loading && (
                 <div className="flex justify-between items-center mb-6 p-4 bg-white rounded-lg border border-gray-200">
                   <div className="flex items-center gap-4">
-                    <div className="text-sm text-gray-600">
+                    <div className="text-sm text-gray-500">
                       <span className="font-medium text-gray-900">
                         {filteredContacts.length}
                       </span>{" "}
