@@ -340,15 +340,17 @@ function TaskAssignments() {
                     {getCurrentTasks().map((task, index) => {
                       const priority = getTaskPriority(task.task_deadline);
                       return (
-                        <div key={index} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow duration-200">
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-3 mb-2">
-                                <h3 className="text-lg font-semibold text-gray-900">{task.task_title}</h3>
-                                <span className={`px-2 py-1 text-xs font-medium rounded-full ${priority.color}`}>
+                        <div key={index} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow duration-200 overflow-hidden">
+                          <div className="flex items-start justify-between min-w-0">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-3 mb-2 flex-wrap">
+                                <h3 className="text-lg font-semibold text-gray-900 break-all hyphens-auto min-w-0">
+                                  {task.task_title}
+                                </h3>
+                                <span className={`px-2 py-1 text-xs font-medium rounded-full whitespace-nowrap ${priority.color}`}>
                                   {priority.label}
                                 </span>
-                                <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                                <span className={`px-2 py-1 text-xs font-medium rounded-full whitespace-nowrap ${
                                   task.task_type === 'assigned' 
                                     ? 'bg-blue-100 text-blue-800' 
                                     : 'bg-gray-100 text-gray-800'
@@ -356,24 +358,26 @@ function TaskAssignments() {
                                   {task.task_type === 'assigned' ? 'Manual' : 'Automated'}
                                 </span>
                                 {task.task_completion && (
-                                  <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
+                                  <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800 whitespace-nowrap">
                                     Completed
                                   </span>
                                 )}
                               </div>
                               
                               {task.task_description && (
-                                <p className="text-gray-600 mb-3">{task.task_description}</p>
+                                <p className="text-gray-600 mb-3 break-words hyphens-auto whitespace-pre-wrap">
+                                  {task.task_description}
+                                </p>
                               )}
                               
-                              <div className="flex items-center gap-6 text-sm text-gray-500">
-                                <div className="flex items-center gap-1">
+                              <div className="flex items-center gap-6 text-sm text-gray-500 flex-wrap">
+                                <div className="flex items-center gap-1 whitespace-nowrap">
                                   <Calendar className="w-4 h-4" />
                                   <span>Due: {format(parseISO(task.task_deadline), 'PPP')}</span>
                                 </div>
                                 <div className="flex items-center gap-1">
                                   <User className="w-4 h-4" />
-                                  <span>Category: {task.task_assigned_category}</span>
+                                  <span className="break-all">Category: {task.task_assigned_category}</span>
                                 </div>
                               </div>
                             </div>
