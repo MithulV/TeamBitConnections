@@ -22,8 +22,8 @@ function Navbar() {
   const menuItemsByRole = {
     user: [
       { name: "Home", icon: <House size={20} />, path: "/" },
-      { name: "entries", icon: <NotebookText size={20} />, path: "/entries" },
-      { name: "assignments", icon: <Handshake size={20} />, path: "/assigned" },
+      { name: "Entries", icon: <NotebookText size={20} />, path: "/entries" },
+      { name: "Assignments", icon: <Handshake size={20} />, path: "/assigned" },
     ],
     cata: [
       { name: "Home", icon: <House size={20} />, path: "/" },
