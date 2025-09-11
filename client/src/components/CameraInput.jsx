@@ -26,7 +26,7 @@ function CameraInput() {
   const [currentView, setCurrentView] = useState("initial"); // 'initial', 'camera-active', 'captured'
   const [loading, setLoading] = useState(false);
   const [facingMode, setFacingMode] = useState("environment"); // 'environment' for back, 'user' for front
-  const [isFromUpload, setIsFromUpload] = useState(false); // Track if image came from upload
+  const [isFromUpload, setIsFromUpload] = useState(false);
 
   const [alert, setAlert] = useState({
     isOpen: false,
@@ -140,62 +140,6 @@ function CameraInput() {
       setCapturedImage(imageData);
       stopCamera();
       setCurrentView("captured");
-      setIsFromUpload(false);
-    }
-  };
-
-  // Handle file selection
-  const handleFileSelect = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setCapturedImage(e.target.result);
-        setCurrentView("captured");
-        setIsFromUpload(true);
-      };
-      reader.readAsDataURL(file);
-    }
-    // Clear the input value so the same file can be selected again
-    e.target.value = "";
-  };
-
-  // Save photo to server
-  const handleSavePhoto = async () => {
-    if (!capturedImage) return;
-
-    try {
-      setLoading(true);
-      const formData = new FormData();
-
-      // Convert base64 to blob
-      const response = await fetch(capturedImage);
-      const blob = await response.blob();
-
-      formData.append("image", blob, "captured_image.jpg");
-      formData.append("user_id", id);
-      formData.append("TEST", "Hello World");
-
-      const res = await axios.post(
-        "http://localhost:8000/api/upload-contact",
-        formData,
-        {
-          headers: { "Content-Type": "multipart/form-data" },
-        }
-      );
-
-      console.log("Upload success:", res.data);
-      showAlert("success", "Visiting card has been successfully added.");
-
-      // Navigate back after success
-      setTimeout(() => {
-        handleBack();
-      }, 2000);
-    } catch (err) {
-      console.error("Upload failed:", err);
-      showAlert("error", "Failed to add contact.");
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -217,32 +161,90 @@ function CameraInput() {
     } else if (currentView === "captured") {
       setCapturedImage(null);
       setCurrentView("initial");
-      setIsFromUpload(false);
     } else {
       handleBack();
     }
   };
 
-  // Handle retake/reupload
+  // Handle retake
   const handleRetake = () => {
-    setCapturedImage(null);
-
     if (isFromUpload) {
-      // If image was uploaded, trigger file input again
+      // For uploaded images, trigger file selection again
       fileInputRef.current?.click();
     } else {
-      // If image was taken with camera, restart camera
+      // For camera captures, restart camera
+      setCapturedImage(null);
       setCurrentView("camera-active");
       startCamera();
     }
   };
 
-  // Handle cancel from captured state - NEW FUNCTION
+  // Handle cancel from captured state
   const handleCancel = () => {
     setCapturedImage(null);
     setCurrentView("initial");
     setIsFromUpload(false);
     stopCamera(); // Make sure camera is stopped
+  };
+
+  // Handle file selection from upload
+  const handleFileSelect = (event) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setCapturedImage(e.target?.result);
+        setCurrentView("captured");
+        setIsFromUpload(true);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Handle save photo (upload without event details)
+  const handleSavePhoto = async () => {
+    if (!capturedImage) return;
+
+    setLoading(true);
+    try {
+      // Convert base64 to blob
+      const base64Data = capturedImage.split(",")[1];
+      const byteCharacters = atob(base64Data);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: "image/jpeg" });
+
+      // Create FormData
+      const formData = new FormData();
+      formData.append("photo", blob, "business-card.jpg");
+      formData.append("user_id", id);
+
+      const response = await axios.post(
+        "http://localhost:5000/upload-image",
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      if (response.status === 200) {
+        showAlert("success", "Photo uploaded successfully!");
+        // Reset state
+        setCapturedImage(null);
+        setCurrentView("initial");
+        setIsFromUpload(false);
+      }
+    } catch (error) {
+      console.error("Error uploading photo:", error);
+      showAlert("error", "Failed to upload photo. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Restart camera when facing mode changes
@@ -403,14 +405,6 @@ function CameraInput() {
                 >
                   <Plus size={20} />
                   Add Event Details
-                </button>
-                <button
-                  onClick={handleSavePhoto}
-                  disabled={loading}
-                  className="flex items-center justify-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-                >
-                  <Upload size={20} />
-                  {loading ? "Uploading..." : "Upload"}
                 </button>
 
                 <button

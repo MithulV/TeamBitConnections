@@ -1,5 +1,10 @@
 import db from "../src/config/db.js";
 import { logContactModification } from "./ModificationHistoryControllers.js";
+import {
+  getModificationHistory,
+  getAllModificationHistory,
+  getTotalModificationHistoryCount,
+} from "./ModificationHistoryControllers.js";
 
 export const GetAllContact = async (req, res) => {
   const { limit } = req.query;
@@ -1028,11 +1033,21 @@ export const DeleteContact = async (req, res) => {
   console.log(contactId, userType, eventId);
   try {
     await db.begin(async (t) => {
-      const [contact] = await t`
-        SELECT contact_id, contact_status, verified 
-        FROM event 
-        WHERE contact_id = ${contactId} AND event_id=${eventId}
-      `;
+      let contact;
+
+      if (eventId && eventId !== "null") {
+        [contact] = await t`
+          SELECT contact_id, contact_status, verified 
+          FROM event 
+          WHERE contact_id = ${contactId} AND event_id = ${eventId}
+        `;
+      } else {
+        [contact] = await t`
+          SELECT contact_id, contact_status, verified 
+          FROM event 
+          WHERE contact_id = ${contactId} AND event_id IS NULL
+        `;
+      }
 
       if (!contact) {
         throw new Error("Contact not found");
@@ -1117,6 +1132,78 @@ export const DeleteContact = async (req, res) => {
 
 const performCompleteDeletion = async (transaction, contactId, eventId) => {
   await transaction`DELETE FROM event WHERE contact_id = ${contactId} AND event_id=${eventId}`;
+};
+
+// Separate controller for MiddleManHome verified contact deletion
+export const DeleteVerifiedContact = async (req, res) => {
+  const { contactId } = req.params;
+  const { userType = null, eventId = null } = req.query;
+
+  console.log(
+    `MiddleManHome Delete - ContactId: ${contactId}, UserType: ${userType}, EventId: ${eventId}`
+  );
+
+  try {
+    await db.begin(async (t) => {
+      // Check if contact exists in the main contact table
+      const [contactExists] = await t`
+        SELECT contact_id FROM contact WHERE contact_id = ${contactId}
+      `;
+
+      if (!contactExists) {
+        throw new Error("Contact not found in contact table");
+      }
+
+      // For middleman users (cata, catb, catc, admin), allow direct deletion
+      if (["cata", "catb", "catc", "admin"].includes(userType)) {
+        // Delete from contact table - foreign key constraints will handle cascading
+        const result = await t`
+          DELETE FROM contact WHERE contact_id = ${contactId}
+        `;
+
+        if (result.count === 0) {
+          throw new Error("Failed to delete contact");
+        }
+
+        console.log(`Successfully deleted contact ${contactId} by ${userType}`);
+
+        return res.status(200).json({
+          success: true,
+          message: "Contact and all associated data deleted successfully!",
+          action: "deleted",
+          deletedContactId: contactId,
+          deletedBy: userType,
+        });
+      } else {
+        return res.status(403).json({
+          success: false,
+          message: "You don't have permission to delete verified contacts.",
+          action: "denied",
+          reason: "Insufficient permissions - middleman access required",
+        });
+      }
+    });
+  } catch (err) {
+    console.error("DeleteVerifiedContact error:", err);
+
+    if (err.message === "Contact not found in contact table") {
+      return res.status(404).json({
+        success: false,
+        message: "Contact not found.",
+      });
+    } else if (err.message === "Failed to delete contact") {
+      return res.status(500).json({
+        success: false,
+        message: "Failed to delete contact from database.",
+      });
+    } else {
+      return res.status(500).json({
+        success: false,
+        message: "Server Error!",
+        error: err.message,
+      });
+    }
+  }
 };
 
 export const AddEventToExistingContact = async (req, res) => {
@@ -1735,12 +1822,6 @@ export const GetFilterOptions = async (req, res) => {
     });
   }
 };
-
-import {
-  getModificationHistory,
-  getAllModificationHistory,
-  getTotalModificationHistoryCount,
-} from "./ModificationHistoryControllers.js";
 
 // Get contact modification history
 export const getContactModificationHistory = async (req, res) => {

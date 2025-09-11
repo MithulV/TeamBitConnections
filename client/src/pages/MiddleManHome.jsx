@@ -337,22 +337,22 @@ const FilterModal = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black bg-opacity-60 backdrop-blur-sm"
+        className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
         onClick={handleClose}
       />
 
       {/* Modal Content */}
-      <div className="relative z-10 w-full max-w-7xl bg-white rounded-2xl shadow-2xl max-h-[95vh] overflow-hidden">
-        {/* Enhanced Modal Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-6">
+      <div className="relative z-10 w-full max-w-6xl bg-white rounded-xl shadow-2xl max-h-[90vh] overflow-hidden">
+        {/* Professional Header */}
+        <div className="bg-gradient-to-r from-slate-800 to-slate-900 text-white px-8 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="p-3 bg-opacity-20 rounded-lg backdrop-blur-sm">
-                <Filter size={24} />
+              <div className="p-2.5 bg-white/10 rounded-lg backdrop-blur-sm">
+                <Filter size={20} />
               </div>
               <div>
-                <h2 className="text-2xl font-bold">Advanced Filters</h2>
-                <p className="text-blue-100 text-sm">
+                <h2 className="text-xl font-semibold">Advanced Filters</h2>
+                <p className="text-slate-300 text-sm mt-1">
                   {getActiveFilterCount() > 0
                     ? `${getActiveFilterCount()} active filters • ${
                         contacts.length
@@ -369,41 +369,50 @@ const FilterModal = ({
               {getActiveFilterCount() > 0 && (
                 <button
                   onClick={clearFilters}
-                  className="px-4 py-2 text-sm font-medium text-black bg-white bg-opacity-20 rounded-lg hover:bg-opacity-30 transition-all duration-200 backdrop-blur-sm"
+                  className="px-4 py-2 text-sm font-medium text-white bg-white/10 rounded-lg hover:bg-white/20 transition-all duration-200 backdrop-blur-sm border border-white/20"
                 >
-                  Clear All
+                  Clear All ({getActiveFilterCount()})
                 </button>
               )}
               <button
                 onClick={handleClose}
-                className="p-2 hover:bg-white hover:text-black hover:bg-opacity-20 rounded-lg transition-colors"
+                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                aria-label="Close modal"
               >
-                <X size={20} />
+                <X size={18} />
               </button>
             </div>
           </div>
         </div>
 
         {/* Filter Content */}
-        <div className="overflow-y-auto max-h-[calc(95vh-180px)]">
-          <div className="p-6 space-y-8">
-            {/* Quick Filter Tags */}
+        <div className="overflow-y-auto max-h-[calc(90vh-200px)] scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100">
+          <div className="p-8 space-y-8">
+            {/* Active Filters Summary */}
             {getActiveFilterCount() > 0 && (
-              <div className="bg-gray-50 rounded-xl p-4">
-                <h3 className="text-sm font-medium text-gray-700 mb-3">
-                  Active Filters ({getActiveFilterCount()})
-                </h3>
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-semibold text-blue-900">
+                    Active Filters ({getActiveFilterCount()})
+                  </h3>
+                  <button
+                    onClick={clearFilters}
+                    className="text-xs text-blue-600 hover:text-blue-700 font-medium transition-colors"
+                  >
+                    Clear all
+                  </button>
+                </div>
                 <div className="flex flex-wrap gap-2">
                   {Object.entries(activeFilters).map(([filterType, values]) =>
                     values.map((value) => (
                       <span
                         key={`${filterType}-${value}`}
-                        className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                        className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200"
                       >
                         {value}
                         <button
                           onClick={() => toggleFilter(filterType, value)}
-                          className="ml-1 inline-flex items-center justify-center w-4 h-4 rounded-full hover:bg-blue-200"
+                          className="ml-1.5 inline-flex items-center justify-center w-4 h-4 rounded-full hover:bg-blue-200 transition-colors"
                         >
                           <X size={10} />
                         </button>
@@ -415,14 +424,14 @@ const FilterModal = ({
             )}
 
             {/* Basic Information */}
-            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-100">
-              <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-3">
-                <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
+            <div className="bg-slate-50 rounded-xl p-6 border border-slate-200">
+              <h3 className="text-lg font-semibold text-slate-900 mb-6 flex items-center gap-3">
+                <div className="w-8 h-8 bg-slate-600 rounded-lg flex items-center justify-center">
                   <FileCheckIcon size={16} className="text-white" />
                 </div>
-                Basic Information
+                Personal Information
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {filterOptions.genders?.length > 0 && (
                   <SearchableMultiSelect
                     options={filterOptions.genders}
@@ -430,7 +439,7 @@ const FilterModal = ({
                     onSelectionChange={(values) =>
                       handleFilterChange("gender", values)
                     }
-                    placeholder="Select genders..."
+                    placeholder="All genders"
                     label="Gender"
                     color="blue"
                   />
@@ -442,7 +451,7 @@ const FilterModal = ({
                     onSelectionChange={(values) =>
                       handleFilterChange("nationality", values)
                     }
-                    placeholder="Select nationalities..."
+                    placeholder="All nationalities"
                     label="Nationality"
                     color="blue"
                   />
@@ -454,7 +463,7 @@ const FilterModal = ({
                     onSelectionChange={(values) =>
                       handleFilterChange("marital_status", values)
                     }
-                    placeholder="Select marital status..."
+                    placeholder="Any status"
                     label="Marital Status"
                     color="blue"
                   />
@@ -463,9 +472,9 @@ const FilterModal = ({
             </div>
 
             {/* Location Information */}
-            <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-6 border border-green-100">
-              <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-3">
-                <div className="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center">
+            <div className="bg-emerald-50 rounded-xl p-6 border border-emerald-200">
+              <h3 className="text-lg font-semibold text-slate-900 mb-6 flex items-center gap-3">
+                <div className="w-8 h-8 bg-emerald-600 rounded-lg flex items-center justify-center">
                   <MapPinned size={16} className="text-white" />
                 </div>
                 Location
@@ -478,7 +487,7 @@ const FilterModal = ({
                     onSelectionChange={(values) =>
                       handleFilterChange("address_country", values)
                     }
-                    placeholder="Search countries..."
+                    placeholder="Any country"
                     label="Country"
                     color="green"
                   />
@@ -490,8 +499,8 @@ const FilterModal = ({
                     onSelectionChange={(values) =>
                       handleFilterChange("address_state", values)
                     }
-                    placeholder="Search states..."
-                    label="State"
+                    placeholder="Any state"
+                    label="State/Province"
                     color="green"
                   />
                 )}
@@ -502,7 +511,7 @@ const FilterModal = ({
                     onSelectionChange={(values) =>
                       handleFilterChange("address_city", values)
                     }
-                    placeholder="Search cities..."
+                    placeholder="Any city"
                     label="City"
                     color="green"
                   />
@@ -511,14 +520,14 @@ const FilterModal = ({
             </div>
 
             {/* Professional Information */}
-            <div className="bg-gradient-to-br from-purple-50 to-violet-50 rounded-xl p-6 border border-purple-100">
-              <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-3">
-                <div className="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center">
+            <div className="bg-purple-50 rounded-xl p-6 border border-purple-200">
+              <h3 className="text-lg font-semibold text-slate-900 mb-6 flex items-center gap-3">
+                <div className="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center">
                   <ShieldCheckIcon size={16} className="text-white" />
                 </div>
-                Professional Information
+                Professional Experience
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {filterOptions.companies?.length > 0 && (
                   <SearchableMultiSelect
                     options={filterOptions.companies}
@@ -526,7 +535,7 @@ const FilterModal = ({
                     onSelectionChange={(values) =>
                       handleFilterChange("company", values)
                     }
-                    placeholder="Search companies..."
+                    placeholder="Any company"
                     label="Company"
                     color="purple"
                   />
@@ -538,7 +547,7 @@ const FilterModal = ({
                     onSelectionChange={(values) =>
                       handleFilterChange("job_title", values)
                     }
-                    placeholder="Search job titles..."
+                    placeholder="Any role"
                     label="Job Title"
                     color="purple"
                   />
@@ -550,8 +559,8 @@ const FilterModal = ({
                     onSelectionChange={(values) =>
                       handleFilterChange("skills", values)
                     }
-                    placeholder="Search skills..."
-                    label="Skills"
+                    placeholder="Any skills"
+                    label="Skills & Technologies"
                     color="purple"
                   />
                 )}
@@ -559,12 +568,12 @@ const FilterModal = ({
             </div>
 
             {/* Education Information */}
-            <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-xl p-6 border border-orange-100">
-              <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-3">
-                <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
+            <div className="bg-amber-50 rounded-xl p-6 border border-amber-200">
+              <h3 className="text-lg font-semibold text-slate-900 mb-6 flex items-center gap-3">
+                <div className="w-8 h-8 bg-amber-600 rounded-lg flex items-center justify-center">
                   <University size={16} className="text-white" />
                 </div>
-                Education
+                Education Background
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {filterOptions.pg_courses?.length > 0 && (
@@ -574,7 +583,7 @@ const FilterModal = ({
                     onSelectionChange={(values) =>
                       handleFilterChange("pg_course_name", values)
                     }
-                    placeholder="Search postgraduate courses..."
+                    placeholder="Any postgraduate course"
                     label="Postgraduate Courses"
                     color="orange"
                   />
@@ -586,7 +595,7 @@ const FilterModal = ({
                     onSelectionChange={(values) =>
                       handleFilterChange("ug_course_name", values)
                     }
-                    placeholder="Search undergraduate courses..."
+                    placeholder="Any undergraduate course"
                     label="Undergraduate Courses"
                     color="orange"
                   />
@@ -597,32 +606,34 @@ const FilterModal = ({
         </div>
 
         {/* Enhanced Modal Footer */}
-        <div className="bg-gray-50 border-t border-gray-200 p-6">
+        <div className="bg-white border-t border-gray-200 px-8 py-6">
           <div className="flex items-center justify-between">
-            <div className="text-sm text-gray-600">
-              <div className="flex items-center gap-4">
-                <span className="font-medium text-lg">{contacts.length}</span>
-                <span>contact{contacts.length !== 1 ? "s" : ""} found</span>
-                {getActiveFilterCount() > 0 && (
-                  <span className="text-blue-600 font-medium">
-                    • {getActiveFilterCount()} filter
-                    {getActiveFilterCount() > 1 ? "s" : ""} applied
-                  </span>
-                )}
+            <div className="flex items-center gap-6">
+              <div className="text-sm text-gray-600">
+                <span className="font-semibold text-lg text-gray-900">{contacts.length.toLocaleString()}</span>
+                <span className="ml-2">contact{contacts.length !== 1 ? "s" : ""} found</span>
               </div>
+              {getActiveFilterCount() > 0 && (
+                <div className="flex items-center gap-2 px-3 py-1 bg-blue-100 rounded-full">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                  <span className="text-xs font-medium text-blue-700">
+                    {getActiveFilterCount()} filter{getActiveFilterCount() > 1 ? "s" : ""} applied
+                  </span>
+                </div>
+              )}
             </div>
             <div className="flex items-center gap-3">
               <button
                 onClick={handleClose}
                 className="px-6 py-2.5 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium"
               >
-                Close
+                Cancel
               </button>
               <button
                 onClick={handleClose}
-                className="px-8 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 font-medium shadow-lg"
+                className="px-8 py-2.5 bg-slate-800 text-white rounded-lg hover:bg-slate-900 transition-colors font-medium shadow-sm"
               >
-                Apply Filters ({contacts.length})
+                Apply Filters
               </button>
             </div>
           </div>
@@ -927,7 +938,7 @@ const MiddleManHome = () => {
       );
 
       await api.delete(
-        `/api/delete-contact/${contactToDelete.contact_id}/?userType=${role}`
+        `/api/verified-contact-delete/${contactToDelete.contact_id}?userType=${role}&eventId=${id}`
       );
 
       console.log("Delete successful, updating state");
