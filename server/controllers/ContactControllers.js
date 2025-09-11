@@ -211,18 +211,19 @@ export const CreateContact = async (req, res) => {
   if (!name || !phone_number || !email_address) {
     return res.status(400).json({
       success: false,
-      message: "Required fields are missing (name, phone_number, email_address).",
+      message:
+        "Required fields are missing (name, phone_number, email_address).",
     });
   }
 
   try {
     const result = await db.begin(async (t) => {
       const existingContactsResult = await t`
-        SELECT * FROM contact 
-        WHERE (email_address = ${email_address} AND email_address IS NOT NULL)
-           OR (phone_number = ${phone_number} AND phone_number IS NOT NULL)
-        LIMIT 1
-      `;
+          SELECT * FROM contact 
+          WHERE (email_address = ${email_address} AND email_address IS NOT NULL)
+            OR (phone_number = ${phone_number} AND phone_number IS NOT NULL)
+          LIMIT 1
+        `;
 
       if (existingContactsResult.length > 0) {
         throw new Error(
@@ -231,18 +232,26 @@ export const CreateContact = async (req, res) => {
       }
 
       const [contact] = await t`
-        INSERT INTO contact (
-          name, phone_number, email_address, dob, gender, nationality, marital_status, category,
-          secondary_email, secondary_phone_number, created_by, emergency_contact_name,
-          emergency_contact_relationship, emergency_contact_phone_number, skills, logger, linkedin_url
-        ) VALUES (
-          ${name}, ${phone_number}, ${email_address}, ${dob || null}, ${gender || null},
-          ${nationality || null}, ${marital_status || null}, ${category || null}, ${secondary_email || null},
-          ${secondary_phone_number || null}, ${created_by || null}, ${emergency_contact_name || null},
-          ${emergency_contact_relationship || null}, ${emergency_contact_phone_number || null}, ${skills || null},
-          ${logger || null}, ${linkedin_url || null}
-        ) RETURNING *
-      `;
+          INSERT INTO contact (
+            name, phone_number, email_address, dob, gender, nationality, marital_status, category,
+            secondary_email, secondary_phone_number, created_by, emergency_contact_name,
+            emergency_contact_relationship, emergency_contact_phone_number, skills, logger, linkedin_url
+          ) VALUES (
+            ${name}, ${phone_number}, ${email_address}, ${dob || null}, ${
+        gender || null
+      },
+            ${nationality || null}, ${marital_status || null}, ${
+        category || null
+      }, ${secondary_email || null},
+            ${secondary_phone_number || null}, ${created_by || null}, ${
+        emergency_contact_name || null
+      },
+            ${emergency_contact_relationship || null}, ${
+        emergency_contact_phone_number || null
+      }, ${skills || null},
+            ${logger || null}, ${linkedin_url || null}
+          ) RETURNING *
+        `;
 
       const contactId = contact.contact_id;
       console.log("Created new contact with ID:", contactId);
@@ -254,66 +263,128 @@ export const CreateContact = async (req, res) => {
 
       if (address) {
         [createdAddress] = await t`
-          INSERT INTO contact_address (contact_id, street, city, state, country, zipcode) 
-          VALUES (${contactId}, ${address.street || null}, ${address.city || null}, ${address.state || null}, ${address.country || null
-          }, ${address.zipcode || null}) 
-          RETURNING *
-        `;
+            INSERT INTO contact_address (contact_id, street, city, state, country, zipcode) 
+            VALUES (${contactId}, ${address.street || null}, ${
+          address.city || null
+        }, ${address.state || null}, ${address.country || null}, ${
+          address.zipcode || null
+        }) 
+            RETURNING *
+          `;
       }
 
       if (education) {
         [createdEducation] = await t`
-          INSERT INTO contact_education (
-            contact_id, 
-            pg_course_name, pg_college, pg_university, pg_from_date, pg_to_date,
-            ug_course_name, ug_college, ug_university, ug_from_date, ug_to_date
-          ) VALUES (
-            ${contactId}, 
-            ${education.pg_course_name || null}, ${education.pg_college || null}, ${education.pg_university || null}, 
-            ${education.pg_from_date || null}, ${education.pg_to_date || null},
-            ${education.ug_course_name || null}, ${education.ug_college || null}, ${education.ug_university || null}, 
-            ${education.ug_from_date || null}, ${education.ug_to_date || null}
-          ) RETURNING *
-        `;
+            INSERT INTO contact_education (
+              contact_id, 
+              pg_course_name, pg_college, pg_university, pg_from_date, pg_to_date,
+              ug_course_name, ug_college, ug_university, ug_from_date, ug_to_date
+            ) VALUES (
+              ${contactId}, 
+              ${education.pg_course_name || null}, ${
+          education.pg_college || null
+        }, ${education.pg_university || null}, 
+              ${education.pg_from_date || null}, ${
+          education.pg_to_date || null
+        },
+              ${education.ug_course_name || null}, ${
+          education.ug_college || null
+        }, ${education.ug_university || null}, 
+              ${education.ug_from_date || null}, ${education.ug_to_date || null}
+            ) RETURNING *
+          `;
       }
 
       if (experiences && experiences.length > 0) {
         for (const exp of experiences) {
           const [newExp] = await t`
-            INSERT INTO contact_experience (
-              contact_id, job_title, company, department, from_date, to_date, company_skills
-            ) VALUES (
-              ${contactId}, ${exp.job_title || null}, ${exp.company || null}, ${exp.department || null}, 
-              ${exp.from_date || null}, ${exp.to_date || null}, ${exp.company_skills || null}
-            ) RETURNING *
-          `;
+              INSERT INTO contact_experience (
+                contact_id, job_title, company, department, from_date, to_date, company_skills
+              ) VALUES (
+                ${contactId}, ${exp.job_title || null}, ${
+            exp.company || null
+          }, ${exp.department || null}, 
+                ${exp.from_date || null}, ${exp.to_date || null}, ${
+            exp.company_skills || null
+          }
+              ) RETURNING *
+            `;
           createdExperiences.push(newExp);
         }
       }
 
       if (events && events.length > 0) {
         for (const event of events) {
-          const [existingEvent] = await t`
-            SELECT * FROM event 
-            WHERE contact_id = ${contactId} 
-              AND event_name = ${event.event_name}
-              AND event_held_organization = ${event.event_held_organization || null}
-            LIMIT 1
-          `;
+          // Check if this event already exists (by event_id or photo_id)
+          let existingEvent = null;
 
-          if (!existingEvent) {
-            const [newEvent] = await t`
-              INSERT INTO event (
-                contact_id, event_name, event_role, event_date, event_held_organization, event_location, verified, created_by
-              ) VALUES (
-                ${contactId}, ${event.event_name}, ${event.event_role || null}, ${event.event_date || null}, 
-                ${event.event_held_organization || null}, ${event.event_location || null}, ${event.verified || false},
-                ${created_by || null}
-              ) RETURNING *
-            `;
-            createdEvents.push(newEvent);
+          if (event.event_id) {
+            // If event_id is provided, find the existing event
+            [existingEvent] = await t`
+                SELECT * FROM event 
+                WHERE event_id = ${event.event_id}
+                LIMIT 1
+              `;
+          } else if (event.photo_id) {
+            // If photo_id is provided, find event associated with that photo
+            [existingEvent] = await t`
+                SELECT * FROM event 
+                WHERE photo_id = ${event.photo_id} 
+                  AND event_name = ${event.event_name}
+                LIMIT 1
+              `;
+          }
+
+          if (existingEvent) {
+            // Update the existing event to link it to the new contact
+            const [updatedEvent] = await t`
+                UPDATE event 
+                SET contact_id = ${contactId}, 
+                    event_role = ${
+                      event.event_role || existingEvent.event_role
+                    }, 
+                    event_date = ${
+                      event.event_date || existingEvent.event_date
+                    }, 
+                    event_held_organization = ${
+                      event.event_held_organization ||
+                      existingEvent.event_held_organization
+                    }, 
+                    event_location = ${
+                      event.event_location || existingEvent.event_location
+                    },
+                    verified = ${
+                      event.verified !== undefined
+                        ? event.verified
+                        : existingEvent.verified
+                    },
+                    updated_at = NOW()
+                WHERE event_id = ${existingEvent.event_id}
+                RETURNING *
+              `;
+            createdEvents.push(updatedEvent);
+            console.log(
+              `Linked existing event '${event.event_name}' to contact ${contactId}`
+            );
           } else {
-            console.log(`Event '${event.event_name}' already exists for contact ${contactId}, skipping...`);
+            // Create a new event if none exists
+            const [newEvent] = await t`
+                INSERT INTO event (
+                  contact_id, photo_id, event_name, event_role, event_date, event_held_organization, event_location, verified, created_by
+                ) VALUES (
+                  ${contactId}, ${event.photo_id || null}, ${
+              event.event_name
+            }, ${event.event_role || null}, ${event.event_date || null}, 
+                  ${event.event_held_organization || null}, ${
+              event.event_location || null
+            }, ${event.verified || false},
+                  ${created_by || null}
+                ) RETURNING *
+              `;
+            createdEvents.push(newEvent);
+            console.log(
+              `Created new event '${event.event_name}' for contact ${contactId}`
+            );
           }
         }
       }
@@ -321,7 +392,10 @@ export const CreateContact = async (req, res) => {
       try {
         logContactModification(db, contactId, created_by, "CREATE", t);
       } catch (err) {
-        console.warn("Contact modification logging failed, but continuing operation:", err.message);
+        console.warn(
+          "Contact modification logging failed, but continuing operation:",
+          err.message
+        );
         // Execution continues
       }
 
@@ -456,7 +530,7 @@ export const GetUnVerifiedContacts = async (req, res) => {
 };
 
 export const UpdateContactAndEvents = async (req, res) => {
-  console.log("here")
+  console.log("here");
   const { id, userId } = req.params;
   const { name, phone_number, email_address, events } = req.body;
 
@@ -469,7 +543,8 @@ export const UpdateContactAndEvents = async (req, res) => {
   if (!name || !phone_number || !email_address) {
     return res.status(400).json({
       success: false,
-      message: "Required fields are missing (name, phone_number, email_address).",
+      message:
+        "Required fields are missing (name, phone_number, email_address).",
     });
   }
   if (!events || !Array.isArray(events) || events.length === 0) {
@@ -490,7 +565,8 @@ export const UpdateContactAndEvents = async (req, res) => {
     ) {
       return res.status(400).json({
         success: false,
-        message: "Each event object must contain all required fields (event_id, event_name, etc.).",
+        message:
+          "Each event object must contain all required fields (event_id, event_name, etc.).",
         invalid_event: event,
       });
     }
@@ -540,7 +616,10 @@ export const UpdateContactAndEvents = async (req, res) => {
       try {
         logContactModification(db, id, userId, "UPDATE", t);
       } catch (err) {
-        console.warn("Contact modification logging failed, but continuing operation:", err.message);
+        console.warn(
+          "Contact modification logging failed, but continuing operation:",
+          err.message
+        );
         // Execution continues
       }
 
@@ -561,7 +640,8 @@ export const UpdateContactAndEvents = async (req, res) => {
     if (err.message === "ContactNotFound" || err.message === "EventNotFound") {
       return res.status(404).json({
         success: false,
-        message: "Contact or one of the specified events not found for the given contact ID.",
+        message:
+          "Contact or one of the specified events not found for the given contact ID.",
       });
     }
     if (err.code === "23505") {
@@ -666,10 +746,18 @@ export const UpdateContact = async (req, res) => {
               secondary_email, secondary_phone_number, emergency_contact_name, emergency_contact_relationship, 
               emergency_contact_phone_number, skills, logger, linkedin_url
             ) VALUES (
-              ${created_by || null}, ${name || null}, ${phone_number || null}, ${email_address || null}, ${dob || null},
-              ${gender || null}, ${nationality || null}, ${marital_status || null}, ${category || null},
-              ${secondary_email || null}, ${secondary_phone_number || null}, ${emergency_contact_name || null}, 
-              ${emergency_contact_relationship || null}, ${emergency_contact_phone_number || null},
+              ${created_by || null}, ${name || null}, ${
+            phone_number || null
+          }, ${email_address || null}, ${dob || null},
+              ${gender || null}, ${nationality || null}, ${
+            marital_status || null
+          }, ${category || null},
+              ${secondary_email || null}, ${secondary_phone_number || null}, ${
+            emergency_contact_name || null
+          }, 
+              ${emergency_contact_relationship || null}, ${
+            emergency_contact_phone_number || null
+          },
               ${skills || null}, ${logger || null}, ${linkedin_url || null}
             ) RETURNING *
           `;
@@ -689,8 +777,12 @@ export const UpdateContact = async (req, res) => {
             secondary_email = ${secondary_email || null},
             secondary_phone_number = ${secondary_phone_number || null},
             emergency_contact_name = ${emergency_contact_name || null},
-            emergency_contact_relationship = ${emergency_contact_relationship || null},
-            emergency_contact_phone_number = ${emergency_contact_phone_number || null},
+            emergency_contact_relationship = ${
+              emergency_contact_relationship || null
+            },
+            emergency_contact_phone_number = ${
+              emergency_contact_phone_number || null
+            },
             skills = ${skills || null},
             logger = ${logger || null},
             linkedin_url = ${linkedin_url || null},
@@ -709,8 +801,11 @@ export const UpdateContact = async (req, res) => {
       if (address && activeContactId) {
         [updatedAddress] = await t`
           INSERT INTO contact_address (contact_id, street, city, state, country, zipcode)
-          VALUES (${activeContactId}, ${address.street || null}, ${address.city || null}, ${address.state || null}, ${address.country || null
-          }, ${address.zipcode || null})
+          VALUES (${activeContactId}, ${address.street || null}, ${
+          address.city || null
+        }, ${address.state || null}, ${address.country || null}, ${
+          address.zipcode || null
+        })
           ON CONFLICT (contact_id) DO UPDATE SET
             street = EXCLUDED.street,
             city = EXCLUDED.city,
@@ -728,9 +823,13 @@ export const UpdateContact = async (req, res) => {
             ug_course_name, ug_college, ug_university, ug_from_date, ug_to_date
           ) VALUES (
             ${activeContactId},
-            ${education.pg_course_name || null}, ${education.pg_college || null}, ${education.pg_university || null}, 
+            ${education.pg_course_name || null}, ${
+          education.pg_college || null
+        }, ${education.pg_university || null}, 
             ${education.pg_from_date || null}, ${education.pg_to_date || null},
-            ${education.ug_course_name || null}, ${education.ug_college || null}, ${education.ug_university || null}, 
+            ${education.ug_course_name || null}, ${
+          education.ug_college || null
+        }, ${education.ug_university || null}, 
             ${education.ug_from_date || null}, ${education.ug_to_date || null}
           ) ON CONFLICT (contact_id) DO UPDATE SET
             pg_course_name = EXCLUDED.pg_course_name,
@@ -754,8 +853,12 @@ export const UpdateContact = async (req, res) => {
             INSERT INTO contact_experience (
               contact_id, job_title, company, department, from_date, to_date, company_skills
             ) VALUES (
-              ${activeContactId}, ${exp.job_title || null}, ${exp.company || null}, ${exp.department || null}, 
-              ${exp.from_date || null}, ${exp.to_date || null}, ${exp.company_skills || null}
+              ${activeContactId}, ${exp.job_title || null}, ${
+            exp.company || null
+          }, ${exp.department || null}, 
+              ${exp.from_date || null}, ${exp.to_date || null}, ${
+            exp.company_skills || null
+          }
             ) RETURNING *
           `;
           updatedExperiences.push(newExp);
@@ -793,8 +896,12 @@ export const UpdateContact = async (req, res) => {
             INSERT INTO event (
               contact_id, event_name, event_role, event_date, event_held_organization, event_location, verified, contact_status
             ) VALUES (
-              ${activeContactId}, ${event_name}, ${event_role || null}, ${event_date || null}, 
-              ${event_held_organization || null}, ${event_location || null}, ${isVerified}, ${contact_status || null}
+              ${activeContactId}, ${event_name}, ${event_role || null}, ${
+            event_date || null
+          }, 
+              ${event_held_organization || null}, ${
+            event_location || null
+          }, ${isVerified}, ${contact_status || null}
             ) RETURNING *
           `;
           if (newEvent) updatedEvents.push(newEvent);
@@ -819,35 +926,69 @@ export const UpdateContact = async (req, res) => {
     WHERE event_id = ${event_id} 
     LIMIT 1
 `;
-      console.log(eventAssignment)
+      console.log(eventAssignment);
 
       if (assignment_id) {
-        console.log(`Event ID ${event_id} has an active assignment - updating as assigned user`);
+        console.log(
+          `Event ID ${event_id} has an active assignment - updating as assigned user`
+        );
         console.log("Marking assignment as completed:", assignment_id);
         await t`UPDATE user_assignments SET completed = TRUE WHERE id = ${assignment_id}`;
 
         try {
           console.log(userId);
-          logContactModification(db, activeContactId, userId, "USER UPDATE", t, null);
+          logContactModification(
+            db,
+            activeContactId,
+            userId,
+            "USER UPDATE",
+            t,
+            null
+          );
         } catch (err) {
-          console.warn("Contact modification logging failed, but continuing operation:", err.message);
+          console.warn(
+            "Contact modification logging failed, but continuing operation:",
+            err.message
+          );
           // Execution continues
         }
       } else {
         if (eventAssignment) {
           try {
             console.log(userId);
-            logContactModification(db, activeContactId, userId, "USER VERIFY", t, null);
+            logContactModification(
+              db,
+              activeContactId,
+              userId,
+              "USER VERIFY",
+              t,
+              null
+            );
           } catch (err) {
-            console.warn("Contact modification logging failed, but continuing operation:", err.message);
+            console.warn(
+              "Contact modification logging failed, but continuing operation:",
+              err.message
+            );
           }
         } else {
-          console.log(`Event ID ${event_id} has no assignment - regular update`);
+          console.log(
+            `Event ID ${event_id} has no assignment - regular update`
+          );
           try {
             console.log(userId);
-            logContactModification(db, activeContactId, userId, "UPDATE", t, null);
+            logContactModification(
+              db,
+              activeContactId,
+              userId,
+              "UPDATE",
+              t,
+              null
+            );
           } catch (err) {
-            console.warn("Contact modification logging failed, but continuing operation:", err.message);
+            console.warn(
+              "Contact modification logging failed, but continuing operation:",
+              err.message
+            );
             // Execution continues
           }
         }
@@ -863,7 +1004,9 @@ export const UpdateContact = async (req, res) => {
       };
     });
 
-    const message = contact_id ? "Contact updated successfully!" : "Contact processed successfully!";
+    const message = contact_id
+      ? "Contact updated successfully!"
+      : "Contact processed successfully!";
     return res.status(200).json({
       success: true,
       message,
@@ -881,7 +1024,7 @@ export const UpdateContact = async (req, res) => {
 
 export const DeleteContact = async (req, res) => {
   const { contactId } = req.params;
-  const { userType=null, eventId=null} = req.query;
+  const { userType = null, eventId = null } = req.query;
   console.log(contactId, userType, eventId);
   try {
     await db.begin(async (t) => {
@@ -897,8 +1040,10 @@ export const DeleteContact = async (req, res) => {
 
       if (userType === "user") {
         if (
-          (contact.contact_status === "pending" && contact.verified === false ) || (contact.contact_status === "rejected" && contact.verified === true)
-          ) {
+          (contact.contact_status === "pending" &&
+            contact.verified === false) ||
+          (contact.contact_status === "rejected" && contact.verified === true)
+        ) {
           await performCompleteDeletion(t, contactId, eventId);
 
           return res.status(200).json({
@@ -906,10 +1051,14 @@ export const DeleteContact = async (req, res) => {
             message: "Contact and all associated data deleted successfully!",
             action: "deleted",
           });
-        } else if (contact.contact_status === "approved" && contact.verified === true) {
+        } else if (
+          contact.contact_status === "approved" &&
+          contact.verified === true
+        ) {
           return res.status(403).json({
             success: false,
-            message: "Cannot delete approved and verified contacts. Contact support if needed.",
+            message:
+              "Cannot delete approved and verified contacts. Contact support if needed.",
             action: "denied",
             reason: "Contact is approved and verified",
             contact_status: contact.contact_status,
@@ -918,7 +1067,8 @@ export const DeleteContact = async (req, res) => {
         } else {
           return res.status(403).json({
             success: false,
-            message: "You don't have permission to delete this contact as it is approved.",
+            message:
+              "You don't have permission to delete this contact as it is approved.",
             action: "denied",
             reason: "Insufficient permissions for current contact state",
             contact_status: contact.contact_status,
@@ -971,7 +1121,14 @@ const performCompleteDeletion = async (transaction, contactId, eventId) => {
 
 export const AddEventToExistingContact = async (req, res) => {
   const { contactId, userId } = req.params;
-  const { eventName, eventRole, eventDate, eventHeldOrganization, eventLocation, verified } = req.body;
+  const {
+    eventName,
+    eventRole,
+    eventDate,
+    eventHeldOrganization,
+    eventLocation,
+    verified,
+  } = req.body;
 
   if (!eventName || !eventRole || !eventDate) {
     return res.status(400).json({
@@ -983,15 +1140,19 @@ export const AddEventToExistingContact = async (req, res) => {
   try {
     const [newEvent] = await db`
       INSERT INTO event (contact_id, event_name, event_role, event_date, event_held_organization, event_location, verified)
-      VALUES (${contactId}, ${eventName}, ${eventRole}, ${eventDate}, ${eventHeldOrganization}, ${eventLocation}, ${verified || false
-      })
+      VALUES (${contactId}, ${eventName}, ${eventRole}, ${eventDate}, ${eventHeldOrganization}, ${eventLocation}, ${
+      verified || false
+    })
       RETURNING *
     `;
 
     try {
       logContactModification(db, contactId, userId, "UPDATE USER EVENT");
     } catch (err) {
-      console.warn("Contact modification logging failed, but continuing operation:", err.message);
+      console.warn(
+        "Contact modification logging failed, but continuing operation:",
+        err.message
+      );
       // Execution continues
     }
     return res.status(201).json({
@@ -1120,8 +1281,10 @@ export const GetFilteredContacts = async (req, res) => {
     const conditions = [];
 
     if (name) conditions.push(`c.name ILIKE '%${name}%'`);
-    if (phone_number) conditions.push(`c.phone_number ILIKE '%${phone_number}%'`);
-    if (email_address) conditions.push(`c.email_address ILIKE '%${email_address}%'`);
+    if (phone_number)
+      conditions.push(`c.phone_number ILIKE '%${phone_number}%'`);
+    if (email_address)
+      conditions.push(`c.email_address ILIKE '%${email_address}%'`);
     if (created_by) conditions.push(`c.created_by = '${created_by}'`);
 
     if (category) {
@@ -1140,95 +1303,132 @@ export const GetFilteredContacts = async (req, res) => {
     }
 
     if (nationality) {
-      const nationalityConditions = nationality.map((nat) => `c.nationality ILIKE '%${nat}%'`);
+      const nationalityConditions = nationality.map(
+        (nat) => `c.nationality ILIKE '%${nat}%'`
+      );
       conditions.push(`(${nationalityConditions.join(" OR ")})`);
     }
 
     if (skills) {
-      const skillsConditions = skills.map((skill) => `c.skills ILIKE '%${skill}%'`);
+      const skillsConditions = skills.map(
+        (skill) => `c.skills ILIKE '%${skill}%'`
+      );
       conditions.push(`(${skillsConditions.join(" OR ")})`);
     }
 
     if (address_city) {
-      const cityConditions = address_city.map((city) => `ca.city ILIKE '%${city}%'`);
+      const cityConditions = address_city.map(
+        (city) => `ca.city ILIKE '%${city}%'`
+      );
       conditions.push(`(${cityConditions.join(" OR ")})`);
     }
 
     if (address_state) {
-      const stateConditions = address_state.map((state) => `ca.state ILIKE '%${state}%'`);
+      const stateConditions = address_state.map(
+        (state) => `ca.state ILIKE '%${state}%'`
+      );
       conditions.push(`(${stateConditions.join(" OR ")})`);
     }
 
     if (address_country) {
-      const countryConditions = address_country.map((country) => `ca.country ILIKE '%${country}%'`);
+      const countryConditions = address_country.map(
+        (country) => `ca.country ILIKE '%${country}%'`
+      );
       conditions.push(`(${countryConditions.join(" OR ")})`);
     }
 
     if (address_zipcode) conditions.push(`ca.zipcode = '${address_zipcode}'`);
-    if (address_street) conditions.push(`ca.street ILIKE '%${address_street}%'`);
+    if (address_street)
+      conditions.push(`ca.street ILIKE '%${address_street}%'`);
 
     if (pg_course_name) {
-      const pgCourseConditions = pg_course_name.map((course) => `ce.pg_course_name ILIKE '%${course}%'`);
+      const pgCourseConditions = pg_course_name.map(
+        (course) => `ce.pg_course_name ILIKE '%${course}%'`
+      );
       conditions.push(`(${pgCourseConditions.join(" OR ")})`);
     }
 
     if (pg_college) {
-      const pgCollegeConditions = pg_college.map((college) => `ce.pg_college ILIKE '%${college}%'`);
+      const pgCollegeConditions = pg_college.map(
+        (college) => `ce.pg_college ILIKE '%${college}%'`
+      );
       conditions.push(`(${pgCollegeConditions.join(" OR ")})`);
     }
 
     if (pg_university) {
-      const pgUniversityConditions = pg_university.map((uni) => `ce.pg_university ILIKE '%${uni}%'`);
+      const pgUniversityConditions = pg_university.map(
+        (uni) => `ce.pg_university ILIKE '%${uni}%'`
+      );
       conditions.push(`(${pgUniversityConditions.join(" OR ")})`);
     }
 
     if (ug_course_name) {
-      const ugCourseConditions = ug_course_name.map((course) => `ce.ug_course_name ILIKE '%${course}%'`);
+      const ugCourseConditions = ug_course_name.map(
+        (course) => `ce.ug_course_name ILIKE '%${course}%'`
+      );
       conditions.push(`(${ugCourseConditions.join(" OR ")})`);
     }
 
     if (ug_college) {
-      const ugCollegeConditions = ug_college.map((college) => `ce.ug_college ILIKE '%${college}%'`);
+      const ugCollegeConditions = ug_college.map(
+        (college) => `ce.ug_college ILIKE '%${college}%'`
+      );
       conditions.push(`(${ugCollegeConditions.join(" OR ")})`);
     }
 
     if (ug_university) {
-      const ugUniversityConditions = ug_university.map((uni) => `ce.ug_university ILIKE '%${uni}%'`);
+      const ugUniversityConditions = ug_university.map(
+        (uni) => `ce.ug_university ILIKE '%${uni}%'`
+      );
       conditions.push(`(${ugUniversityConditions.join(" OR ")})`);
     }
 
     if (job_title) {
-      const jobTitleConditions = job_title.map((jt) => `exp.job_title ILIKE '%${jt}%'`);
+      const jobTitleConditions = job_title.map(
+        (jt) => `exp.job_title ILIKE '%${jt}%'`
+      );
       conditions.push(`(${jobTitleConditions.join(" OR ")})`);
     }
 
     if (company) {
-      const companyConditions = company.map((comp) => `exp.company ILIKE '%${comp}%'`);
+      const companyConditions = company.map(
+        (comp) => `exp.company ILIKE '%${comp}%'`
+      );
       conditions.push(`(${companyConditions.join(" OR ")})`);
     }
 
     if (department) {
-      const departmentConditions = department.map((dept) => `exp.department ILIKE '%${dept}%'`);
+      const departmentConditions = department.map(
+        (dept) => `exp.department ILIKE '%${dept}%'`
+      );
       conditions.push(`(${departmentConditions.join(" OR ")})`);
     }
 
     if (event_name) {
-      const eventNameConditions = event_name.map((name) => `e.event_name ILIKE '%${name}%'`);
+      const eventNameConditions = event_name.map(
+        (name) => `e.event_name ILIKE '%${name}%'`
+      );
       conditions.push(`(${eventNameConditions.join(" OR ")})`);
     }
 
     if (event_role) {
-      const eventRoleConditions = event_role.map((role) => `e.event_role ILIKE '%${role}%'`);
+      const eventRoleConditions = event_role.map(
+        (role) => `e.event_role ILIKE '%${role}%'`
+      );
       conditions.push(`(${eventRoleConditions.join(" OR ")})`);
     }
 
     if (event_organization) {
-      const eventOrgConditions = event_organization.map((org) => `e.event_held_organization ILIKE '%${org}%'`);
+      const eventOrgConditions = event_organization.map(
+        (org) => `e.event_held_organization ILIKE '%${org}%'`
+      );
       conditions.push(`(${eventOrgConditions.join(" OR ")})`);
     }
 
     if (event_location) {
-      const eventLocationConditions = event_location.map((loc) => `e.event_location ILIKE '%${loc}%'`);
+      const eventLocationConditions = event_location.map(
+        (loc) => `e.event_location ILIKE '%${loc}%'`
+      );
       conditions.push(`(${eventLocationConditions.join(" OR ")})`);
     }
 
@@ -1245,15 +1445,29 @@ export const GetFilteredContacts = async (req, res) => {
       conditions.push(
         `(EXTRACT(YEAR FROM ce.pg_to_date) <= ${education_to_year} OR EXTRACT(YEAR FROM ce.ug_to_date) <= ${education_to_year})`
       );
-    if (experience_from_year) conditions.push(`EXTRACT(YEAR FROM exp.from_date) >= ${experience_from_year}`);
-    if (experience_to_year) conditions.push(`EXTRACT(YEAR FROM exp.to_date) <= ${experience_to_year}`);
-    if (event_year) conditions.push(`EXTRACT(YEAR FROM e.event_date) = ${event_year}`);
+    if (experience_from_year)
+      conditions.push(
+        `EXTRACT(YEAR FROM exp.from_date) >= ${experience_from_year}`
+      );
+    if (experience_to_year)
+      conditions.push(
+        `EXTRACT(YEAR FROM exp.to_date) <= ${experience_to_year}`
+      );
+    if (event_year)
+      conditions.push(`EXTRACT(YEAR FROM e.event_date) = ${event_year}`);
 
-    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+    const whereClause =
+      conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
     console.log("WHERE clause:", whereClause);
 
     const offset = (page - 1) * limit;
-    const validSortFields = ["name", "email_address", "phone_number", "created_at", "dob"];
+    const validSortFields = [
+      "name",
+      "email_address",
+      "phone_number",
+      "created_at",
+      "dob",
+    ];
     const sortField = validSortFields.includes(sort_by) ? sort_by : "name";
     const sortDirection = sort_order.toUpperCase() === "DESC" ? "DESC" : "ASC";
 
@@ -1339,114 +1553,139 @@ export const GetFilterOptions = async (req, res) => {
   try {
     // Get the user's category from request (could be from auth middleware, query param, or body)
     const userCategory = req.query.category;
-    console.log(userCategory)
+    console.log(userCategory);
     if (!userCategory) {
       return res.status(400).json({
         success: false,
-        error: "User category is required"
+        error: "User category is required",
       });
     }
 
     // Build the category filter condition
-    let categoryFilter = '';
-    if (userCategory.toLowerCase() === 'admin') {
+    let categoryFilter = "";
+    if (userCategory.toLowerCase() === "admin") {
       // Admin can see all categories
-      categoryFilter = '';
-    } else if (['cata', 'catb', 'catc'].includes(userCategory.toLowerCase())) {
+      categoryFilter = "";
+    } else if (["cata", "catb", "catc"].includes(userCategory.toLowerCase())) {
       // Map user categories to database values
       const categoryMap = {
-        'cata': 'A',
-        'catb': 'B',
-        'catc': 'C'
+        cata: "A",
+        catb: "B",
+        catc: "C",
       };
       const dbCategory = categoryMap[userCategory.toLowerCase()];
       categoryFilter = `AND c.category = '${dbCategory}'`;
     } else {
       return res.status(400).json({
         success: false,
-        error: "Invalid category. Must be 'cata', 'catb', 'catc', or 'admin'"
+        error: "Invalid category. Must be 'cata', 'catb', 'catc', or 'admin'",
       });
     }
 
     const genders = await db`
             SELECT DISTINCT gender as value, COUNT(*)::text as count 
-            FROM contact c WHERE gender IS NOT NULL ${categoryFilter ? db.unsafe(categoryFilter) : db``}
+            FROM contact c WHERE gender IS NOT NULL ${
+              categoryFilter ? db.unsafe(categoryFilter) : db``
+            }
             GROUP BY gender ORDER BY count DESC
         `;
 
     const categories = await db`
             SELECT DISTINCT category as value, COUNT(*)::text as count 
-            FROM contact c WHERE category IS NOT NULL ${categoryFilter ? db.unsafe(categoryFilter) : db``}
+            FROM contact c WHERE category IS NOT NULL ${
+              categoryFilter ? db.unsafe(categoryFilter) : db``
+            }
             GROUP BY category ORDER BY count DESC
         `;
 
     const nationalities = await db`
             SELECT DISTINCT nationality as value, COUNT(*)::text as count 
             FROM contact c 
-            WHERE nationality IS NOT NULL ${categoryFilter ? db.unsafe(categoryFilter) : db``}
+            WHERE nationality IS NOT NULL ${
+              categoryFilter ? db.unsafe(categoryFilter) : db``
+            }
             GROUP BY nationality ORDER BY count DESC
         `;
 
     const maritalStatuses = await db`
             SELECT DISTINCT marital_status as value, COUNT(*)::text as count 
             FROM contact c 
-            WHERE marital_status IS NOT NULL ${categoryFilter ? db.unsafe(categoryFilter) : db``}
+            WHERE marital_status IS NOT NULL ${
+              categoryFilter ? db.unsafe(categoryFilter) : db``
+            }
             GROUP BY marital_status ORDER BY count DESC
         `;
 
     const countries = await db`
             SELECT DISTINCT ca.country as value, COUNT(DISTINCT c.contact_id)::text as count
             FROM contact c JOIN contact_address ca ON c.contact_id = ca.contact_id
-            WHERE ca.country IS NOT NULL ${categoryFilter ? db.unsafe(categoryFilter) : db``}
+            WHERE ca.country IS NOT NULL ${
+              categoryFilter ? db.unsafe(categoryFilter) : db``
+            }
             GROUP BY ca.country ORDER BY count DESC
         `;
 
     const states = await db`
             SELECT DISTINCT ca.state as value, COUNT(DISTINCT c.contact_id)::text as count
             FROM contact c JOIN contact_address ca ON c.contact_id = ca.contact_id
-            WHERE ca.state IS NOT NULL ${categoryFilter ? db.unsafe(categoryFilter) : db``}
+            WHERE ca.state IS NOT NULL ${
+              categoryFilter ? db.unsafe(categoryFilter) : db``
+            }
             GROUP BY ca.state ORDER BY count DESC
         `;
 
     const cities = await db`
             SELECT DISTINCT ca.city as value, COUNT(DISTINCT c.contact_id)::text as count
             FROM contact c JOIN contact_address ca ON c.contact_id = ca.contact_id
-            WHERE ca.city IS NOT NULL ${categoryFilter ? db.unsafe(categoryFilter) : db``}
+            WHERE ca.city IS NOT NULL ${
+              categoryFilter ? db.unsafe(categoryFilter) : db``
+            }
             GROUP BY ca.city ORDER BY count DESC
         `;
 
     const companies = await db`
             SELECT DISTINCT exp.company as value, COUNT(DISTINCT c.contact_id)::text as count
             FROM contact c JOIN contact_experience exp ON c.contact_id = exp.contact_id
-            WHERE exp.company IS NOT NULL ${categoryFilter ? db.unsafe(categoryFilter) : db``}
+            WHERE exp.company IS NOT NULL ${
+              categoryFilter ? db.unsafe(categoryFilter) : db``
+            }
             GROUP BY exp.company ORDER BY count DESC
         `;
 
     const jobTitles = await db`
             SELECT DISTINCT exp.job_title as value, COUNT(DISTINCT c.contact_id)::text as count
             FROM contact c JOIN contact_experience exp ON c.contact_id = exp.contact_id
-            WHERE exp.job_title IS NOT NULL ${categoryFilter ? db.unsafe(categoryFilter) : db``}
+            WHERE exp.job_title IS NOT NULL ${
+              categoryFilter ? db.unsafe(categoryFilter) : db``
+            }
             GROUP BY exp.job_title ORDER BY count DESC
         `;
 
     const pgCourses = await db`
             SELECT DISTINCT ce.pg_course_name as value, COUNT(DISTINCT c.contact_id)::text as count
             FROM contact c JOIN contact_education ce ON c.contact_id = ce.contact_id
-            WHERE ce.pg_course_name IS NOT NULL ${categoryFilter ? db.unsafe(categoryFilter) : db``}
+            WHERE ce.pg_course_name IS NOT NULL ${
+              categoryFilter ? db.unsafe(categoryFilter) : db``
+            }
             GROUP BY ce.pg_course_name ORDER BY count DESC
         `;
 
     const ugCourses = await db`
             SELECT DISTINCT ce.ug_course_name as value, COUNT(DISTINCT c.contact_id)::text as count
             FROM contact c JOIN contact_education ce ON c.contact_id = ce.contact_id
-            WHERE ce.ug_course_name IS NOT NULL ${categoryFilter ? db.unsafe(categoryFilter) : db``}
+            WHERE ce.ug_course_name IS NOT NULL ${
+              categoryFilter ? db.unsafe(categoryFilter) : db``
+            }
             GROUP BY ce.ug_course_name ORDER BY count DESC
         `;
 
     // For skills, we need to get the data first and then filter
-    const skillsQuery = userCategory.toLowerCase() === 'admin'
-      ? db`SELECT skills FROM contact WHERE skills IS NOT NULL AND skills != ''`
-      : db`SELECT skills FROM contact c WHERE skills IS NOT NULL AND skills != '' ${db.unsafe(categoryFilter)}`;
+    const skillsQuery =
+      userCategory.toLowerCase() === "admin"
+        ? db`SELECT skills FROM contact WHERE skills IS NOT NULL AND skills != ''`
+        : db`SELECT skills FROM contact c WHERE skills IS NOT NULL AND skills != '' ${db.unsafe(
+            categoryFilter
+          )}`;
 
     const skillsData = await skillsQuery;
 
@@ -1483,7 +1722,10 @@ export const GetFilterOptions = async (req, res) => {
         ug_courses: ugCourses,
         skills,
       },
-      filter_applied: userCategory !== 'admin' ? `Category filtered for ${userCategory}` : 'No category filter (admin access)'
+      filter_applied:
+        userCategory !== "admin"
+          ? `Category filtered for ${userCategory}`
+          : "No category filter (admin access)",
     });
   } catch (err) {
     console.error("GetFilterOptions error:", err);
@@ -1494,8 +1736,11 @@ export const GetFilterOptions = async (req, res) => {
   }
 };
 
-
-import { getModificationHistory, getAllModificationHistory, getTotalModificationHistoryCount } from "./ModificationHistoryControllers.js";
+import {
+  getModificationHistory,
+  getAllModificationHistory,
+  getTotalModificationHistoryCount,
+} from "./ModificationHistoryControllers.js";
 
 // Get contact modification history
 export const getContactModificationHistory = async (req, res) => {
@@ -1561,7 +1806,11 @@ export const getAllContactModificationHistory = async (req, res) => {
     }
 
     // Fetch all modification history
-    const history = await getAllModificationHistory(db, limitValue, offsetValue);
+    const history = await getAllModificationHistory(
+      db,
+      limitValue,
+      offsetValue
+    );
 
     if (!history || history.length === 0) {
       return res.status(404).json({
@@ -1588,7 +1837,10 @@ export const getAllContactModificationHistory = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error in getAllContactModificationHistory controller:", error);
+    console.error(
+      "Error in getAllContactModificationHistory controller:",
+      error
+    );
     res.status(500).json({
       success: false,
       message: "Internal server error while fetching modification history",
