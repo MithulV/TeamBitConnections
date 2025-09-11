@@ -4,6 +4,7 @@ import {
   GetContacts,
   UpdateContact,
   DeleteContact,
+  DeleteVerifiedContact,
   SearchContacts,
   AddEventToExistingContact,
   GetUnVerifiedContacts,
@@ -20,7 +21,7 @@ import {
 import {
   updateUserPing,
   getOnlineUsers,
-  startOnlineStatusTask
+  startOnlineStatusTask,
 } from "../controllers/OnlineController.js";
 
 import {
@@ -39,14 +40,25 @@ import {
   DeleteImage,
   VerifyImages,
 } from "../controllers/PhotoControllers.js";
-import { GetTasks, CompleteTask, CreateTask } from "../controllers/TaskControllers.js";
+import {
+  GetTasks,
+  CompleteTask,
+  CreateTask,
+} from "../controllers/TaskControllers.js";
 import { createTask } from "node-cron";
-import { ImportContactsFromCSV, uploadCSV } from "../controllers/CsvImportControllers.js";
+import {
+  ImportContactsFromCSV,
+  uploadCSV,
+} from "../controllers/CsvImportControllers.js";
 import verifyToken from "../middlewares/AuthMiddleware.js";
 import { getModificationHistory } from "../controllers/ModificationHistoryControllers.js";
 import {
-  sendReferralInvitation, validateReferralLink, completeRegistration, invalidateInvitation, invitationHeartbeat
-} from '../controllers/referralControllers.js';
+  sendReferralInvitation,
+  validateReferralLink,
+  completeRegistration,
+  invalidateInvitation,
+  invitationHeartbeat,
+} from "../controllers/referralControllers.js";
 const router = express.Router();
 import { analyzeContactNetwork } from "../controllers/aiNetworkControllers.js";
 // Existing routes
@@ -63,7 +75,11 @@ router.get("/get-contact-images/:userId", GetPicturesByUserId);
 router.put("/update-contact/:contact_id", UpdateContact);
 router.post("/create-contact-by-admin", UpdateContact);
 router.delete("/delete-contact/:contactId", DeleteContact);
-router.post("/add-event-existing-contact/:contactId/:userId", AddEventToExistingContact);
+router.delete("/verified-contact-delete/:contactId", DeleteVerifiedContact);
+router.post(
+  "/add-event-existing-contact/:contactId/:userId",
+  AddEventToExistingContact
+);
 router.put("/update-contacts-and-events/:id/:userId", UpdateContactAndEvents);
 router.delete("/delete-image/:id", DeleteImage);
 router.post("/verify-image/:id", VerifyImages);
@@ -76,25 +92,24 @@ router.get("/get-tasks/", GetTasks);
 router.put("/complete-task/:id", CompleteTask);
 router.get("/get-filter-options", GetFilterOptions);
 router.post("/create-task", CreateTask);
-router.get("/searchContacts", SearchContacts)
-router.get("/get-modification-history/:id", getContactModificationHistory)
-router.get("/get-all-modification-history/", getAllContactModificationHistory)
+router.get("/searchContacts", SearchContacts);
+router.get("/get-modification-history/:id", getContactModificationHistory);
+router.get("/get-all-modification-history/", getAllContactModificationHistory);
 
 //csv file upload
-router.post('/import-csv', uploadCSV, ImportContactsFromCSV);
+router.post("/import-csv", uploadCSV, ImportContactsFromCSV);
 
 router.post("/user/ping/:id", updateUserPing);
 router.get("/users/online", getOnlineUsers);
 
-
-router.post('/send-referral', sendReferralInvitation);
-router.get('/validate-referral/:token', validateReferralLink);
-router.post('/complete-registration', completeRegistration);
-router.post('/invalidate-invitation', invalidateInvitation);
-router.post('/invitation-heartbeat', invitationHeartbeat);
+router.post("/send-referral", sendReferralInvitation);
+router.get("/validate-referral/:token", validateReferralLink);
+router.post("/complete-registration", completeRegistration);
+router.post("/invalidate-invitation", invalidateInvitation);
+router.post("/invitation-heartbeat", invitationHeartbeat);
 
 //ai
-router.get('/analyze-contact-network', analyzeContactNetwork);
+router.get("/analyze-contact-network", analyzeContactNetwork);
 
 // Start the background task when routes are loaded
 startOnlineStatusTask();
