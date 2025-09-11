@@ -132,7 +132,6 @@ const LoginPage = () => {
                   className="w-full p-3 border border-gray-300 rounded-lg placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                 />
               </div>
-
               <button
                 onClick={handleLogin}
                 className="w-full bg-gradient-to-r from-blue-600 to-blue-500 text-white p-3 rounded-lg font-medium hover:from-blue-700 hover:to-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]"

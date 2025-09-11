@@ -17,6 +17,7 @@ import UserAssignments from "../pages/UserAssignments";
 import TaskAssignments from "../pages/TaskAssignments";
 import CameraInput from "../components/CameraInput";
 import FormInput from "../components/FormInput";
+import EventDetails from "../pages/EventDetails";
 import axios from "axios";
 import Referral from "../pages/Referral";
 import ReferralSignup from "../pages/ReferralSignup";
@@ -64,7 +65,7 @@ function Applayout() {
   const location = useLocation();
 
   // Define routes where navbar should be hidden
-  const hideNavbarRoutes = ['/login', '/register'];
+  const hideNavbarRoutes = ["/login", "/register"];
   const shouldShowNavbar = !hideNavbarRoutes.includes(location.pathname);
 
   // Online status tracking - ping server every 10 seconds
@@ -112,11 +113,14 @@ function Applayout() {
                 </MiddleManRoutesWrapper>
               }
             />
-            <Route path="/analysis" element={
-              <AdminRouteWrapper>
-                <ContactNetworkAnalysis />
-              </AdminRouteWrapper>
-            } />
+            <Route
+              path="/analysis"
+              element={
+                <AdminRouteWrapper>
+                  <ContactNetworkAnalysis />
+                </AdminRouteWrapper>
+              }
+            />
             <Route path="/tasks" element={<MiddleManTasks />} />
             <Route path="/profile/:id" element={<ProfileView />} />
             <Route path="/edit/:id" element={<DetailsInput />} />
@@ -150,6 +154,7 @@ function Applayout() {
             <Route path="/camera-input" element={<CameraInput />} />
             <Route path="/form-input" element={<FormInput />} />
             <Route path="/details-input" element={<DetailsInput />} />
+            <Route path="/event-details" element={<EventDetails />} />
           </Route>
 
           {/* Fallback route */}
