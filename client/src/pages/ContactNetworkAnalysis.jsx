@@ -51,7 +51,7 @@ function ContactNetworkAnalysis() {
       const dimensions = treeContainer.current.getBoundingClientRect();
       setTranslate({
         x: dimensions.width / 2,
-        y: 100,
+        y: 50,
       });
     }
   }, [treeData]);
@@ -61,10 +61,10 @@ function ContactNetworkAnalysis() {
       setLoading(true);
       const response = await axios.get('http://localhost:8000/api/analyze-contact-network');
       setNetworkData(response.data);
-      
+
       const treeStructure = buildTreeStructure(response.data);
       setTreeData(treeStructure);
-      
+
       console.log('🤖 AI Network data loaded:', response.data);
     } catch (err) {
       setError(err.response?.data?.error || err.message || 'Failed to fetch network data');
@@ -85,9 +85,9 @@ function ContactNetworkAnalysis() {
 
     const nodes = data.networkData.nodes;
     const edges = data.networkData.edges || [];
-    
+
     const nodeMap = new Map();
-    
+
     nodes.forEach(node => {
       const treeNode = {
         name: node.name || node.email || 'Unknown',
@@ -117,7 +117,7 @@ function ContactNetworkAnalysis() {
     edges.forEach(edge => {
       const parentId = edge.from;
       const childId = edge.to;
-      
+
       if (!childrenMap.has(parentId)) {
         childrenMap.set(parentId, []);
       }
@@ -138,7 +138,7 @@ function ContactNetworkAnalysis() {
 
       const children = childrenMap.get(nodeId) || [];
       node.children = children.map(childId => buildSubtree(childId)).filter(Boolean);
-      
+
       return node;
     };
 
@@ -183,15 +183,15 @@ function ContactNetworkAnalysis() {
     const isRoot = nodeDatum.attributes?.type === 'virtual_root' || nodeDatum.attributes?.type === 'root';
     const isUser = nodeDatum.attributes?.type === 'user';
     const isContact = nodeDatum.attributes?.type === 'contact';
-    
+
     const shouldHighlight = () => {
       if (!searchTerm) return false;
       return nodeDatum.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-             (nodeDatum.attributes?.email && nodeDatum.attributes.email.toLowerCase().includes(searchTerm.toLowerCase()));
+        (nodeDatum.attributes?.email && nodeDatum.attributes.email.toLowerCase().includes(searchTerm.toLowerCase()));
     };
 
     const isHighlighted = shouldHighlight();
-    
+
     return (
       <g>
         {isHighlighted && (
@@ -203,7 +203,7 @@ function ContactNetworkAnalysis() {
             opacity="0.6"
           />
         )}
-        
+
         {isRoot ? (
           <polygon
             points="-20,-15 20,-15 25,0 20,15 -20,15 -25,0"
@@ -245,32 +245,33 @@ function ContactNetworkAnalysis() {
             }}
           />
         )}
-        
+
         <text
           fill="#1f2937"
-          x="35"
+          x="25"        // Reduced from 35
           y="-8"
-          fontSize="15px"
+          fontSize="14px"  // Slightly smaller
           fontWeight="600"
           style={{ userSelect: 'none' }}
         >
-          {nodeDatum.name && nodeDatum.name.length > 16 ? 
-            `${nodeDatum.name.substring(0, 16)}...` : 
+          {nodeDatum.name && nodeDatum.name.length > 14 ?
+            `${nodeDatum.name.substring(0, 14)}...` :
             nodeDatum.name || 'Unknown'
           }
         </text>
-        
+
         <text
           fill="#6b7280"
-          x="35"
+          x="25"        // Reduced from 35
           y="6"
-          fontSize="12px"
+          fontSize="11px"  // Slightly smaller
           fontWeight="500"
           style={{ userSelect: 'none' }}
         >
-          {nodeDatum.attributes?.type || 'unknown'} 
+          {nodeDatum.attributes?.type || 'unknown'}
           {nodeDatum.attributes?.connections ? ` • ${nodeDatum.attributes.connections}` : ''}
         </text>
+
 
         {isUser && nodeDatum.attributes?.connections > 0 && (
           <g>
@@ -365,7 +366,7 @@ function ContactNetworkAnalysis() {
   // Chart data preparation functions
   const prepareStatisticsBarChart = () => {
     if (!networkData?.networkMetrics) return { labels: [], datasets: [] };
-    
+
     return {
       labels: ['Total Contacts', 'Total Users', 'Network Depth', 'Referral Chains'],
       datasets: [{
@@ -395,7 +396,7 @@ function ContactNetworkAnalysis() {
 
   const prepareNetworkMetricsChart = () => {
     if (!networkData?.networkMetrics) return { labels: [], datasets: [] };
-    
+
     const metrics = networkData.networkMetrics;
     return {
       labels: ['Network Depth', 'Avg Connections', 'Network Density', 'Total Nodes'],
@@ -430,7 +431,7 @@ function ContactNetworkAnalysis() {
 
   const prepareConnectionDistribution = () => {
     if (!networkData?.networkData?.nodes) return { labels: [], datasets: [] };
-    
+
     const users = networkData.networkData.nodes.filter(n => n.type === 'user');
     const connectionRanges = {
       '0': 0,
@@ -503,7 +504,7 @@ function ContactNetworkAnalysis() {
   return (
     <div className="min-h-screen bg-gray-100">
       <Header />
-      
+
       <div className="container mx-auto px-6 py-8">
         {/* Header */}
         <div className="text-center mb-8">
@@ -530,11 +531,10 @@ function ContactNetworkAnalysis() {
                 <button
                   key={tab.key}
                   onClick={() => setActiveTab(tab.key)}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === tab.key
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
+                  className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === tab.key
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`}
                 >
                   {tab.label}
                 </button>
@@ -583,14 +583,14 @@ function ContactNetworkAnalysis() {
                     <li>• <strong>Click nodes:</strong> Expand/collapse branches and view details</li>
                   </ul>
                 </div>
-                
+
                 {/* Legend */}
                 <div className="bg-gray-50 rounded-lg p-4 mb-6 border">
                   <div className="flex flex-wrap items-center gap-6 text-sm">
                     <div className="flex items-center">
-                      <div className="w-6 h-6 bg-purple-500 rounded mr-2" style={{clipPath: 'polygon(20% 0%, 80% 0%, 100% 50%, 80% 100%, 20% 100%, 0% 50%)'}}></div>
+                      <div className="w-6 h-6 bg-purple-500 rounded mr-2" style={{ clipPath: 'polygon(20% 0%, 80% 0%, 100% 50%, 80% 100%, 20% 100%, 0% 50%)' }}></div>
                       <span className="font-medium text-gray-700">Network Root</span>
-                    </div>
+                    </div>  
                     <div className="flex items-center">
                       <div className="w-6 h-6 bg-blue-500 rounded-full mr-2"></div>
                       <span className="font-medium text-gray-700">Users ({networkData.totalUsers})</span>
@@ -605,7 +605,7 @@ function ContactNetworkAnalysis() {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
                   {/* Tree Visualization */}
                   <div className="lg:col-span-3">
@@ -613,24 +613,26 @@ function ContactNetworkAnalysis() {
                       id="treeWrapper"
                       ref={treeContainer}
                       className="bg-white border border-gray-300 rounded-lg"
-                      style={{ width: '100%', height: '700px' }}
+                      style={{ width: '100%', height: '600px' }}  // Reduced from 700px
                     >
+
                       {treeData ? (
                         <Tree
                           data={treeData}
                           translate={translate}
                           orientation="vertical"
                           pathFunc="step"
-                          separation={{ siblings: 2.5, nonSiblings: 3 }}
-                          nodeSize={{ x: 300, y: 140 }}
+                          separation={{ siblings: 0.8, nonSiblings: 1.2}}  // Reduced from 2.5, 3
+                          nodeSize={{ x: 180, y: 100 }}                     // Reduced from 300, 140
                           renderCustomNodeElement={renderTreeNode}
-                          zoom={0.8}
-                          scaleExtent={{ min: 0.2, max: 3 }}
+                          zoom={1.0}                                         // Increased from 0.8
+                          scaleExtent={{ min: 0.3, max: 4 }}               // Adjusted range
                           enableLegacyTransitions={true}
                           shouldCollapseNeighborNodes={false}
                           collapsible={true}
-                          depthFactor={140}
+                          depthFactor={100}                                 // Reduced from 140
                         />
+
                       ) : (
                         <div className="flex items-center justify-center h-full">
                           <div className="text-center">
@@ -654,19 +656,18 @@ function ContactNetworkAnalysis() {
                       {selectedNode ? (
                         <div className="space-y-4">
                           <div className="text-center">
-                            <div className={`inline-flex items-center justify-center w-12 h-12 rounded-lg mb-3 ${
-                              selectedNode.attributes?.type === 'user' ? 'bg-blue-500' :
+                            <div className={`inline-flex items-center justify-center w-12 h-12 rounded-lg mb-3 ${selectedNode.attributes?.type === 'user' ? 'bg-blue-500' :
                               selectedNode.attributes?.type === 'contact' ? 'bg-green-500' :
-                              'bg-purple-500'
-                            }`}>
+                                'bg-purple-500'
+                              }`}>
                               <span className="text-white text-lg">
                                 {selectedNode.attributes?.type === 'user' ? '👤' :
-                                 selectedNode.attributes?.type === 'contact' ? '📋' : '🌐'}
+                                  selectedNode.attributes?.type === 'contact' ? '📋' : '🌐'}
                               </span>
                             </div>
                             <h5 className="font-semibold text-gray-800">{selectedNode.name}</h5>
                           </div>
-                          
+
                           <div className="space-y-3 text-sm">
                             {selectedNode.attributes?.email && (
                               <div>
@@ -674,7 +675,7 @@ function ContactNetworkAnalysis() {
                                 <p className="text-gray-600 text-xs break-all">{selectedNode.attributes.email}</p>
                               </div>
                             )}
-                            
+
                             <div className="grid grid-cols-2 gap-2">
                               <div className="bg-gray-50 p-2 rounded text-center">
                                 <div className="text-lg font-semibold text-blue-600">{selectedNode.attributes?.connections || 0}</div>
@@ -752,7 +753,7 @@ function ContactNetworkAnalysis() {
                     <div className="flex items-center">
                       <div className="p-3 bg-blue-100 rounded-lg">
                         <svg className="w-6 h-6 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/>
+                          <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
                         </svg>
                       </div>
                       <div className="ml-4">
@@ -766,7 +767,7 @@ function ContactNetworkAnalysis() {
                     <div className="flex items-center">
                       <div className="p-3 bg-green-100 rounded-lg">
                         <svg className="w-6 h-6 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z"/>
+                          <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z" />
                         </svg>
                       </div>
                       <div className="ml-4">
@@ -780,7 +781,7 @@ function ContactNetworkAnalysis() {
                     <div className="flex items-center">
                       <div className="p-3 bg-purple-100 rounded-lg">
                         <svg className="w-6 h-6 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"/>
+                          <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
                         </svg>
                       </div>
                       <div className="ml-4">
@@ -794,7 +795,7 @@ function ContactNetworkAnalysis() {
                     <div className="flex items-center">
                       <div className="p-3 bg-orange-100 rounded-lg">
                         <svg className="w-6 h-6 text-orange-600" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M12.395 2.553a1 1 0 00-1.45-.385c-.345.23-.614.558-.822.88-.214.33-.403.713-.57 1.116-.334.804-.614 1.768-.84 2.734a31.365 31.365 0 00-.613 3.58 2.64 2.64 0 01-.945-1.067c-.328-.68-.398-1.534-.398-2.654A1 1 0 005.05 6.05 6.981 6.981 0 003 11a7 7 0 1011.95-4.95c-.592-.591-.98-.985-1.348-1.467-.363-.476-.724-1.063-1.207-2.03zM12.12 15.12A3 3 0 017 13s.879.5 2.5.5c0-1 .5-4 1.25-4.5.5 1 .786 1.293 1.371 1.879A2.99 2.99 0 0113 13a2.99 2.99 0 01-.879 2.121z" clipRule="evenodd"/>
+                          <path fillRule="evenodd" d="M12.395 2.553a1 1 0 00-1.45-.385c-.345.23-.614.558-.822.88-.214.33-.403.713-.57 1.116-.334.804-.614 1.768-.84 2.734a31.365 31.365 0 00-.613 3.58 2.64 2.64 0 01-.945-1.067c-.328-.68-.398-1.534-.398-2.654A1 1 0 005.05 6.05 6.981 6.981 0 003 11a7 7 0 1011.95-4.95c-.592-.591-.98-.985-1.348-1.467-.363-.476-.724-1.063-1.207-2.03zM12.12 15.12A3 3 0 017 13s.879.5 2.5.5c0-1 .5-4 1.25-4.5.5 1 .786 1.293 1.371 1.879A2.99 2.99 0 0113 13a2.99 2.99 0 01-.879 2.121z" clipRule="evenodd" />
                         </svg>
                       </div>
                       <div className="ml-4">
@@ -813,7 +814,7 @@ function ContactNetworkAnalysis() {
                       <Bar data={prepareStatisticsBarChart()} options={chartOptions} />
                     </div>
                   </div>
-                  
+
                   <div className="bg-white p-6 rounded-lg shadow border">
                     <h4 className="text-xl font-semibold mb-4 text-gray-800">Connection Distribution</h4>
                     <div className="h-80">
@@ -833,7 +834,7 @@ function ContactNetworkAnalysis() {
                       </div>
                       <p className="text-sm text-gray-600">How interconnected your network is</p>
                     </div>
-                    
+
                     <div className="bg-white p-4 rounded-lg shadow">
                       <h5 className="font-semibold text-gray-700 mb-2">Total Relationships</h5>
                       <div className="text-2xl font-bold text-green-600 mb-1">
@@ -841,7 +842,7 @@ function ContactNetworkAnalysis() {
                       </div>
                       <p className="text-sm text-gray-600">Direct connections in your network</p>
                     </div>
-                    
+
                     <div className="bg-white p-4 rounded-lg shadow">
                       <h5 className="font-semibold text-gray-700 mb-2">Referral Chains</h5>
                       <div className="text-2xl font-bold text-purple-600 mb-1">
@@ -873,7 +874,7 @@ function ContactNetworkAnalysis() {
                     <li>• <strong>Referral Chains:</strong> Number of active referral pathways in your network</li>
                   </ul>
                 </div>
-                
+
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
                   <div className="bg-white p-6 rounded-lg shadow border">
                     <h4 className="text-xl font-semibold mb-4 text-gray-800">Network Metrics Overview</h4>
@@ -881,7 +882,7 @@ function ContactNetworkAnalysis() {
                       <Radar data={prepareNetworkMetricsChart()} options={radarOptions} />
                     </div>
                   </div>
-                  
+
                   <div className="bg-white p-6 rounded-lg shadow border">
                     <h4 className="text-xl font-semibold mb-4 text-gray-800">Connection Distribution</h4>
                     <div className="h-80">
@@ -897,13 +898,13 @@ function ContactNetworkAnalysis() {
                     <div className="text-3xl font-bold mb-2">{(networkData.networkMetrics.networkDensity * 100).toFixed(2)}%</div>
                     <p className="text-indigo-200 text-sm">How interconnected your network is</p>
                   </div>
-                  
+
                   <div className="bg-teal-500 text-white p-6 rounded-lg shadow">
                     <h5 className="text-lg font-semibold mb-2">Total Relationships</h5>
                     <div className="text-3xl font-bold mb-2">{networkData.networkData.totalEdges}</div>
                     <p className="text-teal-200 text-sm">Direct connections in your network</p>
                   </div>
-                  
+
                   <div className="bg-rose-500 text-white p-6 rounded-lg shadow">
                     <h5 className="text-lg font-semibold mb-2">Referral Chains</h5>
                     <div className="text-3xl font-bold mb-2">{networkData.referralChains?.length || 0}</div>
@@ -938,22 +939,20 @@ function ContactNetworkAnalysis() {
                   {networkData.aiInsights?.map((insight, index) => (
                     <div
                       key={index}
-                      className={`rounded-lg shadow border ${
-                        insight.importance === 'high'
-                          ? 'bg-red-50 border-red-200'
-                          : insight.importance === 'medium'
+                      className={`rounded-lg shadow border ${insight.importance === 'high'
+                        ? 'bg-red-50 border-red-200'
+                        : insight.importance === 'medium'
                           ? 'bg-yellow-50 border-yellow-200'
                           : 'bg-green-50 border-green-200'
-                      }`}
+                        }`}
                     >
                       <div className="p-6">
                         <div className="flex items-start justify-between mb-4">
                           <div className="flex-1">
                             <div className="flex items-center mb-2">
-                              <div className={`w-3 h-3 rounded-full mr-3 ${
-                                insight.importance === 'high' ? 'bg-red-500' : 
+                              <div className={`w-3 h-3 rounded-full mr-3 ${insight.importance === 'high' ? 'bg-red-500' :
                                 insight.importance === 'medium' ? 'bg-yellow-500' : 'bg-green-500'
-                              }`}></div>
+                                }`}></div>
                               <h4 className="text-xl font-semibold text-gray-800">{insight.title}</h4>
                             </div>
                             <p className="text-gray-700 mb-2">{insight.description}</p>
@@ -963,15 +962,14 @@ function ContactNetworkAnalysis() {
                               </p>
                             )}
                           </div>
-                          <div className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                            insight.importance === 'high' ? 'bg-red-500 text-white' :
+                          <div className={`px-3 py-1 rounded-full text-xs font-semibold ${insight.importance === 'high' ? 'bg-red-500 text-white' :
                             insight.importance === 'medium' ? 'bg-yellow-500 text-white' :
-                            'bg-green-500 text-white'
-                          }`}>
+                              'bg-green-500 text-white'
+                            }`}>
                             {insight.importance.toUpperCase()}
                           </div>
                         </div>
-                        
+
                         {insight.data && (
                           <details className="mt-4">
                             <summary className="cursor-pointer text-sm font-medium text-gray-600 hover:text-gray-800">
@@ -1015,12 +1013,11 @@ function ContactNetworkAnalysis() {
                   {networkData.topInfluencers?.map((influencer, index) => (
                     <div key={index} className="bg-white rounded-lg shadow border p-6">
                       <div className="flex items-center justify-center mb-4">
-                        <div className={`w-16 h-16 rounded-lg flex items-center justify-center text-2xl font-bold text-white ${
-                          index === 0 ? 'bg-yellow-500' :
+                        <div className={`w-16 h-16 rounded-lg flex items-center justify-center text-2xl font-bold text-white ${index === 0 ? 'bg-yellow-500' :
                           index === 1 ? 'bg-gray-400' :
-                          index === 2 ? 'bg-orange-400' :
-                          'bg-blue-500'
-                        }`}>
+                            index === 2 ? 'bg-orange-400' :
+                              'bg-blue-500'
+                          }`}>
                           {index + 1}
                         </div>
                         {index < 3 && (
@@ -1029,12 +1026,12 @@ function ContactNetworkAnalysis() {
                           </div>
                         )}
                       </div>
-                      
+
                       <div className="text-center mb-4">
                         <h4 className="text-lg font-semibold text-gray-800 mb-1">{influencer.name}</h4>
                         <p className="text-sm text-gray-600 break-all">{influencer.email}</p>
                       </div>
-                      
+
                       <div className="space-y-3">
                         <div className="flex justify-between items-center py-2 border-b">
                           <span className="text-gray-600">Connections:</span>
@@ -1049,13 +1046,13 @@ function ContactNetworkAnalysis() {
                           <span className="text-xl font-semibold text-purple-600">{influencer.influence_score}</span>
                         </div>
                       </div>
-                      
+
                       {/* Influence meter */}
                       <div className="mt-4">
                         <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div 
+                          <div
                             className="bg-blue-500 h-2 rounded-full"
-                            style={{width: `${Math.min((influencer.influence_score / 50) * 100, 100)}%`}}
+                            style={{ width: `${Math.min((influencer.influence_score / 50) * 100, 100)}%` }}
                           ></div>
                         </div>
                         <p className="text-xs text-gray-500 mt-1 text-center">Influence Level</p>
@@ -1085,7 +1082,7 @@ function ContactNetworkAnalysis() {
                     <li>• <strong>Click to Select:</strong> Choose any node to view detailed information</li>
                   </ul>
                 </div>
-                
+
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   <div className="lg:col-span-2 space-y-6">
                     {/* Search Controls */}
@@ -1117,7 +1114,7 @@ function ContactNetworkAnalysis() {
                       <div className="space-y-3 max-h-96 overflow-y-auto">
                         {networkData.networkData?.nodes
                           ?.filter(node => {
-                            const matchesSearch = !searchTerm || 
+                            const matchesSearch = !searchTerm ||
                               node.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                               node.email?.toLowerCase().includes(searchTerm.toLowerCase());
                             const matchesFilter = filterType === 'all' || node.type === filterType;
@@ -1132,13 +1129,11 @@ function ContactNetworkAnalysis() {
                                 attributes: node,
                                 children: []
                               })}
-                              className={`flex items-center p-3 rounded border cursor-pointer hover:bg-gray-50 ${
-                                node.type === 'user' ? 'border-blue-200' : 'border-green-200'
-                              }`}
+                              className={`flex items-center p-3 rounded border cursor-pointer hover:bg-gray-50 ${node.type === 'user' ? 'border-blue-200' : 'border-green-200'
+                                }`}
                             >
-                              <div className={`w-10 h-10 rounded flex items-center justify-center mr-3 ${
-                                node.type === 'user' ? 'bg-blue-500' : 'bg-green-500'
-                              }`}>
+                              <div className={`w-10 h-10 rounded flex items-center justify-center mr-3 ${node.type === 'user' ? 'bg-blue-500' : 'bg-green-500'
+                                }`}>
                                 <span className="text-white text-sm">
                                   {node.type === 'user' ? '👤' : '📋'}
                                 </span>
@@ -1148,9 +1143,8 @@ function ContactNetworkAnalysis() {
                                 <p className="text-sm text-gray-600">{node.email}</p>
                                 <p className="text-xs text-gray-500">{node.connections || 0} connections</p>
                               </div>
-                              <div className={`px-2 py-1 rounded text-xs font-medium ${
-                                node.type === 'user' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'
-                              }`}>
+                              <div className={`px-2 py-1 rounded text-xs font-medium ${node.type === 'user' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'
+                                }`}>
                                 {node.type}
                               </div>
                             </div>
@@ -1188,16 +1182,15 @@ function ContactNetworkAnalysis() {
                       <div className="bg-white rounded-lg shadow border p-4">
                         <h4 className="text-lg font-semibold mb-4">Selected Node</h4>
                         <div className="text-center mb-3">
-                          <div className={`inline-flex items-center justify-center w-12 h-12 rounded-lg mb-2 ${
-                            selectedNode.attributes?.type === 'user' ? 'bg-blue-500' : 'bg-green-500'
-                          }`}>
+                          <div className={`inline-flex items-center justify-center w-12 h-12 rounded-lg mb-2 ${selectedNode.attributes?.type === 'user' ? 'bg-blue-500' : 'bg-green-500'
+                            }`}>
                             <span className="text-white text-lg">
                               {selectedNode.attributes?.type === 'user' ? '👤' : '📋'}
                             </span>
                           </div>
                           <h5 className="font-semibold text-gray-800">{selectedNode.name}</h5>
                         </div>
-                        
+
                         <div className="space-y-2 text-sm">
                           {selectedNode.attributes?.email && (
                             <div>
@@ -1205,7 +1198,7 @@ function ContactNetworkAnalysis() {
                               <span className="text-gray-600 break-all ml-2">{selectedNode.attributes.email}</span>
                             </div>
                           )}
-                          
+
                           <div className="grid grid-cols-2 gap-2">
                             <div className="bg-blue-50 p-2 rounded text-center">
                               <div className="font-semibold text-blue-600">{selectedNode.attributes?.connections || 0}</div>

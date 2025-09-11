@@ -90,6 +90,7 @@ const DeleteConfirmationModal = ({
                   <path
                     className="opacity-75"
                     fill="currentColor"
+
                     d="M4 12a8 8 0 018-8v8z"
                   ></path>
                 </svg>
@@ -114,6 +115,38 @@ function UserEntries() {
   const [profileData, setProfileData] = useState([]);
   const [imageData, setImageData] = useState([]);
   const { id, role } = useAuthStore();
+
+  const StatusBadge = ({ status }) => {
+    if (!status) return null;
+
+    const getStatusStyles = (status) => {
+      switch (status?.toLowerCase()) {
+        case 'pending':
+          return 'bg-orange-50 text-orange-700 ring-1 ring-orange-200';
+        case 'approved':
+          return 'bg-green-50 text-green-700 ring-1 ring-green-200';
+        case 'rejected':
+          return 'bg-red-50 text-red-700 ring-1 ring-red-200';
+        case 'in_progress':
+          return 'bg-blue-50 text-blue-700 ring-1 ring-blue-200';
+        case 'incomplete':
+          return 'bg-yellow-50 text-yellow-700 ring-1 ring-yellow-200';
+        default:
+          return 'bg-gray-50 text-gray-700 ring-1 ring-gray-200';
+      }
+    };
+
+    const formatStatus = (status) => {
+      if (!status) return '';
+      return status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+    };
+
+    return (
+      <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-md ${getStatusStyles(status)}`}>
+        {formatStatus(status)}
+      </span>
+    );
+  };
 
   const [alert, setAlert] = useState({
     isOpen: false,
@@ -162,15 +195,34 @@ function UserEntries() {
             `http://localhost:8000/api/delete-image/${userToDelete.id}?userType=${role}`
           );
 
-          setImageData((prevData) => ({
-            ...prevData,
-            data: prevData.data.filter((image) => image.id !== userToDelete.id),
-          }));
+          if (response.data.action === "deleted") {
+            // Remove image from state if actually deleted
+            setImageData((prevData) => ({
+              ...prevData,
+              data: prevData.data.filter((image) => image.id !== userToDelete.id),
+            }));
 
-          showAlert(
-            "success",
-            `${userToDelete.name} has been successfully deleted.`
-          );
+            showAlert("success", response.data.message);
+          } else if (response.data.action === "rejected") {
+            // Update image status to rejected if admin rejected it
+            setImageData((prevData) => ({
+              ...prevData,
+              data: prevData.data.map((image) =>
+                image.id === userToDelete.id
+                  ? { ...image, status: "rejected", verified: true }
+                  : image
+              ),
+            }));
+
+            showAlert("success", response.data.message);
+          } else if (response.data.action === "denied") {
+            showAlert("warning", response.data.message);
+          } else {
+            showAlert(
+              "success",
+              response.data.message || `${userToDelete.name} has been processed successfully.`
+            );
+          }
         } else {
           const response = await axios.delete(
             `http://localhost:8000/api/delete-contact/${userToDelete.id}?userType=${role}&userId=${id}&eventId=${userToDelete.event_id}`
@@ -194,7 +246,7 @@ function UserEntries() {
             setProfileData((prevData) =>
               prevData.map((contact) =>
                 contact.contact_id === userToDelete.id
-                  ? { ...contact, contact_status: "rejected" }
+                  ? { ...contact, contact_status: "rejected", verified: true }
                   : contact
               )
             );
@@ -204,8 +256,7 @@ function UserEntries() {
           } else {
             showAlert(
               "success",
-              response.data.message ||
-              `${userToDelete.name} has been processed successfully.`
+              response.data.message || `${userToDelete.name} has been processed successfully.`
             );
           }
         }
@@ -218,11 +269,12 @@ function UserEntries() {
         if (error.response?.status === 403) {
           showAlert(
             "error",
-            error.response.data.message ||
-            "You don't have permission to delete this contact."
+            error.response.data.message || "You don't have permission to delete this item."
           );
         } else if (error.response?.status === 404) {
-          showAlert("error", "Contact not found.");
+          showAlert("error",
+            userToDelete.type === "image" ? "Image not found." : "Contact not found."
+          );
         } else {
           showAlert("error", "Failed to delete. Please try again.");
         }
@@ -234,6 +286,7 @@ function UserEntries() {
       }
     }
   };
+
 
   const cancelDelete = () => {
     if (isDeleting) return;
@@ -289,6 +342,7 @@ function UserEntries() {
       console.log("Error editing user", error);
     }
   };
+
   const handleSelectContact = async () => {
     try {
       console.log(id)
@@ -453,6 +507,14 @@ function UserEntries() {
                           e.target.src = Avatar;
                         }}
                       />
+
+                      {/* Status Badge */}
+                      {card.status && (
+                        <div className="absolute top-2 left-2">
+                          <StatusBadge status={card.status} />
+                        </div>
+                      )}
+
                       {/* Delete button overlay */}
                       <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                         <button
@@ -471,6 +533,7 @@ function UserEntries() {
                     </div>
                   ))}
               </div>
+
 
               {(!imageData?.data || imageData.data.length === 0) && (
                 <div className="text-center py-16">
