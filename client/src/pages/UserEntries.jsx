@@ -291,6 +291,7 @@ function UserEntries() {
   };
   const handleSelectContact = async () => {
     try {
+      console.log(id)
       const response = await api.get(`/api/contacts/${id}`);
       console.log("Contacts fetched successfully:", response.data.data);
       setProfileData(response.data.data);
