@@ -1,10 +1,18 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Camera, Upload, RotateCcw, ArrowLeft, RefreshCw, X } from 'lucide-react';
-import { useAuthStore } from '../store/AuthStore';
-import { useNavigate } from 'react-router-dom';
-import Header from '../components/Header';
-import Alert from '../components/Alert';
-import axios from 'axios';
+import React, { useState, useRef, useEffect } from "react";
+import {
+  Camera,
+  Upload,
+  RotateCcw,
+  ArrowLeft,
+  RefreshCw,
+  X,
+  Plus,
+} from "lucide-react";
+import { useAuthStore } from "../store/AuthStore";
+import { useNavigate } from "react-router-dom";
+import Header from "../components/Header";
+import Alert from "../components/Alert";
+import axios from "axios";
 
 function CameraInput() {
   const { id } = useAuthStore();
@@ -12,14 +20,14 @@ function CameraInput() {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const fileInputRef = useRef(null);
-  
+
   const [stream, setStream] = useState(null);
   const [capturedImage, setCapturedImage] = useState(null);
-  const [currentView, setCurrentView] = useState('initial'); // 'initial', 'camera-active', 'captured'
+  const [currentView, setCurrentView] = useState("initial"); // 'initial', 'camera-active', 'captured'
   const [loading, setLoading] = useState(false);
-  const [facingMode, setFacingMode] = useState('environment'); // 'environment' for back, 'user' for front
+  const [facingMode, setFacingMode] = useState("environment"); // 'environment' for back, 'user' for front
   const [isFromUpload, setIsFromUpload] = useState(false); // Track if image came from upload
-  
+
   const [alert, setAlert] = useState({
     isOpen: false,
     severity: "success",
@@ -45,47 +53,55 @@ function CameraInput() {
   const startCamera = async () => {
     try {
       setLoading(true);
-      
+
       // Stop existing stream first
       if (stream) {
-        stream.getTracks().forEach(track => track.stop());
+        stream.getTracks().forEach((track) => track.stop());
       }
 
       const constraints = {
         video: {
           facingMode: facingMode,
           width: { ideal: 1280 },
-          height: { ideal: 720 }
-        }
+          height: { ideal: 720 },
+        },
       };
 
-      const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+      const mediaStream = await navigator.mediaDevices.getUserMedia(
+        constraints
+      );
       setStream(mediaStream);
-      
+
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
-        
+
         // Wait for video to be ready and then play
         await new Promise((resolve) => {
           videoRef.current.onloadedmetadata = () => {
-            videoRef.current.play().then(resolve).catch(e => {
-              console.error('Error playing video:', e);
-              resolve();
-            });
+            videoRef.current
+              .play()
+              .then(resolve)
+              .catch((e) => {
+                console.error("Error playing video:", e);
+                resolve();
+              });
           };
         });
       }
-      
-      setCurrentView('camera-active');
+
+      setCurrentView("camera-active");
       setIsFromUpload(false);
     } catch (error) {
-      console.error('Error accessing camera:', error);
-      if (error.name === 'NotAllowedError') {
-        showAlert('error', 'Camera access denied. Please allow camera permissions.');
-      } else if (error.name === 'NotFoundError') {
-        showAlert('error', 'No camera found on this device.');
+      console.error("Error accessing camera:", error);
+      if (error.name === "NotAllowedError") {
+        showAlert(
+          "error",
+          "Camera access denied. Please allow camera permissions."
+        );
+      } else if (error.name === "NotFoundError") {
+        showAlert("error", "No camera found on this device.");
       } else {
-        showAlert('error', 'Unable to access camera. Please try again.');
+        showAlert("error", "Unable to access camera. Please try again.");
       }
     } finally {
       setLoading(false);
@@ -95,7 +111,7 @@ function CameraInput() {
   // Stop camera and clean up
   const stopCamera = () => {
     if (stream) {
-      stream.getTracks().forEach(track => {
+      stream.getTracks().forEach((track) => {
         track.stop();
       });
       setStream(null);
@@ -104,7 +120,7 @@ function CameraInput() {
 
   // Switch between front and back camera
   const switchCamera = () => {
-    const newFacingMode = facingMode === 'environment' ? 'user' : 'environment';
+    const newFacingMode = facingMode === "environment" ? "user" : "environment";
     setFacingMode(newFacingMode);
   };
 
@@ -113,17 +129,17 @@ function CameraInput() {
     if (videoRef.current && canvasRef.current) {
       const canvas = canvasRef.current;
       const video = videoRef.current;
-      
+
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
-      
-      const ctx = canvas.getContext('2d');
+
+      const ctx = canvas.getContext("2d");
       ctx.drawImage(video, 0, 0);
-      
-      const imageData = canvas.toDataURL('image/jpeg', 0.8);
+
+      const imageData = canvas.toDataURL("image/jpeg", 0.8);
       setCapturedImage(imageData);
       stopCamera();
-      setCurrentView('captured');
+      setCurrentView("captured");
       setIsFromUpload(false);
     }
   };
@@ -135,13 +151,13 @@ function CameraInput() {
       const reader = new FileReader();
       reader.onload = (e) => {
         setCapturedImage(e.target.result);
-        setCurrentView('captured');
+        setCurrentView("captured");
         setIsFromUpload(true);
       };
       reader.readAsDataURL(file);
     }
     // Clear the input value so the same file can be selected again
-    e.target.value = '';
+    e.target.value = "";
   };
 
   // Save photo to server
@@ -155,17 +171,22 @@ function CameraInput() {
       // Convert base64 to blob
       const response = await fetch(capturedImage);
       const blob = await response.blob();
-      
+
       formData.append("image", blob, "captured_image.jpg");
       formData.append("user_id", id);
+      formData.append("TEST", "Hello World");
 
-      const res = await axios.post("http://localhost:8000/api/upload-contact", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      const res = await axios.post(
+        "http://localhost:8000/api/upload-contact",
+        formData,
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+        }
+      );
 
       console.log("Upload success:", res.data);
       showAlert("success", "Visiting card has been successfully added.");
-      
+
       // Navigate back after success
       setTimeout(() => {
         handleBack();
@@ -184,18 +205,18 @@ function CameraInput() {
     if (window.history.length > 1) {
       navigate(-1);
     } else {
-      navigate('/');
+      navigate("/");
     }
   };
 
   // Go back to previous step
   const goBack = () => {
-    if (currentView === 'camera-active') {
+    if (currentView === "camera-active") {
       stopCamera();
-      setCurrentView('initial');
-    } else if (currentView === 'captured') {
+      setCurrentView("initial");
+    } else if (currentView === "captured") {
       setCapturedImage(null);
-      setCurrentView('initial');
+      setCurrentView("initial");
       setIsFromUpload(false);
     } else {
       handleBack();
@@ -205,13 +226,13 @@ function CameraInput() {
   // Handle retake/reupload
   const handleRetake = () => {
     setCapturedImage(null);
-    
+
     if (isFromUpload) {
       // If image was uploaded, trigger file input again
       fileInputRef.current?.click();
     } else {
       // If image was taken with camera, restart camera
-      setCurrentView('camera-active');
+      setCurrentView("camera-active");
       startCamera();
     }
   };
@@ -219,14 +240,14 @@ function CameraInput() {
   // Handle cancel from captured state - NEW FUNCTION
   const handleCancel = () => {
     setCapturedImage(null);
-    setCurrentView('initial');
+    setCurrentView("initial");
     setIsFromUpload(false);
     stopCamera(); // Make sure camera is stopped
   };
 
   // Restart camera when facing mode changes
   useEffect(() => {
-    if (currentView === 'camera-active') {
+    if (currentView === "camera-active") {
       startCamera();
     }
   }, [facingMode, currentView]);
@@ -248,7 +269,7 @@ function CameraInput() {
         position="bottom"
         duration={4000}
       />
-      
+
       {/* Header with Back Button */}
       <div className="w-full bg-white shadow-sm">
         <div className="flex items-center justify-between">
@@ -275,18 +296,20 @@ function CameraInput() {
           <h2 className="text-2xl font-semibold text-gray-800 mb-6 text-center">
             Scan Business Card
           </h2>
-          
+
           {/* Initial State - Choose between Camera or Upload */}
-          {currentView === 'initial' && (
+          {currentView === "initial" && (
             <div className="bg-white rounded-lg p-8 shadow-sm">
               <div className="text-center">
                 <div className="w-24 h-24 mx-auto bg-blue-100 rounded-full flex items-center justify-center mb-6">
                   <Camera size={32} className="text-blue-600" />
                 </div>
-                
+
                 <h3 className="text-lg font-semibold mb-2">Choose an Option</h3>
-                <p className="text-gray-600 mb-6">Take a photo or select from your device</p>
-                
+                <p className="text-gray-600 mb-6">
+                  Take a photo or select from your device
+                </p>
+
                 <div className="space-y-3 max-w-md mx-auto">
                   <button
                     onClick={startCamera}
@@ -294,9 +317,9 @@ function CameraInput() {
                     className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50"
                   >
                     <Camera size={20} />
-                    {loading ? 'Starting Camera...' : 'Use Camera'}
+                    {loading ? "Starting Camera..." : "Use Camera"}
                   </button>
-                  
+
                   <button
                     onClick={() => fileInputRef.current?.click()}
                     className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
@@ -310,7 +333,7 @@ function CameraInput() {
           )}
 
           {/* Camera Active State */}
-          {currentView === 'camera-active' && (
+          {currentView === "camera-active" && (
             <div className="bg-white rounded-lg p-8 shadow-sm">
               <div className="text-center">
                 <div className="relative bg-black rounded-lg overflow-hidden mb-4 max-w-2xl mx-auto">
@@ -321,17 +344,17 @@ function CameraInput() {
                     muted
                     className="w-full h-auto max-h-96 object-cover"
                   />
-                  
+
                   {/* Camera Switch Button - Overlay */}
                   <button
                     onClick={switchCamera}
                     className="absolute top-3 right-3 px-3 py-2 bg-black bg-opacity-50 text-white rounded-lg hover:bg-opacity-75 transition-colors text-sm font-medium"
                   >
                     <RefreshCw size={16} className="inline mr-1" />
-                    {facingMode === 'environment' ? 'Front' : 'Back'}
+                    {facingMode === "environment" ? "Front" : "Back"}
                   </button>
                 </div>
-                
+
                 <div className="flex gap-3 justify-center">
                   <button
                     onClick={capturePhoto}
@@ -340,11 +363,11 @@ function CameraInput() {
                     <Camera size={20} />
                     Take Photo
                   </button>
-                  
+
                   <button
                     onClick={() => {
                       stopCamera();
-                      setCurrentView('initial');
+                      setCurrentView("initial");
                     }}
                     className="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
                   >
@@ -356,10 +379,12 @@ function CameraInput() {
           )}
 
           {/* Image Captured State */}
-          {currentView === 'captured' && (
+          {currentView === "captured" && (
             <div className="bg-white rounded-lg p-8 shadow-sm text-center">
-              <h3 className="text-lg font-semibold mb-4">Photo {isFromUpload ? 'Selected' : 'Captured'}</h3>
-              
+              <h3 className="text-lg font-semibold mb-4">
+                Photo {isFromUpload ? "Selected" : "Captured"}
+              </h3>
+
               <div className="mb-6">
                 <img
                   src={capturedImage}
@@ -367,24 +392,33 @@ function CameraInput() {
                   className="w-full max-w-2xl mx-auto rounded-lg shadow-sm border border-gray-200"
                 />
               </div>
-              
+
               {/* Updated button layout with Cancel button */}
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <button
+                  onClick={() =>
+                    navigate("/event-details", { state: { capturedImage } })
+                  }
+                  className="flex items-center justify-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                >
+                  <Plus size={20} />
+                  Add Event Details
+                </button>
                 <button
                   onClick={handleSavePhoto}
                   disabled={loading}
                   className="flex items-center justify-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
                 >
                   <Upload size={20} />
-                  {loading ? 'Uploading...' : 'Upload'}
+                  {loading ? "Uploading..." : "Upload"}
                 </button>
-                
+
                 <button
                   onClick={handleRetake}
                   className="flex items-center justify-center gap-2 px-6 py-3 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors font-medium"
                 >
                   <RotateCcw size={20} />
-                  {isFromUpload ? 'Reupload' : 'Retake'}
+                  {isFromUpload ? "Reupload" : "Retake"}
                 </button>
 
                 <button
@@ -399,7 +433,7 @@ function CameraInput() {
           )}
         </div>
       </div>
-      
+
       {/* Hidden file input */}
       <input
         ref={fileInputRef}
@@ -408,7 +442,7 @@ function CameraInput() {
         onChange={handleFileSelect}
         className="hidden"
       />
-      
+
       {/* Hidden canvas for image processing */}
       <canvas ref={canvasRef} className="hidden" />
     </div>

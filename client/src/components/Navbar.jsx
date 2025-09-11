@@ -9,6 +9,8 @@ import {
   NotebookText,
   Handshake,
   ClipboardList,
+  Waypoints,
+  Microscope,
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../store/AuthStore";
@@ -24,6 +26,7 @@ function Navbar() {
       { name: "Home", icon: <House size={20} />, path: "/" },
       { name: "Entries", icon: <NotebookText size={20} />, path: "/entries" },
       { name: "Assignments", icon: <Handshake size={20} />, path: "/assigned" },
+      { name: "Refer Others", icon: <Waypoints size={20} />, path: "/refer" },
     ],
     cata: [
       { name: "Home", icon: <House size={20} />, path: "/" },
@@ -56,6 +59,7 @@ function Navbar() {
       { name: "Admin Panel", icon: <Shield size={20} />, path: "/" },
       { name: "Task Assignments", icon: <ClipboardList size={20} />, path: "/task-assignments" },
       { name: "Records", icon: <NotebookText size={20} />, path: "/all-entries" },
+      { name: "Analysis", icon: <Microscope size={20} />, path: "/analysis" },
     ],
   };
 
@@ -127,8 +131,8 @@ function Navbar() {
                   </span>
                   <span
                     className={`font-medium whitespace-nowrap transition-all duration-500 ease-in-out transform ${collapsed
-                        ? "opacity-0 -translate-x-4 scale-95 w-0 ml-0"
-                        : "opacity-100 translate-x-0 scale-100 w-auto ml-1"
+                      ? "opacity-0 -translate-x-4 scale-95 w-0 ml-0"
+                      : "opacity-100 translate-x-0 scale-100 w-auto ml-1"
                       } ${active
                         ? "text-white"
                         : "text-gray-500 group-hover:text-gray-700"
@@ -173,8 +177,8 @@ function Navbar() {
                   </span>
                   <span
                     className={`font-medium text-[#787878] whitespace-nowrap transition-all duration-500 ease-in-out transform ${collapsed
-                        ? "opacity-0 -translate-x-4 scale-95 w-0 ml-0"
-                        : "opacity-100 translate-x-0 scale-100 w-auto ml-1"
+                      ? "opacity-0 -translate-x-4 scale-95 w-0 ml-0"
+                      : "opacity-100 translate-x-0 scale-100 w-auto ml-1"
                       }`}
                   >
                     {menuItem.name}

@@ -4,7 +4,6 @@ import db from "../src/config/db.js";
 export const updateUserPing = async (req, res) => {
     try {
         const userId = req.params.id;
-        console.log('Updating ping for user ID:', userId); // Debug log
         
         const result = await db`
             UPDATE login 
@@ -14,7 +13,6 @@ export const updateUserPing = async (req, res) => {
             WHERE id = ${userId}
         `;
         
-        console.log('Update result:', result); // Debug log
         res.json({ success: true });
     } catch (error) {
         console.error('Error updating user ping:', error);

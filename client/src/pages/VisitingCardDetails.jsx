@@ -143,8 +143,7 @@ const VisitingCardDetails = () => {
 
         // Fetch all cards and find the one with matching ID
         const response = await api.get(`/api/get-unverified-images/`);
-
-        const card = response.data.data?.find((card) => {
+        const card = response.data.data.find((card) => {
           return card.id.toString() === id.toString();
         });
 
@@ -180,6 +179,23 @@ const VisitingCardDetails = () => {
       document.body.style.overflow = "unset";
     };
   }, [isModalOpen]);
+
+  // Autofill event data when currentCard changes and has events
+  useEffect(() => {
+    if (currentCard && currentCard.events && currentCard.events.length > 0) {
+      const firstEvent = currentCard.events[0]; // Use the first event if multiple exist
+
+      setVisitingCardDetails((prev) => ({
+        ...prev,
+        event_id: firstEvent.event_id || "",
+        event_name: firstEvent.event_name || "",
+        event_role: firstEvent.event_role || "",
+        event_date: firstEvent.event_date || "",
+        event_held_organization: firstEvent.event_held_organization || "",
+        event_location: firstEvent.event_location || "",
+      }));
+    }
+  }, [currentCard]);
 
   const [extractedData, setExtractedData] = useState({
     name: "THOMAS SMITH",
@@ -341,6 +357,24 @@ const VisitingCardDetails = () => {
 
   const handleSave = async () => {
     try {
+      // Validation for required fields
+      if (!visitingCardDetails.name) {
+        showAlert("error", "Name is required.");
+        return;
+      }
+      if (!visitingCardDetails.phone_number) {
+        showAlert("error", "Phone number is required.");
+        return;
+      }
+      if (!visitingCardDetails.email_address) {
+        showAlert("error", "Email address is required.");
+        return;
+      }
+      if (!visitingCardDetails.category) {
+        showAlert("error", "Category is required.");
+        return;
+      }
+
       console.log("Original visiting card details:", visitingCardDetails);
 
       // Transform the flat structure into the nested structure expected by the API
@@ -396,6 +430,8 @@ const VisitingCardDetails = () => {
         events: visitingCardDetails.event_name
           ? [
               {
+                event_id: visitingCardDetails.event_id, // Include existing event ID
+                photo_id: currentCard?.id, // Include photo ID to identify source
                 event_name: visitingCardDetails.event_name,
                 event_role: visitingCardDetails.event_role,
                 event_date: visitingCardDetails.event_date,
@@ -573,17 +609,21 @@ const VisitingCardDetails = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Category
+                  Category <span className="text-red-500">*</span>
                 </label>
-                <input
-                  type="text"
+                <select
                   value={visitingCardDetails.category}
                   onChange={(e) =>
                     handleInputChange("category", e.target.value)
                   }
                   className="w-full py-3 px-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Enter category"
-                />
+                  required
+                >
+                  <option value="">Select Category</option>
+                  <option value="A">Category A</option>
+                  <option value="B">Category B</option>
+                  <option value="C">Category C</option>
+                </select>
               </div>
             </div>
           </div>

@@ -115,7 +115,6 @@ function MiddleManRecords() {
   const [userToDelete, setUserToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const location = useLocation();
-  console.log(location.pathname);
   const [activeView, setActiveView] = useState(
     location.state?.view || "formData"
   );
@@ -148,7 +147,7 @@ function MiddleManRecords() {
   const handleSelectUnverifiedVisitingCards = async () => {
     try {
       const response = await api.get(`/api/get-unverified-images/`);
-      console.log("Visiting cards fetched successfully:", response.data);
+      console.log("Visiting cards fetched successfully:", response.data.data);
       setVisitingCard(response.data.data || []);
     } catch (error) {
       console.error("Error fetching visiting cards:", error);
@@ -223,7 +222,7 @@ function MiddleManRecords() {
         id: contact_id,
         name: user?.name || "this user",
         type: "contact",
-        event_id: user.events[0].event_id
+        event_id: user.events[0].event_id,
       });
       setShowDeleteModal(true);
     }
@@ -264,10 +263,14 @@ function MiddleManRecords() {
 
             setData((prevData) => {
               return prevData.filter((item) => {
-                const hasMatchingEvent = item.events && item.events[0] && item.events[0].event_id === userToDelete.event_id;
-                const shouldRemove = item.contact_id === userToDelete.id && hasMatchingEvent;
+                const hasMatchingEvent =
+                  item.events &&
+                  item.events[0] &&
+                  item.events[0].event_id === userToDelete.event_id;
+                const shouldRemove =
+                  item.contact_id === userToDelete.id && hasMatchingEvent;
 
-                return !shouldRemove; 
+                return !shouldRemove;
               });
             });
 
@@ -374,28 +377,31 @@ function MiddleManRecords() {
           <div className="flex gap-4 mb-6">
             <button
               onClick={() => setActiveView("formData")}
-              className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${activeView === "formData"
+              className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
+                activeView === "formData"
                   ? "bg-blue-600 text-white shadow-md"
                   : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
-                }`}
+              }`}
             >
               Form Data
             </button>
             <button
               onClick={() => setActiveView("visitingCards")}
-              className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${activeView === "visitingCards"
+              className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
+                activeView === "visitingCards"
                   ? "bg-blue-600 text-white shadow-md"
                   : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
-                }`}
+              }`}
             >
               Visiting Cards
             </button>
             <button
               onClick={() => setActiveView("AssignedToUser")}
-              className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${activeView === "AssignedToUser"
+              className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
+                activeView === "AssignedToUser"
                   ? "bg-blue-600 text-white shadow-md"
                   : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
-                }`}
+              }`}
             >
               Assigned By Me
             </button>
@@ -658,9 +664,9 @@ function MiddleManRecords() {
                       assignedOn={
                         participant.assigned_on
                           ? format(
-                            parseISO(participant.assigned_on),
-                            "MMMM dd, yyyy"
-                          )
+                              parseISO(participant.assigned_on),
+                              "MMMM dd, yyyy"
+                            )
                           : "N/A"
                       }
                     />

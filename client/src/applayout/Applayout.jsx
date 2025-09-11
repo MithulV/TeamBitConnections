@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { Route, Routes, Navigate } from "react-router-dom";
+import { Route, Routes, Navigate, useLocation } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Login from "../pages/Login";
 import UserHome from "../pages/userHome";
@@ -17,8 +17,11 @@ import UserAssignments from "../pages/UserAssignments";
 import TaskAssignments from "../pages/TaskAssignments";
 import CameraInput from "../components/CameraInput";
 import FormInput from "../components/FormInput";
+import EventDetails from "../pages/EventDetails";
 import axios from "axios";
-
+import Referral from "../pages/Referral";
+import ReferralSignup from "../pages/ReferralSignup";
+import ContactNetworkAnalysis from "../pages/ContactNetworkAnalysis";
 // A helper component to render the correct home page based on role
 const RoleBasedHome = () => {
   const { role } = useAuthStore();
@@ -59,6 +62,11 @@ const MiddleManRoutesWrapper = ({ children }) => {
 
 function Applayout() {
   const { id } = useAuthStore();
+  const location = useLocation();
+
+  // Define routes where navbar should be hidden
+  const hideNavbarRoutes = ["/login", "/register"];
+  const shouldShowNavbar = !hideNavbarRoutes.includes(location.pathname);
 
   // Online status tracking - ping server every 10 seconds
   useEffect(() => {
@@ -76,7 +84,6 @@ function Applayout() {
               },
             }
           );
-          console.log("Ping successful for user:", id);
         } catch (error) {
           console.error("Ping failed:", error);
         }
@@ -84,15 +91,16 @@ function Applayout() {
     }, 10000); // 10 seconds
 
     return () => clearInterval(pingInterval);
-  }, []); // Added id to dependencies
+  }, [id]); // Added id to dependencies
 
   return (
     <div className="h-screen flex">
-      <Navbar />
+      {shouldShowNavbar && <Navbar />}
       <main className="w-full h-screen flex-1 overflow-x-hidden overflow-y-auto">
         <Routes>
           {/* Public Route */}
           <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<ReferralSignup />} />
 
           {/* Protected Routes */}
           <Route element={<PrivateRoute />}>
@@ -103,6 +111,14 @@ function Applayout() {
                 <MiddleManRoutesWrapper>
                   <MiddleManRecords />
                 </MiddleManRoutesWrapper>
+              }
+            />
+            <Route
+              path="/analysis"
+              element={
+                <AdminRouteWrapper>
+                  <ContactNetworkAnalysis />
+                </AdminRouteWrapper>
               }
             />
             <Route path="/tasks" element={<MiddleManTasks />} />
@@ -134,10 +150,11 @@ function Applayout() {
                 </AdminRouteWrapper>
               }
             />
-
+            <Route path="/refer" element={<Referral />} />
             <Route path="/camera-input" element={<CameraInput />} />
             <Route path="/form-input" element={<FormInput />} />
             <Route path="/details-input" element={<DetailsInput />} />
+            <Route path="/event-details" element={<EventDetails />} />
           </Route>
 
           {/* Fallback route */}
