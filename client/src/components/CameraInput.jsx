@@ -272,18 +272,10 @@ function CameraInput() {
         duration={4000}
       />
 
-      {/* Header with Back Button */}
+      {/* Header without Back Button */}
       <div className="w-full bg-white shadow-sm">
-        <div className="flex items-center justify-between">
-          <div className="flex-shrink-0">
-            <button
-              onClick={goBack}
-              className="px-4 py-2 ml-5 flex items-center gap-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors duration-200 font-medium"
-            >
-              <ArrowLeft size={20} />
-              Back
-            </button>
-          </div>
+        <div className="flex items-center justify-end px-4 py-2">
+          {/* Right side - Header (Profile hidden on mobile via Header component) */}
           <div className="flex-shrink-0">
             <Header />
           </div>
@@ -293,26 +285,39 @@ function CameraInput() {
       <hr className="border-0 border-t border-gray-300 opacity-60" />
 
       {/* Camera Content */}
-      <div className="flex-1 bg-[#F0F0F0] p-6">
+      <div className="flex-1 bg-[#F0F0F0] p-2 md:p-6">
         <div className="max-w-4xl mx-auto">
-          <h2 className="text-2xl font-semibold text-gray-800 mb-6 text-center">
-            Scan Business Card
-          </h2>
+          {/* Title with Back Button */}
+          <div className="flex items-center justify-center mb-4 md:mb-6 relative">
+            {/* Back button positioned to the left */}
+            <button
+              onClick={goBack}
+              className="absolute left-0 flex items-center gap-2 px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors duration-200 font-medium"
+            >
+              <ArrowLeft size={18} />
+              <span className="hidden sm:inline">Back</span>
+            </button>
+
+            {/* Centered title */}
+            <h2 className="text-xl md:text-2xl font-semibold text-gray-800">
+              Scan Business Card
+            </h2>
+          </div>
 
           {/* Initial State - Choose between Camera or Upload */}
           {currentView === "initial" && (
-            <div className="bg-white rounded-lg p-8 shadow-sm">
+            <div className="bg-white rounded-lg p-4 md:p-8 shadow-sm">
               <div className="text-center">
-                <div className="w-24 h-24 mx-auto bg-blue-100 rounded-full flex items-center justify-center mb-6">
-                  <Camera size={32} className="text-blue-600" />
+                <div className="w-20 h-20 md:w-24 md:h-24 mx-auto bg-blue-100 rounded-full flex items-center justify-center mb-6">
+                  <Camera size={28} className="text-blue-600 md:w-8 md:h-8" />
                 </div>
 
                 <h3 className="text-lg font-semibold mb-2">Choose an Option</h3>
-                <p className="text-gray-600 mb-6">
+                <p className="text-gray-600 mb-6 text-sm md:text-base">
                   Take a photo or select from your device
                 </p>
 
-                <div className="space-y-3 max-w-md mx-auto">
+                <div className="space-y-3 max-w-md mx-auto px-4">
                   <button
                     onClick={startCamera}
                     disabled={loading}
@@ -336,15 +341,15 @@ function CameraInput() {
 
           {/* Camera Active State */}
           {currentView === "camera-active" && (
-            <div className="bg-white rounded-lg p-8 shadow-sm">
+            <div className="bg-white rounded-lg p-2 md:p-8 shadow-sm">
               <div className="text-center">
-                <div className="relative bg-black rounded-lg overflow-hidden mb-4 max-w-2xl mx-auto">
+                <div className="relative bg-black rounded-lg overflow-hidden mb-4 w-full md:max-w-2xl mx-auto">
                   <video
                     ref={videoRef}
                     autoPlay
                     playsInline
                     muted
-                    className="w-full h-auto max-h-96 object-cover"
+                    className="w-full h-[60vh] md:h-auto md:max-h-96 object-cover"
                   />
 
                   {/* Camera Switch Button - Overlay */}
@@ -357,10 +362,10 @@ function CameraInput() {
                   </button>
                 </div>
 
-                <div className="flex gap-3 justify-center">
+                <div className="flex flex-col sm:flex-row gap-3 justify-center px-4">
                   <button
                     onClick={capturePhoto}
-                    className="flex items-center gap-2 px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                    className="flex items-center justify-center gap-2 px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium w-full sm:w-auto"
                   >
                     <Camera size={20} />
                     Take Photo
@@ -371,7 +376,7 @@ function CameraInput() {
                       stopCamera();
                       setCurrentView("initial");
                     }}
-                    className="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+                    className="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium w-full sm:w-auto"
                   >
                     Cancel
                   </button>
@@ -382,7 +387,7 @@ function CameraInput() {
 
           {/* Image Captured State */}
           {currentView === "captured" && (
-            <div className="bg-white rounded-lg p-8 shadow-sm text-center">
+            <div className="bg-white rounded-lg p-4 md:p-8 shadow-sm text-center">
               <h3 className="text-lg font-semibold mb-4">
                 Photo {isFromUpload ? "Selected" : "Captured"}
               </h3>
@@ -396,12 +401,12 @@ function CameraInput() {
               </div>
 
               {/* Updated button layout with Cancel button */}
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <div className="flex flex-col sm:flex-row gap-3 justify-center px-4">
                 <button
                   onClick={() =>
                     navigate("/event-details", { state: { capturedImage } })
                   }
-                  className="flex items-center justify-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                  className="flex items-center justify-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium w-full sm:w-auto"
                 >
                   <Plus size={20} />
                   Add Event Details
@@ -409,7 +414,7 @@ function CameraInput() {
 
                 <button
                   onClick={handleRetake}
-                  className="flex items-center justify-center gap-2 px-6 py-3 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors font-medium"
+                  className="flex items-center justify-center gap-2 px-6 py-3 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors font-medium w-full sm:w-auto"
                 >
                   <RotateCcw size={20} />
                   {isFromUpload ? "Reupload" : "Retake"}
@@ -417,7 +422,7 @@ function CameraInput() {
 
                 <button
                   onClick={handleCancel}
-                  className="flex items-center justify-center gap-2 px-6 py-3 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors font-medium"
+                  className="flex items-center justify-center gap-2 px-6 py-3 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors font-medium w-full sm:w-auto"
                 >
                   <X size={20} />
                   Cancel
