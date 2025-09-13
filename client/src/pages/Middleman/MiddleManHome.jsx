@@ -9,12 +9,12 @@ import {
   University,
   FileCheckIcon,
 } from "lucide-react";
-import ContactCard from "../components/MiddleManCard";
-import DetailsInput from "../components/DetailsInput";
-import Header from "../components/Header";
-import { useAuthStore } from "../store/AuthStore";
-import api from "../utils/axios";
-import Alert from "../components/Alert";
+import ContactCard from "../../components/MiddleManCard";
+import DetailsInput from "../../components/DetailsInput";
+import Header from "../../components/Header";
+import { useAuthStore } from "../../store/AuthStore";
+import api from "../../utils/axios";
+import Alert from "../../components/Alert";
 import { useNavigate } from "react-router-dom";
 
 // Helper function to generate initials from a name

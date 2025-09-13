@@ -9,9 +9,9 @@ import {
   Eye,
   X,
 } from "lucide-react";
-import Header from "../components/Header";
-import { useAuthStore } from "../store/AuthStore";
-import api from "../utils/axios";
+import Header from "../../components/Header";
+import { useAuthStore } from "../../store/AuthStore";
+import api from "../../utils/axios";
 
 const TasksPage = () => {
   const { id } = useAuthStore();

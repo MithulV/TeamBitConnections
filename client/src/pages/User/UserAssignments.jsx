@@ -1,12 +1,12 @@
-import api from '../utils/axios';
+import api from '../../utils/axios';
 import React, { useState, useEffect } from 'react';
-import { useAuthStore } from '../store/AuthStore';
+import { useAuthStore } from '../../store/AuthStore';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { format, parseISO } from "date-fns";
-import Header from '../components/Header';
-import BasicDetailCard from '../components/BasicDetailCard';
-import Alert from '../components/Alert';
+import Header from '../../components/Header';
+import BasicDetailCard from '../../components/User/BasicDetailCard';
+import Alert from '../../components/Alert';
 import Avatar from '../assets/Avatar.png';
 
 const DeleteConfirmationModal = ({

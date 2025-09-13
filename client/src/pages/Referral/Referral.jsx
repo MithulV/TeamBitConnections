@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import axios from 'axios';
-import Alert from '../components/Alert';
-import Header from '../components/Header';
-import { useAuthStore } from '../store/AuthStore';
+import Alert from '../../components/Alert';
+import Header from '../../components/Header';
+import { useAuthStore } from '../../store/AuthStore';
 
 function Referral() {
     const { role, email, id } = useAuthStore(); 

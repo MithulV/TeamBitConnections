@@ -27,7 +27,7 @@ import {
   Star,
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { useAuthStore } from "../store/AuthStore";
+import { useAuthStore } from "../../store/AuthStore";
 
 function ProfileView() {
   const [showFullHistory, setShowFullHistory] = useState(false);
