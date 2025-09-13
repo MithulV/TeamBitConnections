@@ -29,6 +29,7 @@ import {
   FileText,
   Plus,
   Trash2,
+  RotateCw,
 } from "lucide-react";
 
 const VisitingCardDetails = () => {
@@ -40,6 +41,7 @@ const VisitingCardDetails = () => {
   const [loading, setLoading] = useState(true);
   const [currentStep, setCurrentStep] = useState(0);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [imageRotation, setImageRotation] = useState(0);
 
   // Alert state
   const [alert, setAlert] = useState({
@@ -489,6 +491,19 @@ const VisitingCardDetails = () => {
 
   const goToStep = (stepIndex) => {
     setCurrentStep(stepIndex);
+  };
+
+  const rotateImage = () => {
+    setImageRotation((prev) => (prev + 90) % 360);
+  };
+
+  const resetImageRotation = () => {
+    setImageRotation(0);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setImageRotation(0);
   };
 
   const getStepStatus = (stepIndex) => {
@@ -1815,7 +1830,7 @@ const VisitingCardDetails = () => {
           {/* Modal Backdrop */}
           <div
             className="absolute inset-0 bg-transparent"
-            onClick={() => setIsModalOpen(false)}
+            onClick={closeModal}
           ></div>
 
           {/* Modal Content */}
@@ -1825,12 +1840,21 @@ const VisitingCardDetails = () => {
               <h3 className="text-lg font-semibold text-gray-900">
                 Visiting Card - Enlarged View
               </h3>
-              <button
-                onClick={() => setIsModalOpen(false)}
-                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-              >
-                <X className="w-5 h-5 text-gray-500" />
-              </button>
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={rotateImage}
+                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                  title="Rotate image 90° clockwise"
+                >
+                  <RotateCw className="w-5 h-5 text-gray-600" />
+                </button>
+                <button
+                  onClick={closeModal}
+                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
             </div>
 
             {/* Modal Body */}
@@ -1843,7 +1867,8 @@ const VisitingCardDetails = () => {
                       "/"
                     )}`}
                     alt="Visiting Card - Enlarged"
-                    className="max-w-full max-h-[70vh] object-contain rounded-lg shadow-lg"
+                    className="max-w-full max-h-[70vh] object-contain rounded-lg shadow-lg transition-transform duration-300"
+                    style={{ transform: `rotate(${imageRotation}deg)` }}
                     onError={(e) => {
                       e.target.src =
                         "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 240'%3E%3Crect width='400' height='240' fill='%23f5f5f5'/%3E%3Ctext x='200' y='120' text-anchor='middle' fill='%23999' font-family='Arial' font-size='14'%3EImage not found%3C/text%3E%3C/svg%3E";
@@ -1860,11 +1885,20 @@ const VisitingCardDetails = () => {
             {/* Modal Footer */}
             <div className="flex items-center justify-between p-4 border-t border-gray-200 bg-gray-50">
               <p className="text-sm text-gray-600">
-                Card ID: {id} • Click outside or press X to close
+                Card ID: {id} • Rotation: {imageRotation}° • Click outside or
+                press X to close
               </p>
               <div className="flex space-x-2">
+                {imageRotation !== 0 && (
+                  <button
+                    onClick={resetImageRotation}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    Reset Rotation
+                  </button>
+                )}
                 <button
-                  onClick={() => setIsModalOpen(false)}
+                  onClick={closeModal}
                   className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   Close
