@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from "react";
-import BasicDetailCard from "../../components/User/BasicDetailCard";
-import Alert from "../../components/Alert";
+import BasicDetailCard from "../components/BasicDetailCard";
+import Alert from "../components/Alert";
 import Avatar from "../assets/Avatar.png";
-import Header from "../../components/Header";
-import { useAuthStore } from "../../store/AuthStore";
-import api from "../../utils/axios";
+import Header from "../components/Header";
+import { useAuthStore } from "../store/AuthStore";
+import api from "../utils/axios";
 import { format, parseISO } from "date-fns";
 import { useLocation, useNavigate } from "react-router-dom";
 

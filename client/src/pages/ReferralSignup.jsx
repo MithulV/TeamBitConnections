@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams, useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import Alert from '../../components/Alert';
+import Alert from '../components/Alert';
 
 function ReferralSignup() {
     const [searchParams] = useSearchParams();
