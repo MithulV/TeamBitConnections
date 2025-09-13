@@ -1,10 +1,20 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { RotateCcw, UserPlus, Save, ArrowLeft, User, Mail, Phone, Plus, X } from 'lucide-react';
-import { useAuthStore } from '../store/AuthStore';
-import { useNavigate, useLocation } from 'react-router-dom';
-import Header from '../components/Header';
-import Alert from '../components/Alert';
-import axios from 'axios';
+import React, { useState, useEffect, useRef } from "react";
+import {
+  RotateCcw,
+  UserPlus,
+  Save,
+  ArrowLeft,
+  User,
+  Mail,
+  Phone,
+  Plus,
+  X,
+} from "lucide-react";
+import { useAuthStore } from "../store/AuthStore";
+import { useNavigate, useLocation } from "react-router-dom";
+import Header from "../components/Header";
+import Alert from "../components/Alert";
+import axios from "axios";
 
 function FormInput() {
   const { id } = useAuthStore();
@@ -12,7 +22,8 @@ function FormInput() {
   const location = useLocation();
 
   // Extract contact data and edit mode from navigation state
-  const { contact: initialData = null, isEditMode = false } = location.state || {};
+  const { contact: initialData = null, isEditMode = false } =
+    location.state || {};
 
   // State for alert messages
   const [alert, setAlert] = useState({
@@ -23,25 +34,27 @@ function FormInput() {
 
   // State for form data
   const [formData, setFormData] = useState({
-    name: '',
-    phone_number: '',
-    email_address: '',
+    name: "",
+    phone_number: "",
+    email_address: "",
     created_by: id,
-    contact_id: '',
-    events: [{
-      event_id: '',
-      event_name: '',
-      event_role: '',
-      event_date: '',
-      event_held_organization: '',
-      event_location: ''
-    }]
+    contact_id: "",
+    events: [
+      {
+        event_id: "",
+        event_name: "",
+        event_role: "",
+        event_date: "",
+        event_held_organization: "",
+        event_location: "",
+      },
+    ],
   });
 
   // State for autocomplete suggestions and selected contact
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [activeField, setActiveField] = useState('');
+  const [activeField, setActiveField] = useState("");
   const [selectedContact, setSelectedContact] = useState(null);
   const debounceTimeout = useRef(null);
 
@@ -55,7 +68,7 @@ function FormInput() {
   };
 
   const closeAlert = () => {
-    setAlert(prev => ({
+    setAlert((prev) => ({
       ...prev,
       isOpen: false,
     }));
@@ -68,30 +81,40 @@ function FormInput() {
   const handleSaveContact = async (formData) => {
     try {
       let response;
-      
+
       if (isEditMode && initialData) {
         const eventToUpdate = {
           ...formData,
-          events: formData.events.map(event => ({
+          events: formData.events.map((event) => ({
             ...event,
-            event_id: event.event_id || initialData.events[0]?.eventId || initialData.events[0]?.event_id
-          }))
+            event_id:
+              event.event_id ||
+              initialData.events[0]?.eventId ||
+              initialData.events[0]?.event_id,
+          })),
         };
-        
+
         response = await axios.put(
-          `http://localhost:8000/api/update-contacts-and-events/${initialData.id || initialData.contact_id}/${id}`, 
+          `http://localhost:8000/api/update-contacts-and-events/${
+            initialData.id || initialData.contact_id
+          }/${id}`,
           eventToUpdate
         );
-        showAlert("success", `Contact and event have been successfully updated.`);
-        
+        showAlert(
+          "success",
+          `Contact and event have been successfully updated.`
+        );
       } else if (selectedContact) {
-        const contactChanged = 
+        const contactChanged =
           selectedContact.name !== formData.name ||
           selectedContact.email_address !== formData.email_address ||
           selectedContact.phone_number !== formData.phone_number;
 
         if (contactChanged) {
-          response = await axios.put(`http://localhost:8000/api/update-contacts-and-events/${selectedContact.contact_id}/${id}`, formData);
+          response = await axios.put(
+            `http://localhost:8000/api/update-contacts-and-events/${selectedContact.contact_id}/${id}`,
+            formData
+          );
           showAlert("success", `Contact has been successfully updated.`);
         } else {
           const eventData = {
@@ -100,17 +123,26 @@ function FormInput() {
             eventDate: formData.events[0].event_date,
             eventHeldOrganization: formData.events[0].event_held_organization,
             eventLocation: formData.events[0].event_location,
-            verified: false
+            verified: false,
           };
-          
-          response = await axios.post(`http://localhost:8000/api/add-event-existing-contact/${selectedContact.contact_id}/${id}`, eventData);
-          showAlert("success", `New event added to existing contact successfully!`);
+
+          response = await axios.post(
+            `http://localhost:8000/api/add-event-existing-contact/${selectedContact.contact_id}/${id}`,
+            eventData
+          );
+          showAlert(
+            "success",
+            `New event added to existing contact successfully!`
+          );
         }
       } else {
-        response = await axios.post(`http://localhost:8000/api/create-contact`, formData);
+        response = await axios.post(
+          `http://localhost:8000/api/create-contact`,
+          formData
+        );
         showAlert("success", `Contact has been successfully added.`);
       }
-      
+
       setTimeout(() => {
         handleBack();
       }, 2000);
@@ -119,7 +151,16 @@ function FormInput() {
       if (isEditMode) {
         showAlert("error", `Failed to update contact and event.`);
       } else if (selectedContact) {
-        showAlert("error", `Failed to ${formData.name !== selectedContact.name || formData.email_address !== selectedContact.email_address || formData.phone_number !== selectedContact.phone_number ? 'update contact' : 'add event to contact'}.`);
+        showAlert(
+          "error",
+          `Failed to ${
+            formData.name !== selectedContact.name ||
+            formData.email_address !== selectedContact.email_address ||
+            formData.phone_number !== selectedContact.phone_number
+              ? "update contact"
+              : "add event to contact"
+          }.`
+        );
       } else {
         showAlert("error", `Failed to add contact.`);
       }
@@ -135,36 +176,43 @@ function FormInput() {
   useEffect(() => {
     if (isEditMode && initialData) {
       setFormData({
-        name: initialData.name || '',
-        phone_number: initialData.phoneNumber || '',
-        email_address: initialData.emailAddress || '',
+        name: initialData.name || "",
+        phone_number: initialData.phoneNumber || "",
+        email_address: initialData.emailAddress || "",
         created_by: id,
-        contact_id: '',
-        events: initialData.events && initialData.events.length > 0 ? initialData.events.map(event => ({
-          event_id: event.eventId || event.event_id || '',
-          event_name: event.eventName || '',
-          event_role: event.eventRole || '',
-          event_date: event.eventDate || '',
-          event_held_organization: event.eventHeldOrganization || '',
-          event_location: event.eventLocation || ''
-        })) : [{
-          event_id: '',
-          event_name: '',
-          event_role: '',
-          event_date: '',
-          event_held_organization: '',
-          event_location: ''
-        }]
+        contact_id: "",
+        events:
+          initialData.events && initialData.events.length > 0
+            ? initialData.events.map((event) => ({
+                event_id: event.eventId || event.event_id || "",
+                event_name: event.eventName || "",
+                event_role: event.eventRole || "",
+                event_date: event.eventDate || "",
+                event_held_organization: event.eventHeldOrganization || "",
+                event_location: event.eventLocation || "",
+              }))
+            : [
+                {
+                  event_id: "",
+                  event_name: "",
+                  event_role: "",
+                  event_date: "",
+                  event_held_organization: "",
+                  event_location: "",
+                },
+              ],
       });
       setSelectedContact(null);
     } else {
-      const today = new Date().toISOString().split('T')[0];
-      setFormData(prev => ({
+      const today = new Date().toISOString().split("T")[0];
+      setFormData((prev) => ({
         ...prev,
-        events: [{
-          ...prev.events[0],
-          event_date: today
-        }]
+        events: [
+          {
+            ...prev.events[0],
+            event_date: today,
+          },
+        ],
       }));
       setSelectedContact(null);
     }
@@ -190,39 +238,48 @@ function FormInput() {
 
     try {
       console.log(`Fetching suggestions for field: ${field}, query: ${query}`); // Debug log
-      
+
       // Use the correct endpoint - should match your existing search endpoint
-      const response = await axios.get(`http://localhost:8000/api/search-contact?q=${encodeURIComponent(query)}`);
-      console.log('API Response:', response.data); // Debug log
-      
+      const response = await axios.get(
+        `http://localhost:8000/api/search-contact?q=${encodeURIComponent(
+          query
+        )}`
+      );
+      console.log("API Response:", response.data); // Debug log
+
       const results = response.data.data || response.data || [];
-      console.log('Filtered results:', results); // Debug log
-      
+      console.log("Filtered results:", results); // Debug log
+
       // Filter results based on the field being searched
       let filteredResults = [];
-      if (field === 'name') {
-        filteredResults = results.filter(contact => 
-          contact.name && contact.name.toLowerCase().includes(query.toLowerCase())
+      if (field === "name") {
+        filteredResults = results.filter(
+          (contact) =>
+            contact.name &&
+            contact.name.toLowerCase().includes(query.toLowerCase())
         );
-      } else if (field === 'phone_number') {
-        filteredResults = results.filter(contact => 
-          contact.phone_number && contact.phone_number.includes(query)
+      } else if (field === "phone_number") {
+        filteredResults = results.filter(
+          (contact) =>
+            contact.phone_number && contact.phone_number.includes(query)
         );
-      } else if (field === 'email_address') {
-        filteredResults = results.filter(contact => 
-          contact.email_address && contact.email_address.toLowerCase().includes(query.toLowerCase())
+      } else if (field === "email_address") {
+        filteredResults = results.filter(
+          (contact) =>
+            contact.email_address &&
+            contact.email_address.toLowerCase().includes(query.toLowerCase())
         );
       } else {
         filteredResults = results;
       }
-      
-      console.log('Final filtered results:', filteredResults); // Debug log
-      
+
+      console.log("Final filtered results:", filteredResults); // Debug log
+
       setSuggestions(filteredResults);
       setActiveField(field);
       setShowSuggestions(filteredResults.length > 0);
     } catch (error) {
-      console.error('Error fetching suggestions:', error);
+      console.error("Error fetching suggestions:", error);
       setSuggestions([]);
       setShowSuggestions(false);
     }
@@ -231,46 +288,54 @@ function FormInput() {
   // Handle form input changes with field-specific search
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    const eventFields = ["event_name", "event_role", "event_date", "event_held_organization", "event_location"];
+    const eventFields = [
+      "event_name",
+      "event_role",
+      "event_date",
+      "event_held_organization",
+      "event_location",
+    ];
 
     if (eventFields.includes(name)) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        events: [{
-          ...prev.events[0],
-          [name]: value
-        }]
+        events: [
+          {
+            ...prev.events[0],
+            [name]: value,
+          },
+        ],
       }));
     } else {
-      if (name === 'phone_number') {
-        const numbersOnly = value.replace(/[^0-9]/g, '');
-        setFormData(prev => ({
+      if (name === "phone_number") {
+        const numbersOnly = value.replace(/[^0-9]/g, "");
+        setFormData((prev) => ({
           ...prev,
-          [name]: numbersOnly
+          [name]: numbersOnly,
         }));
       } else {
-        setFormData(prev => ({
+        setFormData((prev) => ({
           ...prev,
-          [name]: value
+          [name]: value,
         }));
       }
 
       // Only search for basic information fields, not event fields
-      if (['name', 'email_address', 'phone_number'].includes(name)) {
+      if (["name", "email_address", "phone_number"].includes(name)) {
         if (debounceTimeout.current) clearTimeout(debounceTimeout.current);
-        
+
         if (value.trim().length === 0) {
           setSuggestions([]);
           setShowSuggestions(false);
           if (selectedContact) setSelectedContact(null);
           return;
         }
-        
+
         // Clear selected contact if user is typing different values
         if (selectedContact) {
           setSelectedContact(null);
         }
-        
+
         debounceTimeout.current = setTimeout(() => {
           fetchSuggestions(value, name);
         }, 300);
@@ -286,13 +351,13 @@ function FormInput() {
 
   // On selecting a suggestion, fill form fields and store selected contact
   const handleSelectSuggestion = (contact) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       name: contact.name,
       email_address: contact.email_address,
       phone_number: contact.phone_number,
       contact_id: contact.contact_id,
-      events: prev.events
+      events: prev.events,
     }));
     setSelectedContact(contact);
     setShowSuggestions(false);
@@ -308,43 +373,50 @@ function FormInput() {
   const handleReset = () => {
     if (isEditMode && initialData) {
       setFormData({
-        name: initialData.name || '',
-        phone_number: initialData.phoneNumber || '',
-        email_address: initialData.emailAddress || '',
+        name: initialData.name || "",
+        phone_number: initialData.phoneNumber || "",
+        email_address: initialData.emailAddress || "",
         created_by: id,
-        contact_id: '',
-        events: initialData.events && initialData.events.length > 0 ? initialData.events.map(event => ({
-          event_id: event.eventId || event.event_id || '',
-          event_name: event.eventName || '',
-          event_role: event.eventRole || '',
-          event_date: event.eventDate || '',
-          event_held_organization: event.eventHeldOrganization || '',
-          event_location: event.eventLocation || ''
-        })) : [{
-          event_id: '',
-          event_name: '',
-          event_role: '',
-          event_date: '',
-          event_held_organization: '',
-          event_location: ''
-        }]
+        contact_id: "",
+        events:
+          initialData.events && initialData.events.length > 0
+            ? initialData.events.map((event) => ({
+                event_id: event.eventId || event.event_id || "",
+                event_name: event.eventName || "",
+                event_role: event.eventRole || "",
+                event_date: event.eventDate || "",
+                event_held_organization: event.eventHeldOrganization || "",
+                event_location: event.eventLocation || "",
+              }))
+            : [
+                {
+                  event_id: "",
+                  event_name: "",
+                  event_role: "",
+                  event_date: "",
+                  event_held_organization: "",
+                  event_location: "",
+                },
+              ],
       });
       setSelectedContact(null);
     } else {
-      const today = new Date().toISOString().split('T')[0];
+      const today = new Date().toISOString().split("T")[0];
       setFormData({
-        name: '',
-        phone_number: '',
-        email_address: '',
+        name: "",
+        phone_number: "",
+        email_address: "",
         created_by: id,
-        contact_id: '',
-        events: [{
-          event_name: '',
-          event_role: '',
-          event_date: today,
-          event_held_organization: '',
-          event_location: ''
-        }]
+        contact_id: "",
+        events: [
+          {
+            event_name: "",
+            event_role: "",
+            event_date: today,
+            event_held_organization: "",
+            event_location: "",
+          },
+        ],
       });
       setSelectedContact(null);
     }
@@ -353,11 +425,11 @@ function FormInput() {
   };
 
   // Check if contact info has changed from selected contact
-  const contactInfoChanged = selectedContact && (
-    selectedContact.name !== formData.name ||
-    selectedContact.email_address !== formData.email_address ||
-    selectedContact.phone_number !== formData.phone_number
-  );
+  const contactInfoChanged =
+    selectedContact &&
+    (selectedContact.name !== formData.name ||
+      selectedContact.email_address !== formData.email_address ||
+      selectedContact.phone_number !== formData.phone_number);
 
   // Enhanced suggestion item component with better layout
   const SuggestionItem = ({ contact, onSelect }) => (
@@ -372,11 +444,15 @@ function FormInput() {
           </div>
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-gray-900 truncate">{contact.name}</p>
+          <p className="text-sm font-semibold text-gray-900 truncate">
+            {contact.name}
+          </p>
           <div className="flex flex-col space-y-1 mt-1">
             <div className="flex items-center space-x-1">
               <Mail className="w-3 h-3 text-gray-400" />
-              <p className="text-xs text-gray-600 truncate max-w-[200px]">{contact.email_address}</p>
+              <p className="text-xs text-gray-600 truncate max-w-[200px]">
+                {contact.email_address}
+              </p>
             </div>
             <div className="flex items-center space-x-1">
               <Phone className="w-3 h-3 text-gray-400" />
@@ -394,16 +470,16 @@ function FormInput() {
   // Get button text and icon based on current state
   const getButtonConfig = () => {
     if (isEditMode) {
-      return { text: 'Update Contact', icon: Save, color: 'blue' };
+      return { text: "Update Contact", icon: Save, color: "blue" };
     }
     if (selectedContact) {
       if (contactInfoChanged) {
-        return { text: 'Update Contact', icon: Save, color: 'orange' };
+        return { text: "Update Contact", icon: Save, color: "orange" };
       } else {
-        return { text: 'Add Event', icon: Plus, color: 'green' };
+        return { text: "Add Event", icon: Plus, color: "green" };
       }
     }
-    return { text: 'Save Contact', icon: UserPlus, color: 'blue' };
+    return { text: "Save Contact", icon: UserPlus, color: "blue" };
   };
 
   const buttonConfig = getButtonConfig();
@@ -421,24 +497,22 @@ function FormInput() {
 
       <div className="flex-1 flex flex-col overflow-hidden">
         <div className="flex-shrink-0 bg-white border-b border-gray-200">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <button
-                onClick={handleBack}
-                className="px-4 py-2 ml-5 flex items-center gap-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors duration-200 font-medium"
-              >
-                <ArrowLeft size={20} />
-                Back
-              </button>
+          <div className="flex items-center justify-end px-4 py-2">
+            {/* Right side - Header (Profile hidden on mobile via Header component) */}
+            <div className="flex-shrink-0">
+              <Header />
             </div>
-            <Header />
           </div>
         </div>
 
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 overflow-y-auto">
           <div
-            className={`h-full flex flex-col p-8 transition-all duration-300 relative
-              ${isFixed ? 'bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 border-2 border-blue-400 shadow-xl' : 'bg-white border border-gray-200 shadow-sm'}`}
+            className={`min-h-full flex flex-col p-4 md:p-8 transition-all duration-300 relative
+              ${
+                isFixed
+                  ? "bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 border-2 border-blue-400 shadow-xl"
+                  : "bg-white border border-gray-200 shadow-sm"
+              }`}
           >
             {isFixed && (
               <div className="absolute top-4 right-4 flex gap-2">
@@ -452,42 +526,56 @@ function FormInput() {
                 )}
               </div>
             )}
-            
-            <div className="flex-shrink-0 mb-8">
-              <h1 className="text-3xl font-bold text-gray-900 mb-3">
-                {isEditMode 
-                  ? 'Edit Contact Information'
-                  : isFixed 
-                    ? (contactInfoChanged ? 'Update Contact Information' : 'Add Event to Contact')
-                    : 'Contact Information'
-                }
-              </h1>
-              <p className="text-gray-600">
+
+            <div className="flex-shrink-0 mb-6 md:mb-8">
+              {/* Title with Back Button */}
+              <div className="flex items-center mb-3 relative">
+                {/* Back button positioned to the left */}
+                <button
+                  onClick={handleBack}
+                  className="flex items-center gap-2 px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors duration-200 font-medium mr-4"
+                >
+                  <ArrowLeft size={18} />
+                  <span className="hidden sm:inline">Back</span>
+                </button>
+
+                {/* Title */}
+                <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+                  {isEditMode
+                    ? "Edit Contact Information"
+                    : isFixed
+                    ? contactInfoChanged
+                      ? "Update Contact Information"
+                      : "Add Event to Contact"
+                    : "Contact Information"}
+                </h1>
+              </div>
+              <p className="text-gray-600 text-sm md:text-base">
                 {isEditMode
-                  ? 'Update the details for this contact. Required fields are marked with an asterisk.'
+                  ? "Update the details for this contact. Required fields are marked with an asterisk."
                   : isFixed
-                    ? (contactInfoChanged 
-                        ? 'You are updating an existing contact\'s information.'
-                        : 'You are adding a new event to an existing contact.')
-                    : 'Fill in the details for the new contact. Start typing in name, email, or phone to search existing contacts.'
-                }
+                  ? contactInfoChanged
+                    ? "You are updating an existing contact's information."
+                    : "You are adding a new event to an existing contact."
+                  : "Fill in the details for the new contact. Start typing in name, email, or phone to search existing contacts."}
               </p>
             </div>
 
-            <form onSubmit={handleSubmit} className="flex-1 flex flex-col">
-              <div className="flex-1 flex gap-8">
-
+            <form onSubmit={handleSubmit} className="flex flex-col">
+              <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 mb-6 md:mb-8">
                 {/* Left Section - Basic Information */}
                 <div className="flex-1">
-                  <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-2">
+                  <h3 className="text-lg md:text-xl font-semibold text-gray-900 mb-4 md:mb-6 flex items-center gap-2">
                     <User className="w-5 h-5 text-blue-600" />
                     Basic Information
                   </h3>
-                  <div className="grid grid-cols-2 gap-6">
-
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                     {/* Name Field with autocomplete */}
                     <div className="relative">
-                      <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+                      <label
+                        htmlFor="name"
+                        className="block text-sm font-medium text-gray-700 mb-2"
+                      >
                         Name*
                       </label>
                       <input
@@ -500,37 +588,49 @@ function FormInput() {
                         autoComplete="off"
                         required
                         className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-200 shadow-sm
-                          ${isFixed ? 'border-blue-400 focus:ring-blue-500 bg-white' : 'border-gray-300 focus:ring-blue-500 hover:border-gray-400'}`}
+                          ${
+                            isFixed
+                              ? "border-blue-400 focus:ring-blue-500 bg-white"
+                              : "border-gray-300 focus:ring-blue-500 hover:border-gray-400"
+                          }`}
                       />
-                      {showSuggestions && activeField === 'name' && suggestions.length > 0 && (
-                        <div className="absolute z-20 w-full bg-white border border-gray-200 rounded-xl mt-1 shadow-2xl overflow-hidden max-h-80">
-                          <div className="px-4 py-2 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
-                            <p className="text-xs font-medium text-gray-600">Select existing contact by name ({suggestions.length} found)</p>
-                            <button
-                              type="button"
-                              onClick={closeSuggestions}
-                              className="text-gray-400 hover:text-gray-600 transition-colors"
-                              title="Close suggestions"
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
+                      {showSuggestions &&
+                        activeField === "name" &&
+                        suggestions.length > 0 && (
+                          <div className="absolute z-20 w-full bg-white border border-gray-200 rounded-xl mt-1 shadow-2xl overflow-hidden max-h-80">
+                            <div className="px-4 py-2 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
+                              <p className="text-xs font-medium text-gray-600">
+                                Select existing contact by name (
+                                {suggestions.length} found)
+                              </p>
+                              <button
+                                type="button"
+                                onClick={closeSuggestions}
+                                className="text-gray-400 hover:text-gray-600 transition-colors"
+                                title="Close suggestions"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                            <ul className="max-h-64 overflow-auto">
+                              {suggestions.map((contact) => (
+                                <SuggestionItem
+                                  key={contact.contact_id}
+                                  contact={contact}
+                                  onSelect={handleSelectSuggestion}
+                                />
+                              ))}
+                            </ul>
                           </div>
-                          <ul className="max-h-64 overflow-auto">
-                            {suggestions.map(contact => (
-                              <SuggestionItem
-                                key={contact.contact_id}
-                                contact={contact}
-                                onSelect={handleSelectSuggestion}
-                              />
-                            ))}
-                          </ul>
-                        </div>
-                      )}
+                        )}
                     </div>
 
                     {/* Phone Number Field */}
                     <div className="relative">
-                      <label htmlFor="phone_number" className="block text-sm font-medium text-gray-700 mb-2">
+                      <label
+                        htmlFor="phone_number"
+                        className="block text-sm font-medium text-gray-700 mb-2"
+                      >
                         Phone Number*
                       </label>
                       <input
@@ -545,37 +645,49 @@ function FormInput() {
                         autoComplete="off"
                         required
                         className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-200 shadow-sm
-                          ${isFixed ? 'border-blue-400 focus:ring-blue-500 bg-white' : 'border-gray-300 focus:ring-blue-500 hover:border-gray-400'}`}
+                          ${
+                            isFixed
+                              ? "border-blue-400 focus:ring-blue-500 bg-white"
+                              : "border-gray-300 focus:ring-blue-500 hover:border-gray-400"
+                          }`}
                       />
-                      {showSuggestions && activeField === 'phone_number' && suggestions.length > 0 && (
-                        <div className="absolute z-20 w-full bg-white border border-gray-200 rounded-xl mt-1 shadow-2xl overflow-hidden max-h-80">
-                          <div className="px-4 py-2 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
-                            <p className="text-xs font-medium text-gray-600">Select existing contact by phone ({suggestions.length} found)</p>
-                            <button
-                              type="button"
-                              onClick={closeSuggestions}
-                              className="text-gray-400 hover:text-gray-600 transition-colors"
-                              title="Close suggestions"
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
+                      {showSuggestions &&
+                        activeField === "phone_number" &&
+                        suggestions.length > 0 && (
+                          <div className="absolute z-20 w-full bg-white border border-gray-200 rounded-xl mt-1 shadow-2xl overflow-hidden max-h-80">
+                            <div className="px-4 py-2 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
+                              <p className="text-xs font-medium text-gray-600">
+                                Select existing contact by phone (
+                                {suggestions.length} found)
+                              </p>
+                              <button
+                                type="button"
+                                onClick={closeSuggestions}
+                                className="text-gray-400 hover:text-gray-600 transition-colors"
+                                title="Close suggestions"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                            <ul className="max-h-64 overflow-auto">
+                              {suggestions.map((contact) => (
+                                <SuggestionItem
+                                  key={contact.contact_id}
+                                  contact={contact}
+                                  onSelect={handleSelectSuggestion}
+                                />
+                              ))}
+                            </ul>
                           </div>
-                          <ul className="max-h-64 overflow-auto">
-                            {suggestions.map(contact => (
-                              <SuggestionItem
-                                key={contact.contact_id}
-                                contact={contact}
-                                onSelect={handleSelectSuggestion}
-                              />
-                            ))}
-                          </ul>
-                        </div>
-                      )}
+                        )}
                     </div>
 
                     {/* Email Address Field */}
-                    <div className="col-span-2 relative">
-                      <label htmlFor="email_address" className="block text-sm font-medium text-gray-700 mb-2">
+                    <div className="md:col-span-2 relative">
+                      <label
+                        htmlFor="email_address"
+                        className="block text-sm font-medium text-gray-700 mb-2"
+                      >
                         Email Address*
                       </label>
                       <input
@@ -588,46 +700,60 @@ function FormInput() {
                         autoComplete="off"
                         required
                         className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-200 shadow-sm
-                          ${isFixed ? 'border-blue-400 focus:ring-blue-500 bg-white' : 'border-gray-300 focus:ring-blue-500 hover:border-gray-400'}`}
+                          ${
+                            isFixed
+                              ? "border-blue-400 focus:ring-blue-500 bg-white"
+                              : "border-gray-300 focus:ring-blue-500 hover:border-gray-400"
+                          }`}
                       />
-                      {showSuggestions && activeField === 'email_address' && suggestions.length > 0 && (
-                        <div className="absolute z-20 w-full bg-white border border-gray-200 rounded-xl mt-1 shadow-2xl overflow-hidden max-h-80">
-                          <div className="px-4 py-2 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
-                            <p className="text-xs font-medium text-gray-600">Select existing contact by email ({suggestions.length} found)</p>
-                            <button
-                              type="button"
-                              onClick={closeSuggestions}
-                              className="text-gray-400 hover:text-gray-600 transition-colors"
-                              title="Close suggestions"
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
+                      {showSuggestions &&
+                        activeField === "email_address" &&
+                        suggestions.length > 0 && (
+                          <div className="absolute z-20 w-full bg-white border border-gray-200 rounded-xl mt-1 shadow-2xl overflow-hidden max-h-80">
+                            <div className="px-4 py-2 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
+                              <p className="text-xs font-medium text-gray-600">
+                                Select existing contact by email (
+                                {suggestions.length} found)
+                              </p>
+                              <button
+                                type="button"
+                                onClick={closeSuggestions}
+                                className="text-gray-400 hover:text-gray-600 transition-colors"
+                                title="Close suggestions"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                            <ul className="max-h-64 overflow-auto">
+                              {suggestions.map((contact) => (
+                                <SuggestionItem
+                                  key={contact.contact_id}
+                                  contact={contact}
+                                  onSelect={handleSelectSuggestion}
+                                />
+                              ))}
+                            </ul>
                           </div>
-                          <ul className="max-h-64 overflow-auto">
-                            {suggestions.map(contact => (
-                              <SuggestionItem
-                                key={contact.contact_id}
-                                contact={contact}
-                                onSelect={handleSelectSuggestion}
-                              />
-                            ))}
-                          </ul>
-                        </div>
-                      )}
+                        )}
                     </div>
                   </div>
                 </div>
 
-                {/* Vertical Divider */}
-                <div className="w-px bg-gradient-to-b from-gray-200 via-gray-300 to-gray-200"></div>
+                {/* Responsive Divider */}
+                <div className="hidden lg:block w-px bg-gradient-to-b from-gray-200 via-gray-300 to-gray-200"></div>
+                <div className="block lg:hidden h-px bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 my-4"></div>
 
                 {/* Right Section - Event & Role Information */}
                 <div className="flex-1">
-                  <h3 className="text-xl font-semibold text-gray-900 mb-6">Event & Role Information</h3>
-                  <div className="grid grid-cols-2 gap-6">
-
+                  <h3 className="text-lg md:text-xl font-semibold text-gray-900 mb-4 md:mb-6">
+                    Event & Role Information
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                     <div>
-                      <label htmlFor="event_name" className="block text-sm font-medium text-gray-700 mb-2">
+                      <label
+                        htmlFor="event_name"
+                        className="block text-sm font-medium text-gray-700 mb-2"
+                      >
                         Event Name*
                       </label>
                       <input
@@ -643,7 +769,10 @@ function FormInput() {
                     </div>
 
                     <div>
-                      <label htmlFor="event_role" className="block text-sm font-medium text-gray-700 mb-2">
+                      <label
+                        htmlFor="event_role"
+                        className="block text-sm font-medium text-gray-700 mb-2"
+                      >
                         Event Role*
                       </label>
                       <input
@@ -659,7 +788,10 @@ function FormInput() {
                     </div>
 
                     <div>
-                      <label htmlFor="event_date" className="block text-sm font-medium text-gray-700 mb-2">
+                      <label
+                        htmlFor="event_date"
+                        className="block text-sm font-medium text-gray-700 mb-2"
+                      >
                         Event Date*
                       </label>
                       <input
@@ -674,7 +806,10 @@ function FormInput() {
                     </div>
 
                     <div>
-                      <label htmlFor="event_held_organization" className="block text-sm font-medium text-gray-700 mb-2">
+                      <label
+                        htmlFor="event_held_organization"
+                        className="block text-sm font-medium text-gray-700 mb-2"
+                      >
                         Event held Organization*
                       </label>
                       <input
@@ -689,8 +824,11 @@ function FormInput() {
                       />
                     </div>
 
-                    <div className="col-span-2">
-                      <label htmlFor="event_location" className="block text-sm font-medium text-gray-700 mb-2">
+                    <div className="md:col-span-2">
+                      <label
+                        htmlFor="event_location"
+                        className="block text-sm font-medium text-gray-700 mb-2"
+                      >
                         Event Location*
                       </label>
                       <input
@@ -704,18 +842,16 @@ function FormInput() {
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 hover:border-gray-400 transition-all duration-200 shadow-sm"
                       />
                     </div>
-
                   </div>
                 </div>
-
               </div>
 
               {/* Action Buttons */}
-              <div className="flex-shrink-0 flex justify-end gap-3 pt-8 border-t border-gray-200 mt-8">
+              <div className="flex-shrink-0 flex flex-col sm:flex-row justify-end gap-3 pt-6 md:pt-8 border-t border-gray-200 mt-6 md:mt-8">
                 <button
                   type="button"
                   onClick={handleReset}
-                  className="inline-flex items-center gap-2 px-6 py-3 border border-gray-300 bg-white text-gray-700 font-medium rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 shadow-sm"
+                  className="inline-flex items-center justify-center gap-2 px-6 py-3 border border-gray-300 bg-white text-gray-700 font-medium rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 shadow-sm w-full sm:w-auto"
                 >
                   <RotateCcw size={16} />
                   Reset Form
@@ -723,18 +859,20 @@ function FormInput() {
                 <button
                   type="button"
                   onClick={handleBack}
-                  className="px-6 py-3 border border-gray-300 bg-white text-gray-700 font-medium rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 shadow-sm"
+                  className="px-6 py-3 border border-gray-300 bg-white text-gray-700 font-medium rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 shadow-sm w-full sm:w-auto"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className={`inline-flex items-center gap-2 px-6 py-3 font-medium rounded-lg focus:outline-none focus:ring-2 transition-all duration-200 shadow-lg
-                    ${buttonConfig.color === 'green' 
-                      ? 'bg-gradient-to-r from-green-500 to-green-600 text-white hover:from-green-600 hover:to-green-700 focus:ring-green-500'
-                      : buttonConfig.color === 'orange'
-                      ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white hover:from-orange-600 hover:to-orange-700 focus:ring-orange-500'
-                      : 'bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 focus:ring-blue-500'}`}
+                  className={`inline-flex items-center justify-center gap-2 px-6 py-3 font-medium rounded-lg focus:outline-none focus:ring-2 transition-all duration-200 shadow-lg w-full sm:w-auto
+                    ${
+                      buttonConfig.color === "green"
+                        ? "bg-gradient-to-r from-green-500 to-green-600 text-white hover:from-green-600 hover:to-green-700 focus:ring-green-500"
+                        : buttonConfig.color === "orange"
+                        ? "bg-gradient-to-r from-orange-500 to-orange-600 text-white hover:from-orange-600 hover:to-orange-700 focus:ring-orange-500"
+                        : "bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 focus:ring-blue-500"
+                    }`}
                 >
                   <buttonConfig.icon size={16} />
                   {buttonConfig.text}
