@@ -4,9 +4,9 @@ import { useNavigate, useLocation } from "react-router-dom";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import axios from "axios";
-import Header from "../components/Header";
-import Alert from "../components/Alert";
-import { useAuthStore } from "../store/AuthStore";
+import Header from "../Header";
+import Alert from "../Alert";
+import { useAuthStore } from "../../store/AuthStore";
 
 // Custom styles for DatePicker
 const datePickerStyles = `
