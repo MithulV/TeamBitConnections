@@ -78,9 +78,9 @@ import {
 } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import Header from "../../components/Header";
-import Alert from "../../components/Alert";
-import { useAuthStore } from "../../store/AuthStore";
+import Header from "../components/Header";
+import Alert from "../components/Alert";
+import { useAuthStore } from "../store/AuthStore";
 import { format, parseISO, subDays, subMonths, isAfter, startOfDay, endOfDay, differenceInDays, startOfMonth, getDaysInMonth } from "date-fns";
 import { useNavigate } from "react-router-dom";
 import { saveAs } from 'file-saver';

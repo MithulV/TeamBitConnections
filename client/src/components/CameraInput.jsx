@@ -8,10 +8,10 @@ import {
   X,
   Plus,
 } from "lucide-react";
-import { useAuthStore } from "../../store/AuthStore";
+import { useAuthStore } from "../store/AuthStore";
 import { useNavigate } from "react-router-dom";
-import Header from "../Header";
-import Alert from "../Alert";
+import Header from "../components/Header";
+import Alert from "../components/Alert";
 import axios from "axios";
 
 function CameraInput() {

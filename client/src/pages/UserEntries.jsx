@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Avatar from "../assets/Avatar.png";
-import Alert from "../../components/Alert";
-import BasicDetailCard from "../../components/User/BasicDetailCard";
-import Header from "../../components/Header";
-import api from "../../utils/axios";
+import Alert from "../components/Alert";
+import BasicDetailCard from "../components/BasicDetailCard";
+import Header from "../components/Header";
+import api from "../utils/axios";
 import { ArrowLeft, Trash2 } from "lucide-react";
 import { parseISO, format } from "date-fns";
-import { useAuthStore } from "../../store/AuthStore";
+import { useAuthStore } from "../store/AuthStore";
 import axios from "axios";
 
 const DeleteConfirmationModal = ({

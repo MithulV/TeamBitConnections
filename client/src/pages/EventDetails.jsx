@@ -8,10 +8,10 @@ import {
   Camera,
   FileText,
 } from "lucide-react";
-import Header from "../../components/Header";
-import Alert from "../../components/Alert";
+import Header from "../components/Header";
+import Alert from "../components/Alert";
 import axios from "axios";
-import { useAuthStore } from "../../store/AuthStore";
+import { useAuthStore } from "../store/AuthStore";
 
 function EventDetails() {
   const navigate = useNavigate();
