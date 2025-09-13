@@ -94,9 +94,13 @@ function Applayout() {
   }, [id]); // Added id to dependencies
 
   return (
-    <div className="h-screen flex">
+    <div className="h-screen md:flex">
       {shouldShowNavbar && <Navbar />}
-      <main className="w-full h-screen flex-1 overflow-x-hidden overflow-y-auto">
+      <main
+        className={`w-full h-screen flex-1 overflow-x-hidden overflow-y-auto ${
+          shouldShowNavbar ? "md:pt-0" : ""
+        }`}
+      >
         <Routes>
           {/* Public Route */}
           <Route path="/login" element={<Login />} />
