@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { RotateCcw, Plus, Trash2, FileStack, Save, ArrowLeft } from "lucide-react";
+import {
+  RotateCcw,
+  Plus,
+  Trash2,
+  FileStack,
+  Save,
+  ArrowLeft,
+} from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
@@ -95,10 +102,10 @@ function DetailsInput() {
   const {
     contact: initialData = null,
     isAddMode = false,
-    source = 'unknown',
+    source = "unknown",
     currentUserId,
     userRole,
-    successCallback
+    successCallback,
   } = location.state || {};
 
   // Alert state
@@ -242,25 +249,25 @@ function DetailsInput() {
         event_location: firstEvent.event_location || "",
         experience:
           Array.isArray(initialData.experiences) &&
-            initialData.experiences.length > 0
+          initialData.experiences.length > 0
             ? initialData.experiences.map((exp) => ({
-              job_title: exp.job_title || "",
-              company: exp.company || "",
-              department: exp.department || "",
-              from_date: formatDate(exp.from_date),
-              to_date: formatDate(exp.to_date),
-              company_skills: exp.company_skills || "",
-            }))
+                job_title: exp.job_title || "",
+                company: exp.company || "",
+                department: exp.department || "",
+                from_date: formatDate(exp.from_date),
+                to_date: formatDate(exp.to_date),
+                company_skills: exp.company_skills || "",
+              }))
             : [
-              {
-                job_title: "",
-                company: "",
-                department: "",
-                from_date: "",
-                to_date: "",
-                company_skills: "",
-              },
-            ],
+                {
+                  job_title: "",
+                  company: "",
+                  department: "",
+                  from_date: "",
+                  to_date: "",
+                  company_skills: "",
+                },
+              ],
         logger: initialData.logger || "",
       }));
     }
@@ -427,34 +434,200 @@ function DetailsInput() {
       value: formData.country,
       options: [
         "",
-        "Afghanistan", "Albania", "Algeria", "Andorra", "Angola", "Antigua and Barbuda",
-        "Argentina", "Armenia", "Australia", "Austria", "Azerbaijan", "Bahamas", "Bahrain",
-        "Bangladesh", "Barbados", "Belarus", "Belgium", "Belize", "Benin", "Bhutan", "Bolivia",
-        "Bosnia and Herzegovina", "Botswana", "Brazil", "Brunei", "Bulgaria", "Burkina Faso",
-        "Burundi", "Cabo Verde", "Cambodia", "Cameroon", "Canada", "Central African Republic",
-        "Chad", "Chile", "China", "Colombia", "Comoros", "Congo (Congo-Brazzaville)", "Costa Rica",
-        "Croatia", "Cuba", "Cyprus", "Czechia (Czech Republic)", "Democratic Republic of the Congo",
-        "Denmark", "Djibouti", "Dominica", "Dominican Republic", "Ecuador", "Egypt", "El Salvador",
-        "Equatorial Guinea", "Eritrea", "Estonia", "Eswatini (fmr. \"Swaziland\")", "Ethiopia",
-        "Fiji", "Finland", "France", "Gabon", "Gambia", "Georgia", "Germany", "Ghana", "Greece",
-        "Grenada", "Guatemala", "Guinea", "Guinea-Bissau", "Guyana", "Haiti", "Holy See (Vatican City)",
-        "Honduras", "Hungary", "Iceland", "India", "Indonesia", "Iran", "Iraq", "Ireland", "Israel",
-        "Italy", "Jamaica", "Japan", "Jordan", "Kazakhstan", "Kenya", "Kiribati", "Korea (North)",
-        "Korea (South)", "Kuwait", "Kyrgyzstan", "Laos", "Latvia", "Lebanon", "Lesotho", "Liberia",
-        "Libya", "Liechtenstein", "Lithuania", "Luxembourg", "Madagascar", "Malawi", "Malaysia",
-        "Maldives", "Mali", "Malta", "Marshall Islands", "Mauritania", "Mauritius", "Mexico",
-        "Micronesia", "Moldova", "Monaco", "Mongolia", "Montenegro", "Morocco", "Mozambique",
-        "Myanmar (Burma)", "Namibia", "Nauru", "Nepal", "Netherlands", "New Zealand", "Nicaragua",
-        "Niger", "Nigeria", "North Macedonia", "Norway", "Oman", "Pakistan", "Palau", "Palestine State",
-        "Panama", "Papua New Guinea", "Paraguay", "Peru", "Philippines", "Poland", "Portugal", "Qatar",
-        "Romania", "Russia", "Rwanda", "Saint Kitts and Nevis", "Saint Lucia", "Saint Vincent and the Grenadines",
-        "Samoa", "San Marino", "Sao Tome and Principe", "Saudi Arabia", "Senegal", "Serbia", "Seychelles",
-        "Sierra Leone", "Singapore", "Slovakia", "Slovenia", "Solomon Islands", "Somalia", "South Africa",
-        "South Sudan", "Spain", "Sri Lanka", "Sudan", "Suriname", "Sweden", "Switzerland", "Syria",
-        "Tajikistan", "Tanzania", "Thailand", "Timor-Leste", "Togo", "Tonga", "Trinidad and Tobago",
-        "Tunisia", "Turkey", "Turkmenistan", "Tuvalu", "Uganda", "Ukraine", "United Arab Emirates",
-        "United Kingdom", "United States of America", "Uruguay", "Uzbekistan", "Vanuatu", "Venezuela",
-        "Vietnam", "Yemen", "Zambia", "Zimbabwe",
+        "Afghanistan",
+        "Albania",
+        "Algeria",
+        "Andorra",
+        "Angola",
+        "Antigua and Barbuda",
+        "Argentina",
+        "Armenia",
+        "Australia",
+        "Austria",
+        "Azerbaijan",
+        "Bahamas",
+        "Bahrain",
+        "Bangladesh",
+        "Barbados",
+        "Belarus",
+        "Belgium",
+        "Belize",
+        "Benin",
+        "Bhutan",
+        "Bolivia",
+        "Bosnia and Herzegovina",
+        "Botswana",
+        "Brazil",
+        "Brunei",
+        "Bulgaria",
+        "Burkina Faso",
+        "Burundi",
+        "Cabo Verde",
+        "Cambodia",
+        "Cameroon",
+        "Canada",
+        "Central African Republic",
+        "Chad",
+        "Chile",
+        "China",
+        "Colombia",
+        "Comoros",
+        "Congo (Congo-Brazzaville)",
+        "Costa Rica",
+        "Croatia",
+        "Cuba",
+        "Cyprus",
+        "Czechia (Czech Republic)",
+        "Democratic Republic of the Congo",
+        "Denmark",
+        "Djibouti",
+        "Dominica",
+        "Dominican Republic",
+        "Ecuador",
+        "Egypt",
+        "El Salvador",
+        "Equatorial Guinea",
+        "Eritrea",
+        "Estonia",
+        'Eswatini (fmr. "Swaziland")',
+        "Ethiopia",
+        "Fiji",
+        "Finland",
+        "France",
+        "Gabon",
+        "Gambia",
+        "Georgia",
+        "Germany",
+        "Ghana",
+        "Greece",
+        "Grenada",
+        "Guatemala",
+        "Guinea",
+        "Guinea-Bissau",
+        "Guyana",
+        "Haiti",
+        "Holy See (Vatican City)",
+        "Honduras",
+        "Hungary",
+        "Iceland",
+        "India",
+        "Indonesia",
+        "Iran",
+        "Iraq",
+        "Ireland",
+        "Israel",
+        "Italy",
+        "Jamaica",
+        "Japan",
+        "Jordan",
+        "Kazakhstan",
+        "Kenya",
+        "Kiribati",
+        "Korea (North)",
+        "Korea (South)",
+        "Kuwait",
+        "Kyrgyzstan",
+        "Laos",
+        "Latvia",
+        "Lebanon",
+        "Lesotho",
+        "Liberia",
+        "Libya",
+        "Liechtenstein",
+        "Lithuania",
+        "Luxembourg",
+        "Madagascar",
+        "Malawi",
+        "Malaysia",
+        "Maldives",
+        "Mali",
+        "Malta",
+        "Marshall Islands",
+        "Mauritania",
+        "Mauritius",
+        "Mexico",
+        "Micronesia",
+        "Moldova",
+        "Monaco",
+        "Mongolia",
+        "Montenegro",
+        "Morocco",
+        "Mozambique",
+        "Myanmar (Burma)",
+        "Namibia",
+        "Nauru",
+        "Nepal",
+        "Netherlands",
+        "New Zealand",
+        "Nicaragua",
+        "Niger",
+        "Nigeria",
+        "North Macedonia",
+        "Norway",
+        "Oman",
+        "Pakistan",
+        "Palau",
+        "Palestine State",
+        "Panama",
+        "Papua New Guinea",
+        "Paraguay",
+        "Peru",
+        "Philippines",
+        "Poland",
+        "Portugal",
+        "Qatar",
+        "Romania",
+        "Russia",
+        "Rwanda",
+        "Saint Kitts and Nevis",
+        "Saint Lucia",
+        "Saint Vincent and the Grenadines",
+        "Samoa",
+        "San Marino",
+        "Sao Tome and Principe",
+        "Saudi Arabia",
+        "Senegal",
+        "Serbia",
+        "Seychelles",
+        "Sierra Leone",
+        "Singapore",
+        "Slovakia",
+        "Slovenia",
+        "Solomon Islands",
+        "Somalia",
+        "South Africa",
+        "South Sudan",
+        "Spain",
+        "Sri Lanka",
+        "Sudan",
+        "Suriname",
+        "Sweden",
+        "Switzerland",
+        "Syria",
+        "Tajikistan",
+        "Tanzania",
+        "Thailand",
+        "Timor-Leste",
+        "Togo",
+        "Tonga",
+        "Trinidad and Tobago",
+        "Tunisia",
+        "Turkey",
+        "Turkmenistan",
+        "Tuvalu",
+        "Uganda",
+        "Ukraine",
+        "United Arab Emirates",
+        "United Kingdom",
+        "United States of America",
+        "Uruguay",
+        "Uzbekistan",
+        "Vanuatu",
+        "Venezuela",
+        "Vietnam",
+        "Yemen",
+        "Zambia",
+        "Zimbabwe",
       ],
     },
     {
@@ -674,12 +847,12 @@ function DetailsInput() {
 
     const address = hasAddressData
       ? {
-        street: formData.street || null,
-        city: formData.city || null,
-        state: formData.state || null,
-        country: formData.country || null,
-        zipcode: formData.zipcode || null,
-      }
+          street: formData.street || null,
+          city: formData.city || null,
+          state: formData.state || null,
+          country: formData.country || null,
+          zipcode: formData.zipcode || null,
+        }
       : null;
 
     const educationFields = Object.keys(formData.education);
@@ -689,17 +862,17 @@ function DetailsInput() {
 
     const education = hasEducationData
       ? {
-        pg_course_name: formData.education.pg_course_name || null,
-        pg_college: formData.education.pg_college || null,
-        pg_university: formData.education.pg_university || null,
-        pg_from_date: formData.education.pg_from_date || null,
-        pg_to_date: formData.education.pg_to_date || null,
-        ug_course_name: formData.education.ug_course_name || null,
-        ug_college: formData.education.ug_college || null,
-        ug_university: formData.education.ug_university || null,
-        ug_from_date: formData.education.ug_from_date || null,
-        ug_to_date: formData.education.ug_to_date || null,
-      }
+          pg_course_name: formData.education.pg_course_name || null,
+          pg_college: formData.education.pg_college || null,
+          pg_university: formData.education.pg_university || null,
+          pg_from_date: formData.education.pg_from_date || null,
+          pg_to_date: formData.education.pg_to_date || null,
+          ug_course_name: formData.education.ug_course_name || null,
+          ug_college: formData.education.ug_college || null,
+          ug_university: formData.education.ug_university || null,
+          ug_from_date: formData.education.ug_from_date || null,
+          ug_to_date: formData.education.ug_to_date || null,
+        }
       : null;
 
     const experiences = formData.experience
@@ -766,21 +939,27 @@ function DetailsInput() {
         let successMessage = "";
 
         // Different API calls based on source
-        if (source === 'middleman') {
+        if (source === "middleman") {
           // For MiddleManRecords - approve contact
           response = await axios.put(
             `http://localhost:8000/api/update-contact/${apiPayload.contact_id}?contact_status=approved&event_verified=true&userId=${id}`,
             apiPayload
           );
-          successMessage = `${apiPayload.name || initialData.name} has been successfully verified and added to contacts.`;
+          successMessage = `${
+            apiPayload.name || initialData.name
+          } has been successfully verified and added to contacts.`;
           console.log("MiddleMan Update response:", response);
-        } else if (source === 'userassignments') {
+        } else if (source === "userassignments") {
           // For UserAssignments - update as pending
           response = await axios.put(
             `http://localhost:8000/api/update-contact/${apiPayload.contact_id}?event_verified=false&contact_status=pending&userId=${id}`,
             apiPayload
           );
-          successMessage = successCallback?.message || `${apiPayload.name || initialData.name} has been successfully updated.`;
+          successMessage =
+            successCallback?.message ||
+            `${
+              apiPayload.name || initialData.name
+            } has been successfully updated.`;
           console.log("UserAssignments Update response:", response);
         }
 
@@ -789,22 +968,24 @@ function DetailsInput() {
 
         // Navigate back with success state after a delay
         setTimeout(() => {
-          if (source === 'userassignments' && successCallback) {
+          if (source === "userassignments" && successCallback) {
             // Pass success info back to parent
             navigate(-1, {
               state: {
                 fromDetailsInput: true,
                 success: true,
                 message: successMessage,
-                refreshData: successCallback.refreshData
-              }
+                refreshData: successCallback.refreshData,
+              },
             });
           } else {
             navigate(-1);
           }
         }, 500);
-
-      } else if (isAddMode && !initialData || isAddMode && initialData == null) {
+      } else if (
+        (isAddMode && !initialData) ||
+        (isAddMode && initialData == null)
+      ) {
         if (source == "admin") {
           let response;
           let successMessage = "";
@@ -812,7 +993,9 @@ function DetailsInput() {
             `http://localhost:8000/api/create-contact-by-admin/?contact_status=approved&event_verified=true`,
             apiPayload
           );
-          successMessage = `${apiPayload.name || initialData.name} has been successfully added to contacts.`;
+          successMessage = `${
+            apiPayload.name || initialData.name
+          } has been successfully added to contacts.`;
           console.log("admin Update response:", response);
           showAlert("success", successMessage);
           setTimeout(() => {
@@ -828,7 +1011,7 @@ function DetailsInput() {
 
   // Handle assign to user with alerts
   const handleAssignToUser = async () => {
-    if (source === 'middleman' && initialData && currentUserId) {
+    if (source === "middleman" && initialData && currentUserId) {
       try {
         const response = await axios.post(`http://localhost:8000/api/assign/`, {
           assigned_by: currentUserId,
@@ -838,7 +1021,10 @@ function DetailsInput() {
         console.log("Assign to user response:", response.data);
 
         // Show success alert
-        showAlert("success", `${initialData.name} has been successfully assigned to user.`);
+        showAlert(
+          "success",
+          `${initialData.name} has been successfully assigned to user.`
+        );
 
         // Navigate back after showing alert
         setTimeout(() => {
@@ -972,25 +1158,25 @@ function DetailsInput() {
       event_location: firstEvent.event_location || "",
       experience:
         Array.isArray(initialData.experiences) &&
-          initialData.experiences.length > 0
+        initialData.experiences.length > 0
           ? initialData.experiences.map((exp) => ({
-            job_title: exp.job_title || "",
-            company: exp.company || "",
-            department: exp.department || "",
-            from_date: formatDate(exp.from_date),
-            to_date: formatDate(exp.to_date),
-            company_skills: exp.company_skills || "",
-          }))
+              job_title: exp.job_title || "",
+              company: exp.company || "",
+              department: exp.department || "",
+              from_date: formatDate(exp.from_date),
+              to_date: formatDate(exp.to_date),
+              company_skills: exp.company_skills || "",
+            }))
           : [
-            {
-              job_title: "",
-              company: "",
-              department: "",
-              from_date: "",
-              to_date: "",
-              company_skills: "",
-            },
-          ],
+              {
+                job_title: "",
+                company: "",
+                department: "",
+                from_date: "",
+                to_date: "",
+                company_skills: "",
+              },
+            ],
       logger: "",
       event_verified: true,
     });
@@ -1033,8 +1219,9 @@ function DetailsInput() {
           required={field.label.includes("*")}
           readOnly={field.readOnly || false}
           rows={3}
-          className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0077b8] resize-vertical ${field.readOnly ? "bg-gray-100 cursor-not-allowed" : ""
-            }`}
+          className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0077b8] resize-vertical ${
+            field.readOnly ? "bg-gray-100 cursor-not-allowed" : ""
+          }`}
         />
       ) : field.type === "date" ? (
         <DatePicker
@@ -1078,8 +1265,9 @@ function DetailsInput() {
           onChange={handleInputChange}
           required={field.label.includes("*")}
           readOnly={field.readOnly || false}
-          className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0077b8] ${field.readOnly ? "bg-gray-100 cursor-not-allowed" : ""
-            }`}
+          className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0077b8] ${
+            field.readOnly ? "bg-gray-100 cursor-not-allowed" : ""
+          }`}
         />
       )}
     </div>
@@ -1171,41 +1359,49 @@ function DetailsInput() {
         duration={4000}
       />
 
-      {/* Header with back button */}
+      {/* Header */}
       <div className="w-full bg-white shadow-sm border-b border-gray-200">
-        <div className="flex items-center justify-between">
-          <div className="flex-shrink-0">
-            <button
-              onClick={handleBack}
-              className="px-4 py-2 ml-5 flex items-center gap-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors duration-200 font-medium"
-            >
-              <ArrowLeft size={20} />
-              Back
-            </button>
-          </div>
-
+        <div className="flex items-center justify-end">
           <div className="flex-shrink-0">
             <Header />
           </div>
         </div>
       </div>
 
+      {/* Back Button Row */}
+      <div className="bg-white px-4 md:px-6 py-4 border-b border-gray-100">
+        <div className="max-w-7xl mx-auto">
+          <button
+            onClick={handleBack}
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors duration-200 bg-gray-100 hover:bg-gray-200 px-3 py-2 rounded-lg"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span className="font-medium text-sm md:text-base">Back</span>
+          </button>
+        </div>
+      </div>
+
       {/* Main content area */}
       <div className="flex-1 overflow-auto">
-        <form onSubmit={handleSubmit} className="w-full max-w-7xl mx-auto p-6">
-          <div className="bg-white p-6 rounded-lg shadow-sm space-y-8">
-            <div className="flex flex-1 justify-between items-center pr-20">
+        <form
+          onSubmit={handleSubmit}
+          className="w-full max-w-7xl mx-auto p-4 md:p-6"
+        >
+          <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm space-y-6 md:space-y-8">
+            <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 pr-0 md:pr-20">
               <div>
-                <h2 className="text-2xl font-semibold text-gray-800 mb-2">
+                <h2 className="text-xl md:text-2xl font-semibold text-gray-800 mb-2">
                   {getTitle()}
                 </h2>
-                <p className="text-gray-600">{getDescription()}</p>
+                <p className="text-gray-600 text-sm md:text-base">
+                  {getDescription()}
+                </p>
               </div>
-              <div>
-                {isAddMode && source === 'middleman' && (
+              <div className="flex-shrink-0">
+                {isAddMode && source === "middleman" && (
                   <button
                     type="button"
-                    className="flex items-center gap-3 px-4 py-2 bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100 hover:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-opacity-50 transition-all duration-200 cursor-pointer group"
+                    className="flex items-center gap-3 px-4 py-2 bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100 hover:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-opacity-50 transition-all duration-200 cursor-pointer group w-full md:w-auto justify-center md:justify-start"
                     onClick={handleAssignToUser}
                   >
                     <div className="w-2 h-2 bg-orange-400 rounded-full group-hover:bg-orange-500 transition-colors duration-200"></div>
@@ -1441,7 +1637,9 @@ function DetailsInput() {
                           yearDropdownItemNumber={50}
                           scrollableYearDropdown
                           maxDate={new Date()}
-                          minDate={exp.from_date ? new Date(exp.from_date) : null}
+                          minDate={
+                            exp.from_date ? new Date(exp.from_date) : null
+                          }
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0077b8]"
                           calendarClassName="custom-datepicker"
                           popperClassName="custom-datepicker-popper"
