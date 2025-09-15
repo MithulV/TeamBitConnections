@@ -334,7 +334,7 @@ const FilterModal = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 md:p-4">
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
@@ -342,17 +342,19 @@ const FilterModal = ({
       />
 
       {/* Modal Content */}
-      <div className="relative z-10 w-full max-w-6xl bg-white rounded-xl shadow-2xl max-h-[90vh] overflow-hidden">
+      <div className="relative z-10 w-full max-w-6xl bg-white rounded-xl shadow-2xl max-h-[90vh] overflow-hidden flex flex-col">
         {/* Professional Header */}
-        <div className="bg-gradient-to-r from-slate-800 to-slate-900 text-white px-8 py-6">
+        <div className="bg-gradient-to-r from-slate-800 to-slate-900 text-white px-4 md:px-8 py-4 md:py-6 flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="p-2.5 bg-white/10 rounded-lg backdrop-blur-sm">
                 <Filter size={20} />
               </div>
               <div>
-                <h2 className="text-xl font-semibold">Advanced Filters</h2>
-                <p className="text-slate-300 text-sm mt-1">
+                <h2 className="text-lg md:text-xl font-semibold">
+                  Advanced Filters
+                </h2>
+                <p className="text-slate-300 text-xs md:text-sm mt-1">
                   {getActiveFilterCount() > 0
                     ? `${getActiveFilterCount()} active filters • ${
                         contacts.length
@@ -369,7 +371,7 @@ const FilterModal = ({
               {getActiveFilterCount() > 0 && (
                 <button
                   onClick={clearFilters}
-                  className="px-4 py-2 text-sm font-medium text-white bg-white/10 rounded-lg hover:bg-white/20 transition-all duration-200 backdrop-blur-sm border border-white/20"
+                  className="px-3 md:px-4 py-2 text-xs md:text-sm font-medium text-white bg-white/10 rounded-lg hover:bg-white/20 transition-all duration-200 backdrop-blur-sm border border-white/20"
                 >
                   Clear All ({getActiveFilterCount()})
                 </button>
@@ -386,8 +388,8 @@ const FilterModal = ({
         </div>
 
         {/* Filter Content */}
-        <div className="overflow-y-auto max-h-[calc(90vh-200px)] scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100">
-          <div className="p-8 space-y-8">
+        <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100">
+          <div className="p-4 md:p-8 space-y-6 md:space-y-8">
             {/* Active Filters Summary */}
             {getActiveFilterCount() > 0 && (
               <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
@@ -606,32 +608,37 @@ const FilterModal = ({
         </div>
 
         {/* Enhanced Modal Footer */}
-        <div className="bg-white border-t border-gray-200 px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-6">
+        <div className="bg-white border-t border-gray-200 px-4 md:px-8 py-4 md:py-6 flex-shrink-0">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 md:gap-6">
               <div className="text-sm text-gray-600">
-                <span className="font-semibold text-lg text-gray-900">{contacts.length.toLocaleString()}</span>
-                <span className="ml-2">contact{contacts.length !== 1 ? "s" : ""} found</span>
+                <span className="font-semibold text-lg text-gray-900">
+                  {contacts.length.toLocaleString()}
+                </span>
+                <span className="ml-2">
+                  contact{contacts.length !== 1 ? "s" : ""} found
+                </span>
               </div>
               {getActiveFilterCount() > 0 && (
                 <div className="flex items-center gap-2 px-3 py-1 bg-blue-100 rounded-full">
                   <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
                   <span className="text-xs font-medium text-blue-700">
-                    {getActiveFilterCount()} filter{getActiveFilterCount() > 1 ? "s" : ""} applied
+                    {getActiveFilterCount()} filter
+                    {getActiveFilterCount() > 1 ? "s" : ""} applied
                   </span>
                 </div>
               )}
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
               <button
                 onClick={handleClose}
-                className="px-6 py-2.5 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                className="px-6 py-3 md:py-2.5 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium text-center"
               >
                 Cancel
               </button>
               <button
                 onClick={handleClose}
-                className="px-8 py-2.5 bg-slate-800 text-white rounded-lg hover:bg-slate-900 transition-colors font-medium shadow-sm"
+                className="px-8 py-3 md:py-2.5 bg-slate-800 text-white rounded-lg hover:bg-slate-900 transition-colors font-medium shadow-sm text-center"
               >
                 Apply Filters
               </button>
@@ -1007,7 +1014,7 @@ const MiddleManHome = () => {
 
       <div className="px-6 pb-6">
         <div className="max-w-7xl mx-auto">
-          {(
+          {
             <>
               {/* Search and Filter Controls */}
               <div className="flex flex-col md:flex-row gap-4 items-center mb-6">
@@ -1116,7 +1123,7 @@ const MiddleManHome = () => {
                 </div>
               )}
             </>
-          )}
+          }
         </div>
       </div>
 
