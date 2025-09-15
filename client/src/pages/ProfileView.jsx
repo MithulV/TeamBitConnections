@@ -34,7 +34,7 @@ function ProfileView() {
   const [showExpandedHierarchy, setShowExpandedHierarchy] = useState(false);
   const [modificationHistory, setModificationHistory] = useState([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
-  
+
   const navigate = useNavigate();
   const location = useLocation();
   const { role, id } = useAuthStore();
@@ -53,7 +53,9 @@ function ProfileView() {
           return;
         }
 
-        const response = await fetch(`http://localhost:8000/api/get-modification-history/${contactId}`);
+        const response = await fetch(
+          `http://localhost:8000/api/get-modification-history/${contactId}`
+        );
         const data = await response.json();
 
         if (data.success && data.data) {
@@ -297,7 +299,7 @@ function ProfileView() {
 
   // Combine modification history with any existing dummy data
   const combinedContactHistory = [
-    ...modificationHistory.map(item => ({
+    ...modificationHistory.map((item) => ({
       id: item.id,
       type: "modification",
       modificationType: item.modification_type,
@@ -337,13 +339,15 @@ function ProfileView() {
             <X className="w-5 h-5 text-slate-300 group-hover:text-white" />
           </button>
         </div>
-        
+
         {/* Enhanced Content */}
         <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)] bg-gradient-to-br from-slate-50 to-gray-100">
           {isLoadingHistory ? (
             <div className="flex flex-col items-center justify-center py-12">
               <div className="animate-spin rounded-full h-10 w-10 border-3 border-blue-600 border-t-transparent"></div>
-              <span className="mt-4 text-gray-600 font-medium">Loading activity history...</span>
+              <span className="mt-4 text-gray-600 font-medium">
+                Loading activity history...
+              </span>
             </div>
           ) : (
             <div className="space-y-4">
@@ -354,17 +358,20 @@ function ProfileView() {
                 >
                   <div className="flex items-start gap-4">
                     {/* Enhanced Icon */}
-                    <div className={`w-14 h-14 rounded-xl flex items-center justify-center shadow-sm bg-gradient-to-br ${
-                      historyItem.type === 'modification' 
-                        ? getModificationTypeColor(historyItem.modificationType)
-                        : getContactTypeColor(historyItem.type)
-                    }`}>
-                      {historyItem.type === 'modification' 
+                    <div
+                      className={`w-14 h-14 rounded-xl flex items-center justify-center shadow-sm bg-gradient-to-br ${
+                        historyItem.type === "modification"
+                          ? getModificationTypeColor(
+                              historyItem.modificationType
+                            )
+                          : getContactTypeColor(historyItem.type)
+                      }`}
+                    >
+                      {historyItem.type === "modification"
                         ? getModificationTypeIcon(historyItem.modificationType)
-                        : getContactTypeIcon(historyItem.type)
-                      }
+                        : getContactTypeIcon(historyItem.type)}
                     </div>
-                    
+
                     <div className="flex-1 min-w-0">
                       {/* Enhanced Header */}
                       <div className="flex items-start justify-between mb-3">
@@ -375,7 +382,9 @@ function ProfileView() {
                           {historyItem.assignedTo && (
                             <div className="flex items-center gap-1 text-xs px-2 py-1 bg-blue-50 text-blue-700 rounded-full border border-blue-200">
                               <span>assigned to</span>
-                              <span className="font-semibold">{historyItem.assignedTo}</span>
+                              <span className="font-semibold">
+                                {historyItem.assignedTo}
+                              </span>
                             </div>
                           )}
                         </div>
@@ -384,7 +393,7 @@ function ProfileView() {
                           <div>{historyItem.time}</div>
                         </div>
                       </div>
-                      
+
                       {/* Enhanced Title and Description */}
                       <h4 className="font-bold text-gray-900 mb-2 text-lg group-hover:text-blue-700 transition-colors">
                         {historyItem.title}
@@ -392,14 +401,18 @@ function ProfileView() {
                       <p className="text-gray-700 leading-relaxed">
                         {historyItem.description}
                       </p>
-                      
+
                       {/* Activity Badge */}
                       <div className="mt-3 flex items-center gap-2">
-                        <span className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gradient-to-r ${
-                          historyItem.type === 'modification' 
-                            ? getModificationTypeColor(historyItem.modificationType)
-                            : getContactTypeColor(historyItem.type)
-                        }`}>
+                        <span
+                          className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gradient-to-r ${
+                            historyItem.type === "modification"
+                              ? getModificationTypeColor(
+                                  historyItem.modificationType
+                                )
+                              : getContactTypeColor(historyItem.type)
+                          }`}
+                        >
                           Activity #{combinedContactHistory.length - index}
                         </span>
                       </div>
@@ -416,62 +429,68 @@ function ProfileView() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header with clean design */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4 shadow-sm sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <button
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors duration-200"
-            onClick={handleCloseProfile}
-          >
-            <ArrowLeft className="w-5 h-5" />
-            <span className="font-medium">Back to Contacts</span>
-          </button>
+      {/* Header */}
+      <div className="bg-white border-b border-gray-200 px-4 md:px-6 py-4 shadow-sm">
+        <div className="max-w-7xl mx-auto flex items-center justify-end">
           <div className="text-sm text-gray-500">Profile View</div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
+      <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8">
+        {/* Back Button Row */}
+        <div className="flex items-center mb-6">
+          <button
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors duration-200 bg-gray-100 hover:bg-gray-200 px-3 py-2 rounded-lg"
+            onClick={handleCloseProfile}
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span className="font-medium text-sm md:text-base">
+              Back to Contacts
+            </span>
+          </button>
+        </div>
+
         {/* Main Profile Card - Minimal and Professional */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-8 overflow-hidden">
-          <div className="p-8 border-l-4 border-l-blue-500">
-            <div className="flex flex-col md:flex-row gap-6 items-start">
-              <div className="relative">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6 md:mb-8 overflow-hidden">
+          <div className="p-6 md:p-8 border-l-4 border-l-blue-500">
+            <div className="flex flex-col md:flex-row gap-4 md:gap-6 items-start">
+              <div className="relative mx-auto md:mx-0">
                 <div
-                  className="w-24 h-24 rounded-full shadow-sm flex items-center justify-center text-2xl font-bold text-white"
+                  className="w-20 h-20 md:w-24 md:h-24 rounded-full shadow-sm flex items-center justify-center text-xl md:text-2xl font-bold text-white"
                   style={{ backgroundColor: contactData.avatarColor }}
                 >
                   {contactData.initials}
                 </div>
-                <div className="absolute -bottom-1 -right-1 bg-green-500 w-6 h-6 rounded-full border-2 border-white"></div>
+                <div className="absolute -bottom-1 -right-1 bg-green-500 w-5 h-5 md:w-6 md:h-6 rounded-full border-2 border-white"></div>
               </div>
 
-              <div className="flex-1">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <div className="flex items-center gap-3 mb-2">
-                      <h1 className="text-2xl font-bold text-gray-900">
+              <div className="flex-1 text-center md:text-left">
+                <div className="flex flex-col md:flex-row items-center md:items-start justify-between gap-4">
+                  <div className="flex-1">
+                    <div className="flex flex-col md:flex-row items-center md:items-start gap-2 md:gap-3 mb-2">
+                      <h1 className="text-xl md:text-2xl font-bold text-gray-900">
                         {contactData.name}
                       </h1>
                       {contactData.contactStatus.verified && (
                         <CheckCircle className="text-blue-500 w-5 h-5" />
                       )}
                     </div>
-                    <p className="text-lg text-gray-600 mb-2">
+                    <p className="text-base md:text-lg text-gray-600 mb-2">
                       {contactData.title}
                     </p>
-                    <div className="flex items-center gap-4 text-gray-500 mb-4">
-                      <span className="flex items-center gap-1">
+                    <div className="flex flex-col md:flex-row items-center md:items-start gap-2 md:gap-4 text-gray-500 mb-4">
+                      <span className="flex items-center gap-1 text-sm md:text-base">
                         <Briefcase className="w-4 h-4" />
                         {contactData.company}
                       </span>
-                      <span className="flex items-center gap-1">
+                      <span className="flex items-center gap-1 text-sm md:text-base">
                         <MapPin className="w-4 h-4" />
                         {contactData.location}
                       </span>
                     </div>
 
                     {/* Social links */}
-                    <div className="flex gap-3 mb-6">
+                    <div className="flex justify-center md:justify-start gap-3 mb-4 md:mb-6">
                       {contactData.linkedinUrl && (
                         <a
                           href={contactData.linkedinUrl}
@@ -565,56 +584,67 @@ function ProfileView() {
                   <Activity className="w-5 h-5 text-indigo-600" />
                   Recent Activity Timeline
                 </h2>
-                <p className="text-sm text-gray-600 mt-1">Latest contact interactions and updates</p>
+                <p className="text-sm text-gray-600 mt-1">
+                  Latest contact interactions and updates
+                </p>
               </div>
               <div className="p-6">
                 {isLoadingHistory ? (
                   <div className="flex items-center justify-center py-8">
                     <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600"></div>
-                    <span className="ml-2 text-gray-600">Loading recent activity...</span>
+                    <span className="ml-2 text-gray-600">
+                      Loading recent activity...
+                    </span>
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {combinedContactHistory.slice(0, 3).map((historyItem, index) => (
-                      <div
-                        key={`recent-${historyItem.type}-${historyItem.id}`}
-                        className="flex items-start gap-4 p-4 border border-gray-100 rounded-xl hover:bg-gray-50 hover:border-gray-200 transition-all duration-200 group"
-                      >
-                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-lg flex-shrink-0 shadow-sm bg-gradient-to-br ${
-                          historyItem.type === 'modification' 
-                            ? getModificationTypeColor(historyItem.modificationType)
-                            : getContactTypeColor(historyItem.type)
-                        }`}>
-                          {historyItem.type === 'modification' 
-                            ? getModificationTypeIcon(historyItem.modificationType)
-                            : getContactTypeIcon(historyItem.type)
-                          }
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm font-semibold text-gray-800 bg-gray-100 px-2 py-1 rounded-full">
-                                {historyItem.initiator}
-                              </span>
-                              {historyItem.assignedTo && (
-                                <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-full">
-                                  → {historyItem.assignedTo}
-                                </span>
-                              )}
-                            </div>
-                            <span className="text-xs text-gray-500">
-                              {historyItem.date} • {historyItem.time}
-                            </span>
+                    {combinedContactHistory
+                      .slice(0, 3)
+                      .map((historyItem, index) => (
+                        <div
+                          key={`recent-${historyItem.type}-${historyItem.id}`}
+                          className="flex items-start gap-4 p-4 border border-gray-100 rounded-xl hover:bg-gray-50 hover:border-gray-200 transition-all duration-200 group"
+                        >
+                          <div
+                            className={`w-12 h-12 rounded-xl flex items-center justify-center text-lg flex-shrink-0 shadow-sm bg-gradient-to-br ${
+                              historyItem.type === "modification"
+                                ? getModificationTypeColor(
+                                    historyItem.modificationType
+                                  )
+                                : getContactTypeColor(historyItem.type)
+                            }`}
+                          >
+                            {historyItem.type === "modification"
+                              ? getModificationTypeIcon(
+                                  historyItem.modificationType
+                                )
+                              : getContactTypeIcon(historyItem.type)}
                           </div>
-                          <h4 className="font-semibold text-gray-900 mb-1 group-hover:text-indigo-700 transition-colors">
-                            {historyItem.title}
-                          </h4>
-                          <p className="text-gray-600 text-sm leading-relaxed">
-                            {historyItem.description}
-                          </p>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-semibold text-gray-800 bg-gray-100 px-2 py-1 rounded-full">
+                                  {historyItem.initiator}
+                                </span>
+                                {historyItem.assignedTo && (
+                                  <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-full">
+                                    → {historyItem.assignedTo}
+                                  </span>
+                                )}
+                              </div>
+                              <span className="text-xs text-gray-500">
+                                {historyItem.date} • {historyItem.time}
+                              </span>
+                            </div>
+                            <h4 className="font-semibold text-gray-900 mb-1 group-hover:text-indigo-700 transition-colors">
+                              {historyItem.title}
+                            </h4>
+                            <p className="text-gray-600 text-sm leading-relaxed">
+                              {historyItem.description}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
                   </div>
                 )}
                 <button
@@ -622,7 +652,8 @@ function ProfileView() {
                   className="w-full mt-6 py-3 text-center bg-gradient-to-r from-indigo-50 to-purple-50 hover:from-indigo-100 hover:to-purple-100 transition-all duration-200 rounded-xl font-semibold text-indigo-700 border border-indigo-200 hover:border-indigo-300 flex items-center justify-center gap-2"
                 >
                   <Clock className="w-4 h-4" />
-                  View Complete Timeline ({combinedContactHistory.length} activities)
+                  View Complete Timeline ({combinedContactHistory.length}{" "}
+                  activities)
                 </button>
               </div>
             </div>
@@ -724,10 +755,12 @@ function ProfileView() {
                               {event.event_name}
                             </h3>
                             <p className="text-amber-700 font-medium mb-1">
-                              {event.event_role} • {event.event_held_organization}
+                              {event.event_role} •{" "}
+                              {event.event_held_organization}
                             </p>
                             <p className="text-gray-600 text-sm">
-                              {formatDate(event.event_date)} • {event.event_location}
+                              {formatDate(event.event_date)} •{" "}
+                              {event.event_location}
                             </p>
                             {event.verified && (
                               <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 mt-2">
@@ -773,19 +806,21 @@ function ProfileView() {
               </div>
               <div className="p-6">
                 <div className="space-y-4">
-                  {Object.entries(contactData.contactInfo).map(([key, value]) => (
-                    <div
-                      key={key}
-                      className="flex justify-between items-center py-2 border-b border-gray-100 last:border-b-0"
-                    >
-                      <p className="text-sm text-gray-600 capitalize">
-                        {key.replace(/([A-Z])/g, " $1").trim()}
-                      </p>
-                      <p className="font-medium text-gray-900 text-right">
-                        {value}
-                      </p>
-                    </div>
-                  ))}
+                  {Object.entries(contactData.contactInfo).map(
+                    ([key, value]) => (
+                      <div
+                        key={key}
+                        className="flex justify-between items-center py-2 border-b border-gray-100 last:border-b-0"
+                      >
+                        <p className="text-sm text-gray-600 capitalize">
+                          {key.replace(/([A-Z])/g, " $1").trim()}
+                        </p>
+                        <p className="font-medium text-gray-900 text-right">
+                          {value}
+                        </p>
+                      </div>
+                    )
+                  )}
                 </div>
               </div>
             </div>
@@ -802,7 +837,9 @@ function ProfileView() {
                 <div className="p-6">
                   <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
                     <div className="space-y-2 text-gray-700">
-                      <p className="font-medium">{contactData.address.street}</p>
+                      <p className="font-medium">
+                        {contactData.address.street}
+                      </p>
                       <p>
                         {contactData.address.city}, {contactData.address.state}
                       </p>
