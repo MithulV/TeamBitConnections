@@ -752,7 +752,8 @@ export const UpdateContact = async (req, res) => {
   // Validate and sanitize ID fields to prevent empty string issues
   const validContactId = contact_id && contact_id !== "" ? contact_id : null;
   const validEventId = event_id && event_id !== "" ? event_id : null;
-  const validAssignmentId = assignment_id && assignment_id !== "" ? assignment_id : null;
+  const validAssignmentId =
+    assignment_id && assignment_id !== "" ? assignment_id : null;
 
   console.log("UpdateContact received IDs:", {
     contact_id,
@@ -760,7 +761,7 @@ export const UpdateContact = async (req, res) => {
     event_id,
     validEventId,
     assignment_id,
-    validAssignmentId
+    validAssignmentId,
   });
 
   try {
@@ -1087,7 +1088,8 @@ export const UpdateContact = async (req, res) => {
         }
       }
       // Check if the event_id has an assignment first
-      const eventIdValue = validEventId && validEventId !== "" ? parseInt(validEventId, 10) : null;
+      const eventIdValue =
+        validEventId && validEventId !== "" ? parseInt(validEventId, 10) : null;
       const [eventAssignment] = await db`
     SELECT * FROM user_assignments 
     WHERE event_id = ${eventIdValue} 
