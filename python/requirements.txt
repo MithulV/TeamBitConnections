@@ -1,0 +1,8 @@
+Flask==3.0.3
+flask-cors==4.0.0
+paddlepaddle==3.0.0
+paddleocr
+google-generativeai
+werkzeug==3.0.4
+Pillow>=11.0.0
+python-dotenv

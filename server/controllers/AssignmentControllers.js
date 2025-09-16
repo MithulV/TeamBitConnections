@@ -181,33 +181,6 @@ export const getAssignedByUser = async (req, res) => {
     }
 };
 
-export const getAssignmentForEvent = async (req, res) => {
-    const { eventId } = req.params;
-
-    try {
-        const [assignedUser] = await db`
-            SELECT 
-                ua.id AS assignment_id,
-                ua.assigned_by,
-                assignee.contact_id AS assigned_to_id,
-                assignee.name AS assigned_to_name,
-                assignee.email_address AS assigned_to_email
-            FROM user_assignments ua
-            JOIN contact assignee ON ua.assigned_to = assignee.contact_id
-            WHERE ua.event_id = ${eventId}
-        `;
-
-        if (!assignedUser) {
-            return res.status(404).json({ message: "This event has not been assigned to any user." });
-        }
-
-        return res.status(200).json({ data: assignedUser });
-    } catch (err) {
-        console.error("Error fetching assignment for event:", err.message);
-        return res.status(500).json({ message: "Internal Server Error", error: err.message });
-    }
-};
-
 /**
  * @description Revoke (delete) an event assignment by its ID.
  * @route DELETE /api/assignments/:assignmentId
