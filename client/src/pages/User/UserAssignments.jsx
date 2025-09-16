@@ -221,8 +221,8 @@ function UserAssignments() {
       try {
         switch (userToDelete.type) {
           case "assignment":
-            await axios.delete(
-              `http://localhost:8000/api/delete-assignment/${userToDelete.assignment_id}`
+            await api.delete(
+              `/api/delete-assignment/${userToDelete.assignment_id}`
             );
             setData((prevData) =>
               prevData.filter((user) => user.contact_id !== userToDelete.id)
@@ -234,8 +234,8 @@ function UserAssignments() {
             break;
 
           case "contact":
-            await axios.delete(
-              `http://localhost:8000/api/delete-contact/${userToDelete.id}`
+            await api.delete(
+              `/api/delete-contact/${userToDelete.id}`
             );
             setData((prevData) =>
               prevData.filter((user) => user.contact_id !== userToDelete.id)
