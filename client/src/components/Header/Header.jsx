@@ -32,20 +32,22 @@ function Header() {
 
   return (
     <div className="relative md:sticky border-b-2 border-b-gray-200  top-0 z-50 px-8 py-5 bg-white">
-      <div className="flex items-center justify-end max-w-7xl mx-auto">
+      <div className="flex items-center justify-end mx-auto">
         {/* User Info - Hidden on mobile, visible on desktop */}
-        <div className="hidden md:flex items-center gap-4">
-          <div className="text-right">
-            <p className="text-lg font-semibold text-gray-800 ">
+        <div className="hidden md:flex items-center gap-4 min-w-0 flex-shrink-0">
+          <div className="text-right min-w-0 flex-shrink-0">
+            <p className="text-lg font-semibold text-gray-800 whitespace-nowrap overflow-hidden text-ellipsis">
               {email || "user@gmail.com"}
             </p>
-            <p className="text-sm text-gray-500">Welcome back! 👋</p>
+            <p className="text-sm text-gray-500 whitespace-nowrap">Welcome back! 👋</p>
           </div>
-          <img
-            src={Avatar}
-            alt="user profile"
-            className="w-12 h-12 rounded-full object-cover shadow-sm"
-          />
+          <div className="w-12 h-12 flex-shrink-0">
+            <img
+              src={Avatar}
+              alt="user profile"
+              className="w-full h-full rounded-full object-cover shadow-sm"
+            />
+          </div>
         </div>
       </div>
     </div>
