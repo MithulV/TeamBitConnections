@@ -28,7 +28,7 @@ import {
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../store/AuthStore";
-
+import api from "../../utils/axios.js";
 function ProfileView() {
   const [showFullHistory, setShowFullHistory] = useState(false);
   const [showExpandedHierarchy, setShowExpandedHierarchy] = useState(false);
@@ -42,6 +42,7 @@ function ProfileView() {
   // Access the state object passed during navigation
   const contact = location.state || {};
   console.log(contact);
+  console.log("education",contact.education);
 
   // Fetch modification history from API
   useEffect(() => {
@@ -53,10 +54,8 @@ function ProfileView() {
           return;
         }
 
-        const response = await fetch(
-          `http://localhost:8000/api/get-modification-history/${contactId}`
-        );
-        const data = await response.json();
+        const response = await api.get(`/api/get-modification-history/${contactId}`);
+        const data = response.data;
 
         if (data.success && data.data) {
           setModificationHistory(data.data);
@@ -241,29 +240,29 @@ function ProfileView() {
           }`,
         }))
       : [],
-    education: contact.education
+    education: contact
       ? [
-          ...(contact.education.pg_course_name
+          ...(contact.pg_course_name
             ? [
                 {
                   level: "Postgraduate",
-                  degree: contact.education.pg_course_name,
-                  institution: `${contact.education.pg_college}, ${contact.education.pg_university}`,
+                  degree: contact.pg_course_name,
+                  institution: `${contact.pg_college}, ${contact.pg_university}`,
                   period: `${formatDate(
-                    contact.education.pg_from_date
-                  )} - ${formatDate(contact.education.pg_to_date)}`,
+                    contact.pg_from_date
+                  )} - ${formatDate(contact.pg_to_date)}`,
                 },
               ]
             : []),
-          ...(contact.education.ug_course_name
+          ...(contact.ug_course_name
             ? [
                 {
                   level: "Undergraduate",
-                  degree: contact.education.ug_course_name,
-                  institution: `${contact.education.ug_college}, ${contact.education.ug_university}`,
+                  degree: contact.ug_course_name,
+                  institution: `${contact.ug_college}, ${contact.ug_university}`,
                   period: `${formatDate(
-                    contact.education.ug_from_date
-                  )} - ${formatDate(contact.education.ug_to_date)}`,
+                    contact.ug_from_date
+                  )} - ${formatDate(contact.ug_to_date)}`,
                 },
               ]
             : []),
