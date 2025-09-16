@@ -10,10 +10,10 @@ import {
 import { useNavigate, useLocation } from "react-router-dom";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import axios from "axios";
 import Header from "../Header/Header";
 import Alert from "../Alert/Alert";
 import { useAuthStore } from "../../store/AuthStore";
+import api from "../../utils/axios";
 
 // Custom styles for DatePicker
 const datePickerStyles = `
@@ -941,8 +941,8 @@ function DetailsInput() {
         // Different API calls based on source
         if (source === "middleman") {
           // For MiddleManRecords - approve contact
-          response = await axios.put(
-            `http://localhost:8000/api/update-contact/${apiPayload.contact_id}?contact_status=approved&event_verified=true&userId=${id}`,
+          response = await api.put(
+            `/api/update-contact/${apiPayload.contact_id}?contact_status=approved&event_verified=true&userId=${id}`,
             apiPayload
           );
           successMessage = `${
@@ -951,8 +951,8 @@ function DetailsInput() {
           console.log("MiddleMan Update response:", response);
         } else if (source === "userassignments") {
           // For UserAssignments - update as pending
-          response = await axios.put(
-            `http://localhost:8000/api/update-contact/${apiPayload.contact_id}?event_verified=false&contact_status=pending&userId=${id}`,
+          response = await api.put(
+            `/api/update-contact/${apiPayload.contact_id}?event_verified=false&contact_status=pending&userId=${id}`,
             apiPayload
           );
           successMessage =
@@ -989,8 +989,8 @@ function DetailsInput() {
         if (source == "admin") {
           let response;
           let successMessage = "";
-          response = await axios.post(
-            `http://localhost:8000/api/create-contact-by-admin/?contact_status=approved&event_verified=true`,
+          response = await api.post(
+            `/api/create-contact-by-admin/?contact_status=approved&event_verified=true`,
             apiPayload
           );
           successMessage = `${
@@ -1013,7 +1013,7 @@ function DetailsInput() {
   const handleAssignToUser = async () => {
     if (source === "middleman" && initialData && currentUserId) {
       try {
-        const response = await axios.post(`http://localhost:8000/api/assign/`, {
+        const response = await api.post(`/api/assign/`, {
           assigned_by: currentUserId,
           assigned_to: initialData.events[0]?.created_by,
           event_id: initialData.events[0]?.event_id,

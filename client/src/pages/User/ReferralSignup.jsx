@@ -1,8 +1,8 @@
 // ReferralSignup.jsx
 import { useState, useEffect, useRef } from "react";
 import { useSearchParams, useLocation, useNavigate } from "react-router-dom";
-import axios from "axios";
 import Alert from "../../components/Alert/Alert";
+import api from "../../utils/axios";
 
 function ReferralSignup() {
   const [searchParams] = useSearchParams();
@@ -65,8 +65,8 @@ function ReferralSignup() {
     const setupHeartbeat = () => {
       heartbeatInterval.current = setInterval(() => {
         if (!hasRegistered.current && linkValid) {
-          axios
-            .post("http://localhost:8000/api/invitation-heartbeat", {
+          api
+            .post("/api/invitation-heartbeat", {
               token: referralToken,
             })
             .catch((error) => {
@@ -127,8 +127,8 @@ function ReferralSignup() {
     }
 
     try {
-      const response = await axios.get(
-        `http://localhost:8000/api/validate-referral/${tokenToValidate}`
+      const response = await api.get(
+        `/api/validate-referral/${tokenToValidate}`
       );
 
       if (response.data.valid) {
@@ -193,8 +193,8 @@ function ReferralSignup() {
     try {
       const tokenForRegistration = getReferralToken();
 
-      const response = await axios.post(
-        "http://localhost:8000/api/complete-registration",
+      const response = await api.post(
+        "/api/complete-registration",
         {
           token: tokenForRegistration,
           email: invitationData.inviteeEmail,

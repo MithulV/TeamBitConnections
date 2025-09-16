@@ -408,57 +408,68 @@ function MiddleManRecords() {
           </div>
 
           {activeView === "formData" ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {data.map((participant, index) => (
-                <BasicDetailCard
-                  key={participant.contact_id || index}
-                  name={participant.name}
-                  phone={participant.phone_number}
-                  email={participant.email_address}
-                  event={participant.events?.[0]?.event_name || "N/A"}
-                  role={participant.events?.[0]?.event_role || "N/A"}
-                  date={format(
-                    parseISO(participant.created_at),
-                    "MMMM dd, yyyy"
-                  )}
-                  org={
-                    participant.events?.[0]?.event_held_organization || "N/A"
-                  }
-                  location={participant.events?.[0]?.event_location || "N/A"}
-                  profileImage={participant.profileImage || Avatar}
-                  onDelete={() => handleDeleteClick(participant.contact_id)}
-                  onType={() => onAdd(participant.contact_id)}
-                  editOrAdd={"add"}
-                  assignedOn={undefined}
-                />
-              ))}
-
-              {data.length === 0 && (
-                <div className="col-span-full text-center py-16">
-                  <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mb-4">
-                    <svg
-                      className="w-8 h-8 text-gray-400"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"
-                      />
-                    </svg>
-                  </div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">
-                    No unverified contacts found
-                  </h3>
-                  <p className="text-gray-500 mb-6 max-w-md mx-auto">
-                    All contacts have been verified or there are no pending
-                    submissions to review.
-                  </p>
+            <div>
+              <div className="bg-white rounded-lg p-4 mb-6 shadow-sm border border-gray-200">
+                <div className="flex items-center">
+                  <div className="w-3 h-3 bg-orange-400 rounded-full mr-2"></div>
+                  <span className="text-sm text-gray-600">
+                    {data.length} Records to be Verified
+                  </span>
                 </div>
-              )}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {data.map((participant, index) => (
+                  <BasicDetailCard
+                    key={participant.contact_id || index}
+                    name={participant.name}
+                    phone={participant.phone_number}
+                    email={participant.email_address}
+                    event={participant.events?.[0]?.event_name || "N/A"}
+                    role={participant.events?.[0]?.event_role || "N/A"}
+                    date={format(
+                      parseISO(participant.created_at),
+                      "MMMM dd, yyyy"
+                    )}
+                    org={
+                      participant.events?.[0]?.event_held_organization || "N/A"
+                    }
+                    location={participant.events?.[0]?.event_location || "N/A"}
+                    profileImage={participant.profileImage || Avatar}
+                    onDelete={() => handleDeleteClick(participant.contact_id)}
+                    onType={() => onAdd(participant.contact_id)}
+                    editOrAdd={"add"}
+                    assignedOn={undefined}
+                  />
+                ))}
+
+                {data.length === 0 && (
+                  <div className="col-span-full text-center py-16">
+                    <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mb-4">
+                      <svg
+                        className="w-8 h-8 text-gray-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"
+                        />
+                      </svg>
+                    </div>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                      No unverified contacts found
+                    </h3>
+                    <p className="text-gray-500 mb-6 max-w-md mx-auto">
+                      All contacts have been verified or there are no pending
+                      submissions to review.
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
           ) : activeView === "visitingCards" ? (
             <div>
