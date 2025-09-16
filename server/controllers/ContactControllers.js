@@ -1,11 +1,6 @@
 import db from "../src/config/db.js";
 import { logContactModification } from "./ModificationHistoryControllers.js";
-import {
-  getModificationHistory,
-  getAllModificationHistory,
-  getTotalModificationHistoryCount,
-} from "./ModificationHistoryControllers.js";
-
+// In admin
 export const GetAllContact = async (req, res) => {
   const { limit } = req.query;
   const limitValue = limit ? parseInt(limit, 10) : null;
@@ -185,7 +180,7 @@ export const GetAllContact = async (req, res) => {
     });
   }
 };
-
+// In admin and User
 export const CreateContact = async (req, res) => {
   const {
     name,
@@ -433,7 +428,7 @@ export const CreateContact = async (req, res) => {
     });
   }
 };
-
+// In User
 export const GetContacts = async (req, res) => {
   try {
     const { userId } = req.params;
@@ -468,7 +463,7 @@ ORDER BY
     });
   }
 };
-
+// In MiddleMan
 export const GetContactsByCategory = async (req, res) => {
   try {
     const { category } = req.query;
@@ -500,7 +495,7 @@ export const GetContactsByCategory = async (req, res) => {
     });
   }
 };
-
+// In MiddleMan
 export const GetUnVerifiedContacts = async (req, res) => {
   try {
     const contactsWithEvents = await db`
@@ -533,7 +528,7 @@ export const GetUnVerifiedContacts = async (req, res) => {
     });
   }
 };
-
+// In User
 export const UpdateContactAndEvents = async (req, res) => {
   console.log("here");
   const { id, userId } = req.params;
@@ -663,7 +658,7 @@ export const UpdateContactAndEvents = async (req, res) => {
     });
   }
 };
-
+// In MiddleMan and Admin
 export const UpdateContact = async (req, res) => {
   const { contact_id } = req.params || {};
   const { event_verified, contact_status, userId } = req.query;
@@ -1026,7 +1021,7 @@ export const UpdateContact = async (req, res) => {
     });
   }
 };
-
+// In User delete and in MiddleMan reject
 export const DeleteContact = async (req, res) => {
   const { contactId } = req.params;
   const { userType = null, eventId = null } = req.query;
@@ -1129,11 +1124,10 @@ export const DeleteContact = async (req, res) => {
     }
   }
 };
-
+// In DeleteContact controller as a helper function
 const performCompleteDeletion = async (transaction, contactId, eventId) => {
   await transaction`DELETE FROM event WHERE contact_id = ${contactId} AND event_id=${eventId}`;
 };
-
 // Separate controller for MiddleManHome verified contact deletion
 export const DeleteVerifiedContact = async (req, res) => {
   const { contactId } = req.params;
@@ -1205,7 +1199,7 @@ export const DeleteVerifiedContact = async (req, res) => {
     }
   }
 };
-
+// In User
 export const AddEventToExistingContact = async (req, res) => {
   const { contactId, userId } = req.params;
   const {
@@ -1261,7 +1255,7 @@ export const AddEventToExistingContact = async (req, res) => {
     });
   }
 };
-
+// In User 
 export const SearchContacts = async (req, res) => {
   const { q } = req.query;
 
@@ -1312,620 +1306,3 @@ export const SearchContacts = async (req, res) => {
   }
 };
 
-export const GetFilteredContacts = async (req, res) => {
-  const queryParams = req.query;
-
-  const normalizeParam = (param) => {
-    if (!param) return null;
-    return Array.isArray(param) ? param : [param];
-  };
-
-  const {
-    name,
-    phone_number,
-    email_address,
-    created_by,
-    created_from,
-    created_to,
-    dob_from,
-    dob_to,
-    education_from_year,
-    education_to_year,
-    experience_from_year,
-    experience_to_year,
-    event_year,
-    address_zipcode,
-    address_street,
-    page = 1,
-    limit = 20,
-    sort_by = "name",
-    sort_order = "ASC",
-  } = queryParams;
-
-  const category = normalizeParam(queryParams.category);
-  const gender = normalizeParam(queryParams.gender);
-  const nationality = normalizeParam(queryParams.nationality);
-  const marital_status = normalizeParam(queryParams.marital_status);
-  const skills = normalizeParam(queryParams.skills);
-  const address_country = normalizeParam(queryParams.address_country);
-  const address_state = normalizeParam(queryParams.address_state);
-  const address_city = normalizeParam(queryParams.address_city);
-  const pg_course_name = normalizeParam(queryParams.pg_course_name);
-  const pg_college = normalizeParam(queryParams.pg_college);
-  const pg_university = normalizeParam(queryParams.pg_university);
-  const ug_course_name = normalizeParam(queryParams.ug_course_name);
-  const ug_college = normalizeParam(queryParams.ug_college);
-  const ug_university = normalizeParam(queryParams.ug_university);
-  const job_title = normalizeParam(queryParams.job_title);
-  const company = normalizeParam(queryParams.company);
-  const department = normalizeParam(queryParams.department);
-  const event_name = normalizeParam(queryParams.event_name);
-  const event_role = normalizeParam(queryParams.event_role);
-  const event_organization = normalizeParam(queryParams.event_organization);
-  const event_location = normalizeParam(queryParams.event_location);
-
-  try {
-    const conditions = [];
-
-    if (name) conditions.push(`c.name ILIKE '%${name}%'`);
-    if (phone_number)
-      conditions.push(`c.phone_number ILIKE '%${phone_number}%'`);
-    if (email_address)
-      conditions.push(`c.email_address ILIKE '%${email_address}%'`);
-    if (created_by) conditions.push(`c.created_by = '${created_by}'`);
-
-    if (category) {
-      const categoryValues = category.map((cat) => `'${cat}'`).join(",");
-      conditions.push(`c.category IN (${categoryValues})`);
-    }
-
-    if (gender) {
-      const genderValues = gender.map((g) => `'${g}'`).join(",");
-      conditions.push(`c.gender IN (${genderValues})`);
-    }
-
-    if (marital_status) {
-      const maritalValues = marital_status.map((ms) => `'${ms}'`).join(",");
-      conditions.push(`c.marital_status IN (${maritalValues})`);
-    }
-
-    if (nationality) {
-      const nationalityConditions = nationality.map(
-        (nat) => `c.nationality ILIKE '%${nat}%'`
-      );
-      conditions.push(`(${nationalityConditions.join(" OR ")})`);
-    }
-
-    if (skills) {
-      const skillsConditions = skills.map(
-        (skill) => `c.skills ILIKE '%${skill}%'`
-      );
-      conditions.push(`(${skillsConditions.join(" OR ")})`);
-    }
-
-    if (address_city) {
-      const cityConditions = address_city.map(
-        (city) => `ca.city ILIKE '%${city}%'`
-      );
-      conditions.push(`(${cityConditions.join(" OR ")})`);
-    }
-
-    if (address_state) {
-      const stateConditions = address_state.map(
-        (state) => `ca.state ILIKE '%${state}%'`
-      );
-      conditions.push(`(${stateConditions.join(" OR ")})`);
-    }
-
-    if (address_country) {
-      const countryConditions = address_country.map(
-        (country) => `ca.country ILIKE '%${country}%'`
-      );
-      conditions.push(`(${countryConditions.join(" OR ")})`);
-    }
-
-    if (address_zipcode) conditions.push(`ca.zipcode = '${address_zipcode}'`);
-    if (address_street)
-      conditions.push(`ca.street ILIKE '%${address_street}%'`);
-
-    if (pg_course_name) {
-      const pgCourseConditions = pg_course_name.map(
-        (course) => `ce.pg_course_name ILIKE '%${course}%'`
-      );
-      conditions.push(`(${pgCourseConditions.join(" OR ")})`);
-    }
-
-    if (pg_college) {
-      const pgCollegeConditions = pg_college.map(
-        (college) => `ce.pg_college ILIKE '%${college}%'`
-      );
-      conditions.push(`(${pgCollegeConditions.join(" OR ")})`);
-    }
-
-    if (pg_university) {
-      const pgUniversityConditions = pg_university.map(
-        (uni) => `ce.pg_university ILIKE '%${uni}%'`
-      );
-      conditions.push(`(${pgUniversityConditions.join(" OR ")})`);
-    }
-
-    if (ug_course_name) {
-      const ugCourseConditions = ug_course_name.map(
-        (course) => `ce.ug_course_name ILIKE '%${course}%'`
-      );
-      conditions.push(`(${ugCourseConditions.join(" OR ")})`);
-    }
-
-    if (ug_college) {
-      const ugCollegeConditions = ug_college.map(
-        (college) => `ce.ug_college ILIKE '%${college}%'`
-      );
-      conditions.push(`(${ugCollegeConditions.join(" OR ")})`);
-    }
-
-    if (ug_university) {
-      const ugUniversityConditions = ug_university.map(
-        (uni) => `ce.ug_university ILIKE '%${uni}%'`
-      );
-      conditions.push(`(${ugUniversityConditions.join(" OR ")})`);
-    }
-
-    if (job_title) {
-      const jobTitleConditions = job_title.map(
-        (jt) => `exp.job_title ILIKE '%${jt}%'`
-      );
-      conditions.push(`(${jobTitleConditions.join(" OR ")})`);
-    }
-
-    if (company) {
-      const companyConditions = company.map(
-        (comp) => `exp.company ILIKE '%${comp}%'`
-      );
-      conditions.push(`(${companyConditions.join(" OR ")})`);
-    }
-
-    if (department) {
-      const departmentConditions = department.map(
-        (dept) => `exp.department ILIKE '%${dept}%'`
-      );
-      conditions.push(`(${departmentConditions.join(" OR ")})`);
-    }
-
-    if (event_name) {
-      const eventNameConditions = event_name.map(
-        (name) => `e.event_name ILIKE '%${name}%'`
-      );
-      conditions.push(`(${eventNameConditions.join(" OR ")})`);
-    }
-
-    if (event_role) {
-      const eventRoleConditions = event_role.map(
-        (role) => `e.event_role ILIKE '%${role}%'`
-      );
-      conditions.push(`(${eventRoleConditions.join(" OR ")})`);
-    }
-
-    if (event_organization) {
-      const eventOrgConditions = event_organization.map(
-        (org) => `e.event_held_organization ILIKE '%${org}%'`
-      );
-      conditions.push(`(${eventOrgConditions.join(" OR ")})`);
-    }
-
-    if (event_location) {
-      const eventLocationConditions = event_location.map(
-        (loc) => `e.event_location ILIKE '%${loc}%'`
-      );
-      conditions.push(`(${eventLocationConditions.join(" OR ")})`);
-    }
-
-    if (created_from) conditions.push(`c.created_at >= '${created_from}'`);
-    if (created_to) conditions.push(`c.created_at <= '${created_to}'`);
-    if (dob_from) conditions.push(`c.dob >= '${dob_from}'`);
-    if (dob_to) conditions.push(`c.dob <= '${dob_to}'`);
-
-    if (education_from_year)
-      conditions.push(
-        `(EXTRACT(YEAR FROM ce.pg_from_date) >= ${education_from_year} OR EXTRACT(YEAR FROM ce.ug_from_date) >= ${education_from_year})`
-      );
-    if (education_to_year)
-      conditions.push(
-        `(EXTRACT(YEAR FROM ce.pg_to_date) <= ${education_to_year} OR EXTRACT(YEAR FROM ce.ug_to_date) <= ${education_to_year})`
-      );
-    if (experience_from_year)
-      conditions.push(
-        `EXTRACT(YEAR FROM exp.from_date) >= ${experience_from_year}`
-      );
-    if (experience_to_year)
-      conditions.push(
-        `EXTRACT(YEAR FROM exp.to_date) <= ${experience_to_year}`
-      );
-    if (event_year)
-      conditions.push(`EXTRACT(YEAR FROM e.event_date) = ${event_year}`);
-
-    const whereClause =
-      conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
-    console.log("WHERE clause:", whereClause);
-
-    const offset = (page - 1) * limit;
-    const validSortFields = [
-      "name",
-      "email_address",
-      "phone_number",
-      "created_at",
-      "dob",
-    ];
-    const sortField = validSortFields.includes(sort_by) ? sort_by : "name";
-    const sortDirection = sort_order.toUpperCase() === "DESC" ? "DESC" : "ASC";
-
-    const contacts = await db`
-      SELECT DISTINCT 
-        c.*,
-        ca.street, ca.city, ca.state, ca.country, ca.zipcode,
-        ce.pg_course_name, ce.pg_college, ce.pg_university, 
-        ce.pg_from_date, ce.pg_to_date,
-        ce.ug_course_name, ce.ug_college, ce.ug_university, 
-        ce.ug_from_date, ce.ug_to_date
-      FROM contact c
-      LEFT JOIN contact_address ca ON c.contact_id = ca.contact_id
-      LEFT JOIN contact_education ce ON c.contact_id = ce.contact_id
-      LEFT JOIN contact_experience exp ON c.contact_id = exp.contact_id
-      LEFT JOIN event e ON c.contact_id = e.contact_id
-      ${whereClause ? db.unsafe(whereClause) : db``}
-      ORDER BY ${db.unsafe(`c.${sortField} ${sortDirection}`)}
-      LIMIT ${limit} OFFSET ${offset}
-    `;
-
-    const [countResult] = await db`
-      SELECT COUNT(DISTINCT c.contact_id) as total
-      FROM contact c
-      LEFT JOIN contact_address ca ON c.contact_id = ca.contact_id
-      LEFT JOIN contact_education ce ON c.contact_id = ce.contact_id
-      LEFT JOIN contact_experience exp ON c.contact_id = exp.contact_id
-      LEFT JOIN event e ON c.contact_id = e.contact_id
-      ${whereClause ? db.unsafe(whereClause) : db``}
-    `;
-
-    const totalContacts = parseInt(countResult.total);
-    const totalPages = Math.ceil(totalContacts / limit);
-
-    const contactsWithDetails = await Promise.all(
-      contacts.map(async (contact) => {
-        const experiences = await db`
-          SELECT * FROM contact_experience 
-          WHERE contact_id = ${contact.contact_id} 
-          ORDER BY from_date DESC
-        `;
-
-        const events = await db`
-          SELECT * FROM event 
-          WHERE contact_id = ${contact.contact_id} 
-          ORDER BY event_date DESC
-        `;
-
-        return {
-          ...contact,
-          experiences: experiences,
-          events: events,
-        };
-      })
-    );
-
-    return res.status(200).json({
-      success: true,
-      message: "Contacts retrieved successfully!",
-      data: {
-        contacts: contactsWithDetails,
-        pagination: {
-          current_page: parseInt(page),
-          total_pages: totalPages,
-          total_contacts: totalContacts,
-          limit: parseInt(limit),
-          has_next: page < totalPages,
-          has_previous: page > 1,
-        },
-      },
-    });
-  } catch (err) {
-    console.error("GetFilteredContacts error:", err);
-    return res.status(500).json({
-      success: false,
-      message: "Server Error!",
-      error: err.message,
-    });
-  }
-};
-
-export const GetFilterOptions = async (req, res) => {
-  try {
-    // Get the user's category from request (could be from auth middleware, query param, or body)
-    const userCategory = req.query.category;
-    console.log(userCategory);
-    if (!userCategory) {
-      return res.status(400).json({
-        success: false,
-        error: "User category is required",
-      });
-    }
-
-    // Build the category filter condition
-    let categoryFilter = "";
-    if (userCategory.toLowerCase() === "admin") {
-      // Admin can see all categories
-      categoryFilter = "";
-    } else if (["cata", "catb", "catc"].includes(userCategory.toLowerCase())) {
-      // Map user categories to database values
-      const categoryMap = {
-        cata: "A",
-        catb: "B",
-        catc: "C",
-      };
-      const dbCategory = categoryMap[userCategory.toLowerCase()];
-      categoryFilter = `AND c.category = '${dbCategory}'`;
-    } else {
-      return res.status(400).json({
-        success: false,
-        error: "Invalid category. Must be 'cata', 'catb', 'catc', or 'admin'",
-      });
-    }
-
-    const genders = await db`
-            SELECT DISTINCT gender as value, COUNT(*)::text as count 
-            FROM contact c WHERE gender IS NOT NULL ${
-              categoryFilter ? db.unsafe(categoryFilter) : db``
-            }
-            GROUP BY gender ORDER BY count DESC
-        `;
-
-    const categories = await db`
-            SELECT DISTINCT category as value, COUNT(*)::text as count 
-            FROM contact c WHERE category IS NOT NULL ${
-              categoryFilter ? db.unsafe(categoryFilter) : db``
-            }
-            GROUP BY category ORDER BY count DESC
-        `;
-
-    const nationalities = await db`
-            SELECT DISTINCT nationality as value, COUNT(*)::text as count 
-            FROM contact c 
-            WHERE nationality IS NOT NULL ${
-              categoryFilter ? db.unsafe(categoryFilter) : db``
-            }
-            GROUP BY nationality ORDER BY count DESC
-        `;
-
-    const maritalStatuses = await db`
-            SELECT DISTINCT marital_status as value, COUNT(*)::text as count 
-            FROM contact c 
-            WHERE marital_status IS NOT NULL ${
-              categoryFilter ? db.unsafe(categoryFilter) : db``
-            }
-            GROUP BY marital_status ORDER BY count DESC
-        `;
-
-    const countries = await db`
-            SELECT DISTINCT ca.country as value, COUNT(DISTINCT c.contact_id)::text as count
-            FROM contact c JOIN contact_address ca ON c.contact_id = ca.contact_id
-            WHERE ca.country IS NOT NULL ${
-              categoryFilter ? db.unsafe(categoryFilter) : db``
-            }
-            GROUP BY ca.country ORDER BY count DESC
-        `;
-
-    const states = await db`
-            SELECT DISTINCT ca.state as value, COUNT(DISTINCT c.contact_id)::text as count
-            FROM contact c JOIN contact_address ca ON c.contact_id = ca.contact_id
-            WHERE ca.state IS NOT NULL ${
-              categoryFilter ? db.unsafe(categoryFilter) : db``
-            }
-            GROUP BY ca.state ORDER BY count DESC
-        `;
-
-    const cities = await db`
-            SELECT DISTINCT ca.city as value, COUNT(DISTINCT c.contact_id)::text as count
-            FROM contact c JOIN contact_address ca ON c.contact_id = ca.contact_id
-            WHERE ca.city IS NOT NULL ${
-              categoryFilter ? db.unsafe(categoryFilter) : db``
-            }
-            GROUP BY ca.city ORDER BY count DESC
-        `;
-
-    const companies = await db`
-            SELECT DISTINCT exp.company as value, COUNT(DISTINCT c.contact_id)::text as count
-            FROM contact c JOIN contact_experience exp ON c.contact_id = exp.contact_id
-            WHERE exp.company IS NOT NULL ${
-              categoryFilter ? db.unsafe(categoryFilter) : db``
-            }
-            GROUP BY exp.company ORDER BY count DESC
-        `;
-
-    const jobTitles = await db`
-            SELECT DISTINCT exp.job_title as value, COUNT(DISTINCT c.contact_id)::text as count
-            FROM contact c JOIN contact_experience exp ON c.contact_id = exp.contact_id
-            WHERE exp.job_title IS NOT NULL ${
-              categoryFilter ? db.unsafe(categoryFilter) : db``
-            }
-            GROUP BY exp.job_title ORDER BY count DESC
-        `;
-
-    const pgCourses = await db`
-            SELECT DISTINCT ce.pg_course_name as value, COUNT(DISTINCT c.contact_id)::text as count
-            FROM contact c JOIN contact_education ce ON c.contact_id = ce.contact_id
-            WHERE ce.pg_course_name IS NOT NULL ${
-              categoryFilter ? db.unsafe(categoryFilter) : db``
-            }
-            GROUP BY ce.pg_course_name ORDER BY count DESC
-        `;
-
-    const ugCourses = await db`
-            SELECT DISTINCT ce.ug_course_name as value, COUNT(DISTINCT c.contact_id)::text as count
-            FROM contact c JOIN contact_education ce ON c.contact_id = ce.contact_id
-            WHERE ce.ug_course_name IS NOT NULL ${
-              categoryFilter ? db.unsafe(categoryFilter) : db``
-            }
-            GROUP BY ce.ug_course_name ORDER BY count DESC
-        `;
-
-    // For skills, we need to get the data first and then filter
-    const skillsQuery =
-      userCategory.toLowerCase() === "admin"
-        ? db`SELECT skills FROM contact WHERE skills IS NOT NULL AND skills != ''`
-        : db`SELECT skills FROM contact c WHERE skills IS NOT NULL AND skills != '' ${db.unsafe(
-            categoryFilter
-          )}`;
-
-    const skillsData = await skillsQuery;
-
-    const skillCounts = {};
-    skillsData.forEach((row) => {
-      if (row.skills) {
-        const skills = row.skills
-          .split(",")
-          .map((s) => s.trim())
-          .filter((s) => s);
-        skills.forEach((skill) => {
-          skillCounts[skill] = (skillCounts[skill] || 0) + 1;
-        });
-      }
-    });
-
-    const skills = Object.entries(skillCounts)
-      .map(([skill, count]) => ({ value: skill, count: count.toString() }))
-      .sort((a, b) => parseInt(b.count) - parseInt(a.count));
-
-    return res.json({
-      success: true,
-      data: {
-        genders,
-        categories,
-        nationalities,
-        marital_statuses: maritalStatuses,
-        countries,
-        states,
-        cities,
-        companies,
-        job_titles: jobTitles,
-        pg_courses: pgCourses,
-        ug_courses: ugCourses,
-        skills,
-      },
-      filter_applied:
-        userCategory !== "admin"
-          ? `Category filtered for ${userCategory}`
-          : "No category filter (admin access)",
-    });
-  } catch (err) {
-    console.error("GetFilterOptions error:", err);
-    return res.status(500).json({
-      success: false,
-      error: err.message,
-    });
-  }
-};
-
-// Get contact modification history
-export const getContactModificationHistory = async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    // Validate contact ID
-    if (!id || isNaN(parseInt(id))) {
-      return res.status(400).json({
-        success: false,
-        message: "Valid contact ID is required",
-      });
-    }
-
-    const contactId = parseInt(id);
-
-    // Fetch modification history
-    const history = await getModificationHistory(db, contactId);
-
-    if (!history || history.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "No modification history found for this contact",
-      });
-    }
-
-    res.status(200).json({
-      success: true,
-      message: "Contact modification history retrieved successfully",
-      data: history,
-      count: history.length,
-    });
-  } catch (error) {
-    console.error("Error in getContactModificationHistory controller:", error);
-    res.status(500).json({
-      success: false,
-      message: "Internal server error while fetching modification history",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
-    });
-  }
-};
-
-export const getAllContactModificationHistory = async (req, res) => {
-  try {
-    const { limit = 50, offset = 0 } = req.query;
-
-    // Validate pagination parameters
-    const limitValue = parseInt(limit);
-    const offsetValue = parseInt(offset);
-
-    if (isNaN(limitValue) || limitValue < 0 || limitValue > 1000) {
-      return res.status(400).json({
-        success: false,
-        message: "Limit must be a number between 0 and 1000",
-      });
-    }
-
-    if (isNaN(offsetValue) || offsetValue < 0) {
-      return res.status(400).json({
-        success: false,
-        message: "Offset must be a non-negative number",
-      });
-    }
-
-    // Fetch all modification history
-    const history = await getAllModificationHistory(
-      db,
-      limitValue,
-      offsetValue
-    );
-
-    if (!history || history.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "No modification history found",
-        data: [],
-        count: 0,
-      });
-    }
-
-    // Get total count for pagination
-    const totalCount = await getTotalModificationHistoryCount(db);
-
-    res.status(200).json({
-      success: true,
-      message: "All contact modification history retrieved successfully",
-      data: history,
-      count: history.length,
-      totalCount: totalCount,
-      pagination: {
-        limit: limitValue,
-        offset: offsetValue,
-        hasMore: offsetValue + history.length < totalCount,
-      },
-    });
-  } catch (error) {
-    console.error(
-      "Error in getAllContactModificationHistory controller:",
-      error
-    );
-    res.status(500).json({
-      success: false,
-      message: "Internal server error while fetching modification history",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
-    });
-  }
-};

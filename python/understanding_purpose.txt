@@ -1,0 +1,13 @@
+🖼️ Visiting Card Image
+    ↓ (HTTP fetch)
+📝 Raw Image Blob  
+    ↓ (POST to Flask)
+🔍 PaddleOCR Processing
+    ↓ (Text extraction)
+📄 Raw Text: "JOHN DOE\nSoftware Engineer\n..."
+    ↓ (Gemini AI)
+🤖 AI Structuring
+    ↓ (JSON response)
+📋 Structured Data: {"name": "JOHN DOE", "email": "..."}
+    ↓ (Field mapping)
+📝 Auto-filled Form Fields
