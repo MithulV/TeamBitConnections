@@ -49,7 +49,6 @@ export const getOnlineUsers = async (req, res) => {
             SELECT COUNT(*) as total_count 
             FROM login
         `;
-        
         const totalCount = Number(totalCountResult[0]?.total_count || 0);
         const onlineCount = onlineUsers.length;
         
