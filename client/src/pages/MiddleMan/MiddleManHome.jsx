@@ -994,7 +994,7 @@ const MiddleManHome = () => {
 
       {/* Page Title Section */}
       <div className="px-6 pt-6 pb-2">
-        <div className="max-w-7xl mx-auto">
+        <div className="container mx-auto">
           <div className="mb-4">
             <h1 className="text-2xl font-bold text-gray-900">
               {role === "admin"
@@ -1013,7 +1013,7 @@ const MiddleManHome = () => {
       </div>
 
       <div className="px-6 pb-6">
-        <div className="max-w-7xl mx-auto">
+        <div className="container mx-auto">
           {
             <>
               {/* Search and Filter Controls */}
@@ -1101,7 +1101,7 @@ const MiddleManHome = () => {
               )}
 
               {/* Contact Cards Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {filteredContacts.map((contact) => (
                   <ContactCard
                     key={contact.contact_id}

@@ -208,7 +208,7 @@ function TaskAssignments() {
       <Header />
 
       <div className="p-6">
-        <div className="max-w-7xl mx-auto">
+        <div className="container mx-auto">
           {/* Header Section */}
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-3">
