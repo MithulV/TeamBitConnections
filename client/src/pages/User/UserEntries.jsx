@@ -8,7 +8,6 @@ import api from "../../utils/axios";
 import { ArrowLeft, Trash2 } from "lucide-react";
 import { parseISO, format } from "date-fns";
 import { useAuthStore } from "../../store/AuthStore";
-import axios from "axios";
 
 const DeleteConfirmationModal = ({
   isOpen,
@@ -198,8 +197,8 @@ function UserEntries() {
         console.log(userToDelete);
 
         if (userToDelete.type === "image") {
-          const response = await axios.delete(
-            `http://localhost:8000/api/delete-image/${userToDelete.id}?userType=${role}`
+          const response = await api.delete(
+            `/api/delete-image/${userToDelete.id}?userType=${role}`
           );
 
           if (response.data.action === "deleted") {
@@ -234,8 +233,8 @@ function UserEntries() {
             );
           }
         } else {
-          const response = await axios.delete(
-            `http://localhost:8000/api/delete-contact/${userToDelete.id}?userType=${role}&userId=${id}&eventId=${userToDelete.event_id}`
+          const response = await api.delete(
+            `/api/delete-contact/${userToDelete.id}?userType=${role}&userId=${id}&eventId=${userToDelete.event_id}`
           );
 
           if (response.data.action === "deleted") {

@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import Header from "../../components/Header/Header";
 import Alert from "../../components/Alert/Alert";
-import axios from "axios";
+import api from "../../utils/axios";
 import { useAuthStore } from "../../store/AuthStore";
 
 function EventDetails() {
@@ -91,8 +91,8 @@ function EventDetails() {
       formData.append("eventHeldOrganization", eventData.eventHeldOrganization);
       formData.append("eventLocation", eventData.eventLocation);
 
-      const res = await axios.post(
-        "http://localhost:8000/api/upload-contact",
+      const res = await api.post(
+        "/api/upload-contact",
         formData,
         {
           headers: { "Content-Type": "multipart/form-data" },
