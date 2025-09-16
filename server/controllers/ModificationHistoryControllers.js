@@ -76,7 +76,6 @@ export const getModificationHistory = async (db, contact_id) => {
   }
 };
 
-
 export const getAllModificationHistory = async (db, limit = 50, offset = 0) => {
   try {
     const query = db`
@@ -129,7 +128,6 @@ export const getAllModificationHistory = async (db, limit = 50, offset = 0) => {
   }
 };
 
-
 // Function to get total count of modification history records
 export const getTotalModificationHistoryCount = async (db) => {
   try {
@@ -143,5 +141,113 @@ export const getTotalModificationHistoryCount = async (db) => {
   } catch (error) {
     console.error('Error getting total modification history count:', error);
     throw error;
+  }
+};
+
+// Get contact modification history
+
+export const getContactModificationHistory = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Validate contact ID
+    if (!id || isNaN(parseInt(id))) {
+      return res.status(400).json({
+        success: false,
+        message: "Valid contact ID is required",
+      });
+    }
+
+    const contactId = parseInt(id);
+
+    // Fetch modification history
+    const history = await getModificationHistory(db, contactId);
+
+    if (!history || history.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No modification history found for this contact",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Contact modification history retrieved successfully",
+      data: history,
+      count: history.length,
+    });
+  } catch (error) {
+    console.error("Error in getContactModificationHistory controller:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error while fetching modification history",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+};
+
+export const getAllContactModificationHistory = async (req, res) => {
+  try {
+    const { limit = 50, offset = 0 } = req.query;
+
+    // Validate pagination parameters
+    const limitValue = parseInt(limit);
+    const offsetValue = parseInt(offset);
+
+    if (isNaN(limitValue) || limitValue < 0 || limitValue > 1000) {
+      return res.status(400).json({
+        success: false,
+        message: "Limit must be a number between 0 and 1000",
+      });
+    }
+
+    if (isNaN(offsetValue) || offsetValue < 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Offset must be a non-negative number",
+      });
+    }
+
+    // Fetch all modification history
+    const history = await getAllModificationHistory(
+      db,
+      limitValue,
+      offsetValue
+    );
+
+    if (!history || history.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No modification history found",
+        data: [],
+        count: 0,
+      });
+    }
+
+    // Get total count for pagination
+    const totalCount = await getTotalModificationHistoryCount(db);
+
+    res.status(200).json({
+      success: true,
+      message: "All contact modification history retrieved successfully",
+      data: history,
+      count: history.length,
+      totalCount: totalCount,
+      pagination: {
+        limit: limitValue,
+        offset: offsetValue,
+        hasMore: offsetValue + history.length < totalCount,
+      },
+    });
+  } catch (error) {
+    console.error(
+      "Error in getAllContactModificationHistory controller:",
+      error
+    );
+    res.status(500).json({
+      success: false,
+      message: "Internal server error while fetching modification history",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
   }
 };
