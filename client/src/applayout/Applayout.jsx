@@ -22,6 +22,7 @@ import axios from "axios";
 import Referral from "../pages/User/Referral";
 import ReferralSignup from "../pages/User/ReferralSignup";
 import ContactNetworkAnalysis from "../pages/Admin/ContactNetworkAnalysis";
+import api from "../utils/axios";
 // A helper component to render the correct home page based on role
 const RoleBasedHome = () => {
   const { role } = useAuthStore();
@@ -75,15 +76,7 @@ function Applayout() {
     const pingInterval = setInterval(async () => {
       if (navigator.onLine) {
         try {
-          await axios.post(
-            `http://localhost:8000/api/user/ping/${id}`,
-            {},
-            {
-              headers: {
-                "Content-Type": "application/json",
-              },
-            }
-          );
+          await api.post(`/api/user/ping/${id}`);
         } catch (error) {
           console.error("Ping failed:", error);
         }

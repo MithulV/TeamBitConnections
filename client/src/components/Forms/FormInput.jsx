@@ -14,7 +14,7 @@ import { useAuthStore } from "../../store/AuthStore";
 import { useNavigate, useLocation } from "react-router-dom";
 import Header from "../Header/Header";
 import Alert from "../Alert/Alert";
-import axios from "axios";
+import api from "../../utils/axios";
 
 function FormInput() {
   const { id } = useAuthStore();
@@ -94,8 +94,8 @@ function FormInput() {
           })),
         };
 
-        response = await axios.put(
-          `http://localhost:8000/api/update-contacts-and-events/${
+        response = await api.put(
+          `/api/update-contacts-and-events/${
             initialData.id || initialData.contact_id
           }/${id}`,
           eventToUpdate
@@ -111,8 +111,8 @@ function FormInput() {
           selectedContact.phone_number !== formData.phone_number;
 
         if (contactChanged) {
-          response = await axios.put(
-            `http://localhost:8000/api/update-contacts-and-events/${selectedContact.contact_id}/${id}`,
+          response = await api.put(
+            `/api/update-contacts-and-events/${selectedContact.contact_id}/${id}`,
             formData
           );
           showAlert("success", `Contact has been successfully updated.`);
@@ -126,8 +126,8 @@ function FormInput() {
             verified: false,
           };
 
-          response = await axios.post(
-            `http://localhost:8000/api/add-event-existing-contact/${selectedContact.contact_id}/${id}`,
+          response = await api.post(
+            `/api/add-event-existing-contact/${selectedContact.contact_id}/${id}`,
             eventData
           );
           showAlert(
@@ -136,8 +136,8 @@ function FormInput() {
           );
         }
       } else {
-        response = await axios.post(
-          `http://localhost:8000/api/create-contact`,
+        response = await api.post(
+          `/api/create-contact`,
           formData
         );
         showAlert("success", `Contact has been successfully added.`);
@@ -240,8 +240,8 @@ function FormInput() {
       console.log(`Fetching suggestions for field: ${field}, query: ${query}`); // Debug log
 
       // Use the correct endpoint - should match your existing search endpoint
-      const response = await axios.get(
-        `http://localhost:8000/api/search-contact?q=${encodeURIComponent(
+      const response = await api.get(
+        `/api/search-contact?q=${encodeURIComponent(
           query
         )}`
       );
