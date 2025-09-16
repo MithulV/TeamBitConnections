@@ -74,3 +74,21 @@ code {
 .animate-fadeIn {
   animation: fadeIn 0.2s ease-out;
 }
+.tree-container {
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+}
+
+/* Hide default node elements */
+.rd3t-node .rd3t-label__title,
+.rd3t-node .rd3t-label__attributes {
+  display: none;
+}
+
+.rd3t-node > circle {
+  display: none;
+}
+
+/* Ensure our custom nodes are visible */
+.rd3t-node svg {
+  overflow: visible;
+}

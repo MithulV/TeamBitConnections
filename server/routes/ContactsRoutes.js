@@ -55,7 +55,7 @@ import {
   invitationHeartbeat,
 } from "../controllers/referralControllers.js";
 const router = express.Router();
-import { analyzeContactNetwork } from "../controllers/aiNetworkControllers.js";
+import { analyzeContactNetwork } from "../controllers/NetworkControllers.js";
 import {
   GetFilteredContacts,
   GetFilterOptions,
