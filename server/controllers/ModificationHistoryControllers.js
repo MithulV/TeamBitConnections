@@ -1,5 +1,4 @@
 import db from '../src/config/db.js'
-
 // Create a separate utility file for database operations (utils/contactModification.js)
 export const logContactModification = async (db, contact_id, modified_by, modification_type, transaction, assigned_to) => {
   try {
