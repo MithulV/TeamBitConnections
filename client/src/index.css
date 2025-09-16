@@ -1,15 +1,64 @@
-@import 'leaflet/dist/leaflet.css';
+@import "leaflet/dist/leaflet.css";
 @import "tailwindcss";
-body{
-    background:#F0F0F0;
+
+/* Global Styles */
+* {
+  font-family: "Quicksand", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans",
+    "Helvetica Neue", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
+
+body {
+  background: #f0f0f0;
+  line-height: 1.6;
+  letter-spacing: 0.01em;
+}
+
+/* Typography improvements */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: "Quicksand", sans-serif;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.02em;
+}
+
+p,
+span,
+div {
+  font-family: "Quicksand", sans-serif;
+}
+
+/* Input and form styling */
+input,
+textarea,
+select,
+button {
+  font-family: "Quicksand", sans-serif;
+}
+
+/* Code and monospace elements */
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New",
+    monospace;
+}
+
 @import "@fontsource/quicksand/400.css";
 @import "@fontsource/quicksand/500.css";
 @import "@fontsource/quicksand/600.css";
 @import "@fontsource/quicksand/700.css";
 
 @theme {
-   --font-snpro: "Quicksand", sans-serif;
+  --font-family-snpro: "Quicksand", sans-serif;
+  --font-family-default: "Quicksand", -apple-system, BlinkMacSystemFont,
+    "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans",
+    "Droid Sans", "Helvetica Neue", sans-serif;
 }
 @keyframes fadeIn {
   from {

@@ -323,10 +323,10 @@ export const ImportContactsFromCSV = async (req, res) => {
     }
 };
 
-// ✅ EXPORT MULTER UPLOAD MIDDLEWARE
+//  EXPORT MULTER UPLOAD MIDDLEWARE
 export const uploadCSV = upload.single('csv_file');
 
-// ✅ OPTIONAL: Helper function to validate CSV headers
+//  OPTIONAL: Helper function to validate CSV headers
 export const validateCSVHeaders = (headers) => {
     const requiredHeaders = ['name', 'phone_number', 'email_address'];
     const missingHeaders = requiredHeaders.filter(required => 
@@ -339,7 +339,7 @@ export const validateCSVHeaders = (headers) => {
     };
 };
 
-// ✅ OPTIONAL: Helper function to sanitize CSV data
+//  OPTIONAL: Helper function to sanitize CSV data
 export const sanitizeRowData = (row) => {
     const sanitized = {};
     
@@ -358,4 +358,4 @@ export const sanitizeRowData = (row) => {
     return sanitized;
 };
 
-console.log('✅ CSV Import controller loaded with complete multi-table insert support');
+console.log(' CSV Import controller loaded with complete multi-table insert support');
