@@ -1,5 +1,5 @@
 import { useState } from "react";
-import axios from "axios";
+import api from "../../utils/axios";
 import Alert from "../../components/Alert/Alert";
 import Header from "../../components/Header/Header";
 import { useAuthStore } from "../../store/AuthStore";
@@ -40,8 +40,8 @@ function Referral() {
     }
 
     try {
-      const response = await axios.post(
-        "http://localhost:8000/api/send-referral",
+      const response = await api.post(
+        "/api/send-referral",
         {
           referrerEmail: email,
           inviteeEmail: inviteeEmail,
