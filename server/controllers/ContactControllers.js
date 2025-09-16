@@ -237,19 +237,39 @@ export const CreateContact = async (req, res) => {
             secondary_email, secondary_phone_number, created_by, emergency_contact_name,
             emergency_contact_relationship, emergency_contact_phone_number, skills, logger, linkedin_url
           ) VALUES (
-            ${name}, ${phone_number}, ${email_address}, ${dob || null}, ${
-        gender || null
-      },
-            ${nationality || null}, ${marital_status || null}, ${
-        category || null
-      }, ${secondary_email || null},
-            ${secondary_phone_number || null}, ${created_by || null}, ${
-        emergency_contact_name || null
-      },
-            ${emergency_contact_relationship || null}, ${
-        emergency_contact_phone_number || null
-      }, ${skills || null},
-            ${logger || null}, ${linkedin_url || null}
+            ${name}, 
+            ${phone_number}, 
+            ${email_address}, 
+            ${dob === undefined ? null : dob}, 
+            ${gender === undefined ? null : gender},
+            ${nationality === undefined ? null : nationality}, 
+            ${marital_status === undefined ? null : marital_status}, 
+            ${category === undefined ? null : category}, 
+            ${secondary_email === undefined ? null : secondary_email},
+            ${
+              secondary_phone_number === undefined
+                ? null
+                : secondary_phone_number
+            }, 
+            ${created_by === undefined ? null : created_by}, 
+            ${
+              emergency_contact_name === undefined
+                ? null
+                : emergency_contact_name
+            },
+            ${
+              emergency_contact_relationship === undefined
+                ? null
+                : emergency_contact_relationship
+            }, 
+            ${
+              emergency_contact_phone_number === undefined
+                ? null
+                : emergency_contact_phone_number
+            }, 
+            ${skills === undefined ? null : skills},
+            ${logger === undefined ? null : logger}, 
+            ${linkedin_url === undefined ? null : linkedin_url}
           ) RETURNING *
         `;
 
@@ -264,11 +284,14 @@ export const CreateContact = async (req, res) => {
       if (address) {
         [createdAddress] = await t`
             INSERT INTO contact_address (contact_id, street, city, state, country, zipcode) 
-            VALUES (${contactId}, ${address.street || null}, ${
-          address.city || null
-        }, ${address.state || null}, ${address.country || null}, ${
-          address.zipcode || null
-        }) 
+            VALUES (
+              ${contactId}, 
+              ${address.street === undefined ? null : address.street}, 
+              ${address.city === undefined ? null : address.city}, 
+              ${address.state === undefined ? null : address.state}, 
+              ${address.country === undefined ? null : address.country}, 
+              ${address.zipcode === undefined ? null : address.zipcode}
+            ) 
             RETURNING *
           `;
       }
@@ -281,16 +304,48 @@ export const CreateContact = async (req, res) => {
               ug_course_name, ug_college, ug_university, ug_from_date, ug_to_date
             ) VALUES (
               ${contactId}, 
-              ${education.pg_course_name || null}, ${
-          education.pg_college || null
-        }, ${education.pg_university || null}, 
-              ${education.pg_from_date || null}, ${
-          education.pg_to_date || null
-        },
-              ${education.ug_course_name || null}, ${
-          education.ug_college || null
-        }, ${education.ug_university || null}, 
-              ${education.ug_from_date || null}, ${education.ug_to_date || null}
+              ${
+                education.pg_course_name === undefined
+                  ? null
+                  : education.pg_course_name
+              }, 
+              ${
+                education.pg_college === undefined ? null : education.pg_college
+              }, 
+              ${
+                education.pg_university === undefined
+                  ? null
+                  : education.pg_university
+              }, 
+              ${
+                education.pg_from_date === undefined
+                  ? null
+                  : education.pg_from_date
+              }, 
+              ${
+                education.pg_to_date === undefined ? null : education.pg_to_date
+              },
+              ${
+                education.ug_course_name === undefined
+                  ? null
+                  : education.ug_course_name
+              }, 
+              ${
+                education.ug_college === undefined ? null : education.ug_college
+              }, 
+              ${
+                education.ug_university === undefined
+                  ? null
+                  : education.ug_university
+              }, 
+              ${
+                education.ug_from_date === undefined
+                  ? null
+                  : education.ug_from_date
+              }, 
+              ${
+                education.ug_to_date === undefined ? null : education.ug_to_date
+              }
             ) RETURNING *
           `;
       }
@@ -694,13 +749,28 @@ export const UpdateContact = async (req, res) => {
     experiences,
   } = req.body;
 
+  // Validate and sanitize ID fields to prevent empty string issues
+  const validContactId = contact_id && contact_id !== "" ? contact_id : null;
+  const validEventId = event_id && event_id !== "" ? event_id : null;
+  const validAssignmentId =
+    assignment_id && assignment_id !== "" ? assignment_id : null;
+
+  console.log("UpdateContact received IDs:", {
+    contact_id,
+    validContactId,
+    event_id,
+    validEventId,
+    assignment_id,
+    validAssignmentId,
+  });
+
   try {
     const result = await db.begin(async (t) => {
       let contactRecord;
       let existingContact = null;
       let wasExistingContact = false;
 
-      if (!contact_id) {
+      if (!validContactId) {
         const existingContactsResult = await t`
           SELECT * FROM contact 
           WHERE (email_address = ${email_address} AND email_address IS NOT NULL)
@@ -746,19 +816,39 @@ export const UpdateContact = async (req, res) => {
               secondary_email, secondary_phone_number, emergency_contact_name, emergency_contact_relationship, 
               emergency_contact_phone_number, skills, logger, linkedin_url
             ) VALUES (
-              ${created_by || null}, ${name || null}, ${
-            phone_number || null
-          }, ${email_address || null}, ${dob || null},
-              ${gender || null}, ${nationality || null}, ${
-            marital_status || null
-          }, ${category || null},
-              ${secondary_email || null}, ${secondary_phone_number || null}, ${
-            emergency_contact_name || null
-          }, 
-              ${emergency_contact_relationship || null}, ${
-            emergency_contact_phone_number || null
-          },
-              ${skills || null}, ${logger || null}, ${linkedin_url || null}
+              ${created_by === undefined ? null : created_by}, 
+              ${name === undefined ? null : name}, 
+              ${phone_number === undefined ? null : phone_number}, 
+              ${email_address === undefined ? null : email_address}, 
+              ${dob === undefined ? null : dob},
+              ${gender === undefined ? null : gender}, 
+              ${nationality === undefined ? null : nationality}, 
+              ${marital_status === undefined ? null : marital_status}, 
+              ${category === undefined ? null : category},
+              ${secondary_email === undefined ? null : secondary_email}, 
+              ${
+                secondary_phone_number === undefined
+                  ? null
+                  : secondary_phone_number
+              }, 
+              ${
+                emergency_contact_name === undefined
+                  ? null
+                  : emergency_contact_name
+              }, 
+              ${
+                emergency_contact_relationship === undefined
+                  ? null
+                  : emergency_contact_relationship
+              }, 
+              ${
+                emergency_contact_phone_number === undefined
+                  ? null
+                  : emergency_contact_phone_number
+              },
+              ${skills === undefined ? null : skills}, 
+              ${logger === undefined ? null : logger}, 
+              ${linkedin_url === undefined ? null : linkedin_url}
             ) RETURNING *
           `;
         }
@@ -766,33 +856,51 @@ export const UpdateContact = async (req, res) => {
         console.log("Updating existing contact...");
         [contactRecord] = await t`
           UPDATE contact SET
-            name = ${name || null},
-            phone_number = ${phone_number || null},
-            email_address = ${email_address || null},
-            dob = ${dob || null},
-            gender = ${gender || null},
-            nationality = ${nationality || null},
-            marital_status = ${marital_status || null},
-            category = ${category || null},
-            secondary_email = ${secondary_email || null},
-            secondary_phone_number = ${secondary_phone_number || null},
-            emergency_contact_name = ${emergency_contact_name || null},
+            name = ${name === undefined ? null : name},
+            phone_number = ${phone_number === undefined ? null : phone_number},
+            email_address = ${
+              email_address === undefined ? null : email_address
+            },
+            dob = ${dob === undefined ? null : dob},
+            gender = ${gender === undefined ? null : gender},
+            nationality = ${nationality === undefined ? null : nationality},
+            marital_status = ${
+              marital_status === undefined ? null : marital_status
+            },
+            category = ${category === undefined ? null : category},
+            secondary_email = ${
+              secondary_email === undefined ? null : secondary_email
+            },
+            secondary_phone_number = ${
+              secondary_phone_number === undefined
+                ? null
+                : secondary_phone_number
+            },
+            emergency_contact_name = ${
+              emergency_contact_name === undefined
+                ? null
+                : emergency_contact_name
+            },
             emergency_contact_relationship = ${
-              emergency_contact_relationship || null
+              emergency_contact_relationship === undefined
+                ? null
+                : emergency_contact_relationship
             },
             emergency_contact_phone_number = ${
-              emergency_contact_phone_number || null
+              emergency_contact_phone_number === undefined
+                ? null
+                : emergency_contact_phone_number
             },
-            skills = ${skills || null},
-            logger = ${logger || null},
-            linkedin_url = ${linkedin_url || null},
+            skills = ${skills === undefined ? null : skills},
+            logger = ${logger === undefined ? null : logger},
+            linkedin_url = ${linkedin_url === undefined ? null : linkedin_url},
             updated_at = NOW()
-          WHERE contact_id = ${contact_id}
+          WHERE contact_id = ${validContactId}
           RETURNING *
         `;
       }
 
-      const activeContactId = contact_id || contactRecord?.contact_id;
+      const activeContactId = validContactId || contactRecord?.contact_id;
       let updatedAddress = null,
         updatedEducation = null;
       let updatedExperiences = [],
@@ -801,11 +909,14 @@ export const UpdateContact = async (req, res) => {
       if (address && activeContactId) {
         [updatedAddress] = await t`
           INSERT INTO contact_address (contact_id, street, city, state, country, zipcode)
-          VALUES (${activeContactId}, ${address.street || null}, ${
-          address.city || null
-        }, ${address.state || null}, ${address.country || null}, ${
-          address.zipcode || null
-        })
+          VALUES (
+            ${activeContactId}, 
+            ${address.street === undefined ? null : address.street}, 
+            ${address.city === undefined ? null : address.city}, 
+            ${address.state === undefined ? null : address.state}, 
+            ${address.country === undefined ? null : address.country}, 
+            ${address.zipcode === undefined ? null : address.zipcode}
+          )
           ON CONFLICT (contact_id) DO UPDATE SET
             street = EXCLUDED.street,
             city = EXCLUDED.city,
@@ -823,14 +934,44 @@ export const UpdateContact = async (req, res) => {
             ug_course_name, ug_college, ug_university, ug_from_date, ug_to_date
           ) VALUES (
             ${activeContactId},
-            ${education.pg_course_name || null}, ${
-          education.pg_college || null
-        }, ${education.pg_university || null}, 
-            ${education.pg_from_date || null}, ${education.pg_to_date || null},
-            ${education.ug_course_name || null}, ${
-          education.ug_college || null
-        }, ${education.ug_university || null}, 
-            ${education.ug_from_date || null}, ${education.ug_to_date || null}
+            ${
+              education.pg_course_name === undefined
+                ? null
+                : education.pg_course_name
+            }, 
+            ${
+              education.pg_college === undefined ? null : education.pg_college
+            }, 
+            ${
+              education.pg_university === undefined
+                ? null
+                : education.pg_university
+            }, 
+            ${
+              education.pg_from_date === undefined
+                ? null
+                : education.pg_from_date
+            }, 
+            ${education.pg_to_date === undefined ? null : education.pg_to_date},
+            ${
+              education.ug_course_name === undefined
+                ? null
+                : education.ug_course_name
+            }, 
+            ${
+              education.ug_college === undefined ? null : education.ug_college
+            }, 
+            ${
+              education.ug_university === undefined
+                ? null
+                : education.ug_university
+            }, 
+            ${
+              education.ug_from_date === undefined
+                ? null
+                : education.ug_from_date
+            }, 
+            ${education.ug_to_date === undefined ? null : education.ug_to_date}
           ) ON CONFLICT (contact_id) DO UPDATE SET
             pg_course_name = EXCLUDED.pg_course_name,
             pg_college = EXCLUDED.pg_college,
@@ -853,35 +994,47 @@ export const UpdateContact = async (req, res) => {
             INSERT INTO contact_experience (
               contact_id, job_title, company, department, from_date, to_date, company_skills
             ) VALUES (
-              ${activeContactId}, ${exp.job_title || null}, ${
-            exp.company || null
-          }, ${exp.department || null}, 
-              ${exp.from_date || null}, ${exp.to_date || null}, ${
-            exp.company_skills || null
-          }
+              ${activeContactId}, 
+              ${exp.job_title === undefined ? null : exp.job_title}, 
+              ${exp.company === undefined ? null : exp.company}, 
+              ${exp.department === undefined ? null : exp.department}, 
+              ${exp.from_date === undefined ? null : exp.from_date}, 
+              ${exp.to_date === undefined ? null : exp.to_date}, 
+              ${exp.company_skills === undefined ? null : exp.company_skills}
             ) RETURNING *
           `;
           updatedExperiences.push(newExp);
         }
       }
 
-      if (event_id && activeContactId) {
-        const [updatedEvent] = await t`
-          UPDATE event SET
-            event_name = ${event_name || null},
-            event_role = ${event_role || null},
-            event_date = ${event_date || null},
-            event_held_organization = ${event_held_organization || null},
-            event_location = ${event_location || null},
-            verified = ${isVerified},
-            contact_status = ${contact_status || null}
-          WHERE event_id = ${event_id} AND contact_id = ${activeContactId}
-          RETURNING *
-        `;
-        if (updatedEvent) updatedEvents.push(updatedEvent);
+      if (validEventId && validEventId !== "" && activeContactId) {
+        const eventIdValue = parseInt(validEventId, 10);
+        if (!isNaN(eventIdValue)) {
+          const [updatedEvent] = await t`
+            UPDATE event SET
+              event_name = ${event_name === undefined ? null : event_name},
+              event_role = ${event_role === undefined ? null : event_role},
+              event_date = ${event_date === undefined ? null : event_date},
+              event_held_organization = ${
+                event_held_organization === undefined
+                  ? null
+                  : event_held_organization
+              },
+              event_location = ${
+                event_location === undefined ? null : event_location
+              },
+              verified = ${isVerified},
+              contact_status = ${
+                contact_status === undefined ? null : contact_status
+              }
+            WHERE event_id = ${eventIdValue} AND contact_id = ${activeContactId}
+            RETURNING *
+          `;
+          if (updatedEvent) updatedEvents.push(updatedEvent);
+        }
       }
 
-      if (!event_id && event_name && activeContactId) {
+      if (!validEventId && event_name && activeContactId) {
         const [existingEvent] = await t`
           SELECT * FROM event 
           WHERE contact_id = ${activeContactId} 
@@ -896,12 +1049,18 @@ export const UpdateContact = async (req, res) => {
             INSERT INTO event (
               contact_id, event_name, event_role, event_date, event_held_organization, event_location, verified, contact_status
             ) VALUES (
-              ${activeContactId}, ${event_name}, ${event_role || null}, ${
-            event_date || null
-          }, 
-              ${event_held_organization || null}, ${
-            event_location || null
-          }, ${isVerified}, ${contact_status || null}
+              ${activeContactId}, 
+              ${event_name}, 
+              ${event_role === undefined ? null : event_role}, 
+              ${event_date === undefined ? null : event_date}, 
+              ${
+                event_held_organization === undefined
+                  ? null
+                  : event_held_organization
+              }, 
+              ${event_location === undefined ? null : event_location}, 
+              ${isVerified}, 
+              ${contact_status === undefined ? null : contact_status}
             ) RETURNING *
           `;
           if (newEvent) updatedEvents.push(newEvent);
@@ -909,11 +1068,19 @@ export const UpdateContact = async (req, res) => {
           console.log("Event already exists, updating instead...");
           const [updatedEvent] = await t`
             UPDATE event SET
-              event_role = COALESCE(${event_role}, event_role),
-              event_date = COALESCE(${event_date}, event_date),
-              event_location = COALESCE(${event_location}, event_location),
+              event_role = COALESCE(${
+                event_role === undefined ? null : event_role
+              }, event_role),
+              event_date = COALESCE(${
+                event_date === undefined ? null : event_date
+              }, event_date),
+              event_location = COALESCE(${
+                event_location === undefined ? null : event_location
+              }, event_location),
               verified = ${isVerified},
-              contact_status = ${contact_status || null}
+              contact_status = ${
+                contact_status === undefined ? null : contact_status
+              }
             WHERE event_id = ${existingEvent.event_id}
             RETURNING *
           `;
@@ -921,36 +1088,41 @@ export const UpdateContact = async (req, res) => {
         }
       }
       // Check if the event_id has an assignment first
+      const eventIdValue =
+        validEventId && validEventId !== "" ? parseInt(validEventId, 10) : null;
       const [eventAssignment] = await db`
     SELECT * FROM user_assignments 
-    WHERE event_id = ${event_id} 
+    WHERE event_id = ${eventIdValue} 
     LIMIT 1
 `;
       console.log(eventAssignment);
 
-      if (assignment_id) {
-        console.log(
-          `Event ID ${event_id} has an active assignment - updating as assigned user`
-        );
-        console.log("Marking assignment as completed:", assignment_id);
-        await t`UPDATE user_assignments SET completed = TRUE WHERE id = ${assignment_id}`;
+      if (validAssignmentId && validAssignmentId !== "") {
+        const assignmentIdValue = parseInt(validAssignmentId, 10);
+        if (!isNaN(assignmentIdValue)) {
+          console.log(
+            `Event ID ${validEventId} has an active assignment - updating as assigned user`
+          );
+          console.log("Marking assignment as completed:", assignmentIdValue);
+          await t`UPDATE user_assignments SET completed = TRUE WHERE id = ${assignmentIdValue}`;
 
-        try {
-          console.log(userId);
-          logContactModification(
-            db,
-            activeContactId,
-            userId,
-            "USER UPDATE",
-            t,
-            null
-          );
-        } catch (err) {
-          console.warn(
-            "Contact modification logging failed, but continuing operation:",
-            err.message
-          );
-          // Execution continues
+          try {
+            console.log(userId);
+            logContactModification(
+              db,
+              activeContactId,
+              userId,
+              "USER UPDATE",
+              t,
+              null
+            );
+          } catch (err) {
+            console.warn(
+              "Contact modification logging failed, but continuing operation:",
+              err.message
+            );
+            // Execution continues
+          }
         }
       } else {
         if (eventAssignment) {
@@ -1255,7 +1427,7 @@ export const AddEventToExistingContact = async (req, res) => {
     });
   }
 };
-// In User 
+// In User
 export const SearchContacts = async (req, res) => {
   const { q } = req.query;
 
@@ -1305,4 +1477,3 @@ export const SearchContacts = async (req, res) => {
     });
   }
 };
-

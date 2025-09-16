@@ -12,7 +12,7 @@ import { useAuthStore } from "../../store/AuthStore";
 import { useNavigate } from "react-router-dom";
 import Header from "../Header/Header";
 import Alert from "../Alert/Alert";
-import axios from "axios";
+import api from "../../utils/axios";
 
 function CameraInput() {
   const { id } = useAuthStore();
@@ -222,8 +222,8 @@ function CameraInput() {
       formData.append("photo", blob, "business-card.jpg");
       formData.append("user_id", id);
 
-      const response = await axios.post(
-        "http://localhost:5000/upload-image",
+      const response = await api.post(
+        "/upload-image",
         formData,
         {
           headers: {
