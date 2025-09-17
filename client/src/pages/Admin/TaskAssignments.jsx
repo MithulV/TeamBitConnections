@@ -211,19 +211,19 @@ function TaskAssignments() {
         </div>
       </div>
 
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         <div className="container mx-auto">
-          {/* Header Section */}
-          <div className="flex items-center justify-between mb-8">
+          {/* Header Section - Mobile Responsive */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-blue-100 rounded-lg">
-                <LayoutDashboard className="w-8 h-8 text-blue-600" />
+                <LayoutDashboard className="w-6 h-6 sm:w-8 sm:h-8 text-blue-600" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
                   Task Management Dashboard
                 </h1>
-                <p className="text-gray-600">
+                <p className="text-sm sm:text-base text-gray-600">
                   Assign and monitor tasks efficiently
                 </p>
               </div>
@@ -231,160 +231,165 @@ function TaskAssignments() {
 
             <button
               onClick={() => setShowCreateForm(true)}
-              className="flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
+              className="flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2 sm:px-6 sm:py-3 rounded-lg hover:bg-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 w-full sm:w-auto"
             >
-              <Plus size={20} />
-              Create Task
+              <Plus size={18} className="sm:w-5 sm:h-5" />
+              <span className="text-sm sm:text-base">Create Task</span>
             </button>
           </div>
 
-          {/* Stats Cards - Clickable */}
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
+          {/* Stats Cards - Mobile Responsive Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 lg:gap-6 mb-8">
             {/* Total Tasks */}
             <div
-              className={`bg-white rounded-xl p-6 shadow-sm border-2 cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-105 ${activeFilter === "total"
+              className={`bg-white rounded-xl p-4 sm:p-6 shadow-sm border-2 cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-105 ${
+                activeFilter === "total"
                   ? "border-blue-500 bg-blue-50"
                   : "border-gray-200 hover:border-blue-300"
-                }`}
+              }`}
               onClick={() => handleFilterChange("total")}
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">
+                  <p className="text-xs sm:text-sm font-medium text-gray-600">
                     Total Tasks
                   </p>
-                  <p className="text-3xl font-bold text-gray-900">
+                  <p className="text-2xl sm:text-3xl font-bold text-gray-900">
                     {stats.total || 0}
                   </p>
                 </div>
-                <div className="p-3 bg-blue-100 rounded-full">
-                  <Target className="w-6 h-6 text-blue-600" />
+                <div className="p-2 sm:p-3 bg-blue-100 rounded-full">
+                  <Target className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
                 </div>
               </div>
             </div>
 
             {/* Completed Tasks */}
             <div
-              className={`bg-white rounded-xl p-6 shadow-sm border-2 cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-105 ${activeFilter === "completed"
+              className={`bg-white rounded-xl p-4 sm:p-6 shadow-sm border-2 cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-105 ${
+                activeFilter === "completed"
                   ? "border-green-500 bg-green-50"
                   : "border-gray-200 hover:border-green-300"
-                }`}
+              }`}
               onClick={() => handleFilterChange("completed")}
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Completed</p>
-                  <p className="text-3xl font-bold text-green-600">
+                  <p className="text-xs sm:text-sm font-medium text-gray-600">Completed</p>
+                  <p className="text-2xl sm:text-3xl font-bold text-green-600">
                     {stats.completed || 0}
                   </p>
                 </div>
-                <div className="p-3 bg-green-100 rounded-full">
-                  <CheckCircle className="w-6 h-6 text-green-600" />
+                <div className="p-2 sm:p-3 bg-green-100 rounded-full">
+                  <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
                 </div>
               </div>
             </div>
 
             {/* Pending Tasks */}
             <div
-              className={`bg-white rounded-xl p-6 shadow-sm border-2 cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-105 ${activeFilter === "pending"
+              className={`bg-white rounded-xl p-4 sm:p-6 shadow-sm border-2 cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-105 ${
+                activeFilter === "pending"
                   ? "border-orange-500 bg-orange-50"
                   : "border-gray-200 hover:border-orange-300"
-                }`}
+              }`}
               onClick={() => handleFilterChange("pending")}
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Pending</p>
-                  <p className="text-3xl font-bold text-orange-600">
+                  <p className="text-xs sm:text-sm font-medium text-gray-600">Pending</p>
+                  <p className="text-2xl sm:text-3xl font-bold text-orange-600">
                     {stats.pending || 0}
                   </p>
                 </div>
-                <div className="p-3 bg-orange-100 rounded-full">
-                  <Clock className="w-6 h-6 text-orange-600" />
+                <div className="p-2 sm:p-3 bg-orange-100 rounded-full">
+                  <Clock className="w-5 h-5 sm:w-6 sm:h-6 text-orange-600" />
                 </div>
               </div>
             </div>
 
             {/* Manual Tasks */}
             <div
-              className={`bg-white rounded-xl p-6 shadow-sm border-2 cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-105 ${activeFilter === "manual"
+              className={`bg-white rounded-xl p-4 sm:p-6 shadow-sm border-2 cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-105 ${
+                activeFilter === "manual"
                   ? "border-purple-500 bg-purple-50"
                   : "border-gray-200 hover:border-purple-300"
-                }`}
+              }`}
               onClick={() => handleFilterChange("manual")}
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">
+                  <p className="text-xs sm:text-sm font-medium text-gray-600">
                     Manual Tasks
                   </p>
-                  <p className="text-3xl font-bold text-purple-600">
+                  <p className="text-2xl sm:text-3xl font-bold text-purple-600">
                     {stats.breakdown?.assigned?.total || 0}
                   </p>
                 </div>
-                <div className="p-3 bg-purple-100 rounded-full">
-                  <User className="w-6 h-6 text-purple-600" />
+                <div className="p-2 sm:p-3 bg-purple-100 rounded-full">
+                  <User className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
                 </div>
               </div>
             </div>
 
             {/* Automated Tasks */}
             <div
-              className={`bg-white rounded-xl p-6 shadow-sm border-2 cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-105 ${activeFilter === "automated"
+              className={`bg-white rounded-xl p-4 sm:p-6 shadow-sm border-2 cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-105 ${
+                activeFilter === "automated"
                   ? "border-indigo-500 bg-indigo-50"
                   : "border-gray-200 hover:border-indigo-300"
-                }`}
+              }`}
               onClick={() => handleFilterChange("automated")}
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Automated</p>
-                  <p className="text-3xl font-bold text-indigo-600">
+                  <p className="text-xs sm:text-sm font-medium text-gray-600">Automated</p>
+                  <p className="text-2xl sm:text-3xl font-bold text-indigo-600">
                     {stats.breakdown?.automated?.total || 0}
                   </p>
                 </div>
-                <div className="p-3 bg-indigo-100 rounded-full">
-                  <Zap className="w-6 h-6 text-indigo-600" />
+                <div className="p-2 sm:p-3 bg-indigo-100 rounded-full">
+                  <Zap className="w-5 h-5 sm:w-6 sm:h-6 text-indigo-600" />
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Tasks List with Pagination */}
+          {/* Tasks List with Pagination - Mobile Responsive */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex items-center justify-between">
+            <div className="p-4 sm:p-6 border-b border-gray-200">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div className="flex items-center gap-2">
-                  <Clock className="w-5 h-5 text-gray-600" />
-                  <h2 className="text-xl font-semibold text-gray-900">
+                  <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
+                  <h2 className="text-lg sm:text-xl font-semibold text-gray-900">
                     {getFilterTitle()}
                   </h2>
-                  <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-sm">
+                  <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-xs sm:text-sm">
                     {allTasks[activeFilter]?.length || 0} tasks
                   </span>
                 </div>
 
                 {/* Pagination Info */}
-                <div className="text-sm text-gray-500">
+                <div className="text-xs sm:text-sm text-gray-500">
                   Page {currentPage} of {totalPages || 1}
                 </div>
               </div>
             </div>
 
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
               {loading ? (
                 <div className="flex items-center justify-center py-12">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                  <div className="animate-spin rounded-full h-8 w-8 sm:h-12 sm:w-12 border-b-2 border-blue-600"></div>
                 </div>
               ) : getCurrentTasks().length === 0 ? (
                 <div className="text-center py-12">
-                  <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mb-4">
-                    <CheckCircle className="w-8 h-8 text-gray-400" />
+                  <div className="inline-flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 bg-gray-100 rounded-full mb-4">
+                    <CheckCircle className="w-6 h-6 sm:w-8 sm:h-8 text-gray-400" />
                   </div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">
                     No {activeFilter} tasks
                   </h3>
-                  <p className="text-gray-500">
+                  <p className="text-sm sm:text-base text-gray-500">
                     No tasks found for this category.
                   </p>
                 </div>
@@ -398,54 +403,57 @@ function TaskAssignments() {
                           key={index}
                           className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow duration-200 overflow-hidden"
                         >
-                          <div className="flex items-start justify-between min-w-0">
+                          {/* Mobile-first column layout, desktop row layout */}
+                          <div className="flex flex-col space-y-3 min-w-0">
                             <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-3 mb-2 flex-wrap">
-                                <h3 className="text-lg font-semibold text-gray-900 break-all hyphens-auto min-w-0">
+                              {/* Title and badges - stacked on mobile, inline on larger screens */}
+                              <div className="flex flex-col space-y-2 sm:space-y-0 sm:flex-row sm:items-center sm:gap-3 mb-3">
+                                <h3 className="text-base sm:text-lg font-semibold text-gray-900 break-words hyphens-auto min-w-0 order-1">
                                   {task.task_title}
                                 </h3>
-                                <span
-                                  className={`px-2 py-1 text-xs font-medium rounded-full whitespace-nowrap ${priority.color}`}
-                                >
-                                  {priority.label}
-                                </span>
-                                <span
-                                  className={`px-2 py-1 text-xs font-medium rounded-full whitespace-nowrap ${task.task_type === "assigned"
-                                      ? "bg-blue-100 text-blue-800"
-                                      : "bg-gray-100 text-gray-800"
-                                    }`}
-                                >
-                                  {task.task_type === "assigned"
-                                    ? "Manual"
-                                    : "Automated"}
-                                </span>
-                                {task.task_completion && (
-                                  <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800 whitespace-nowrap">
-                                    Completed
+                                
+                                {/* Badges container - stacked on mobile, inline on larger screens */}
+                                <div className="flex flex-wrap gap-2 order-2">
+                                  <span
+                                    className={`px-2 py-1 text-xs font-medium rounded-full whitespace-nowrap ${priority.color}`}
+                                  >
+                                    {priority.label}
                                   </span>
-                                )}
+                                  <span
+                                    className={`px-2 py-1 text-xs font-medium rounded-full whitespace-nowrap ${
+                                      task.task_type === "assigned"
+                                        ? "bg-blue-100 text-blue-800"
+                                        : "bg-gray-100 text-gray-800"
+                                    }`}
+                                  >
+                                    {task.task_type === "assigned" ? "Manual" : "Automated"}
+                                  </span>
+                                  {task.task_completion && (
+                                    <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800 whitespace-nowrap">
+                                      Completed
+                                    </span>
+                                  )}
+                                </div>
                               </div>
 
+                              {/* Description */}
                               {task.task_description && (
-                                <p className="text-gray-600 mb-3 break-words hyphens-auto whitespace-pre-wrap">
+                                <p className="text-sm sm:text-base text-gray-600 mb-3 break-words hyphens-auto whitespace-pre-wrap">
                                   {task.task_description}
                                 </p>
                               )}
 
-                              <div className="flex items-center gap-6 text-sm text-gray-500 flex-wrap">
+                              {/* Task details - column on mobile, row on larger screens */}
+                              <div className="flex flex-col space-y-2 sm:space-y-0 sm:flex-row sm:items-center sm:gap-6 text-xs sm:text-sm text-gray-500">
                                 <div className="flex items-center gap-1 whitespace-nowrap">
-                                  <Calendar className="w-4 h-4" />
+                                  <Calendar className="w-3 h-3 sm:w-4 sm:h-4" />
                                   <span>
-                                    Due:{" "}
-                                    {format(
-                                      parseISO(task.task_deadline),
-                                      "PPP"
-                                    )}
+                                    Due: {format(parseISO(task.task_deadline), "PPP")}
                                   </span>
                                 </div>
                                 <div className="flex items-center gap-1">
-                                  <User className="w-4 h-4" />
-                                  <span className="break-all">
+                                  <User className="w-3 h-3 sm:w-4 sm:h-4" />
+                                  <span className="break-words">
                                     Category: {task.task_assigned_category}
                                   </span>
                                 </div>
@@ -457,19 +465,19 @@ function TaskAssignments() {
                     })}
                   </div>
 
-                  {/* Pagination Controls */}
+                  {/* Pagination Controls - Mobile Responsive */}
                   {totalPages > 1 && (
-                    <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-200">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-6 pt-4 border-t border-gray-200">
                       <button
                         onClick={prevPage}
                         disabled={currentPage === 1}
-                        className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white transition-colors duration-200"
+                        className="flex items-center justify-center gap-2 px-3 py-2 sm:px-4 text-xs sm:text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white transition-colors duration-200"
                       >
-                        <ChevronLeft className="w-4 h-4" />
+                        <ChevronLeft className="w-3 h-3 sm:w-4 sm:h-4" />
                         Previous
                       </button>
 
-                      <span className="text-sm text-gray-700">
+                      <span className="text-xs sm:text-sm text-gray-700 text-center">
                         Showing {(currentPage - 1) * tasksPerPage + 1} to{" "}
                         {Math.min(
                           currentPage * tasksPerPage,
@@ -481,10 +489,10 @@ function TaskAssignments() {
                       <button
                         onClick={nextPage}
                         disabled={currentPage === totalPages}
-                        className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white transition-colors duration-200"
+                        className="flex items-center justify-center gap-2 px-3 py-2 sm:px-4 text-xs sm:text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white transition-colors duration-200"
                       >
                         Next
-                        <ChevronRight className="w-4 h-4" />
+                        <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4" />
                       </button>
                     </div>
                   )}
@@ -495,7 +503,7 @@ function TaskAssignments() {
         </div>
       </div>
 
-      {/* Enhanced Create Task Modal */}
+      {/* Enhanced Create Task Modal - Mobile Responsive */}
       {showCreateForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div
@@ -503,14 +511,14 @@ function TaskAssignments() {
             onClick={() => setShowCreateForm(false)}
           ></div>
 
-          <div className="relative bg-white rounded-2xl shadow-2xl max-w-lg w-full mx-4 transform transition-all duration-300 scale-100">
+          <div className="relative bg-white rounded-2xl shadow-2xl max-w-lg w-full mx-4 transform transition-all duration-300 scale-100 max-h-[90vh] overflow-y-auto">
             {/* Modal Header */}
-            <div className="flex items-center justify-between p-6 border-b border-gray-100">
+            <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-100">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-blue-100 rounded-lg">
-                  <Plus className="w-5 h-5 text-blue-600" />
+                  <Plus className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
                 </div>
-                <h2 className="text-xl font-bold text-gray-900">
+                <h2 className="text-lg sm:text-xl font-bold text-gray-900">
                   Create New Task
                 </h2>
               </div>
@@ -518,19 +526,19 @@ function TaskAssignments() {
                 onClick={() => setShowCreateForm(false)}
                 className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors duration-200"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
             </div>
 
             {/* Modal Body */}
-            <div className="p-6 space-y-6">
+            <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Task Title <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 placeholder-gray-400"
+                  className="w-full px-3 py-2 sm:px-4 sm:py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 placeholder-gray-400 text-sm sm:text-base"
                   placeholder="Enter a descriptive task title"
                   value={newTask.task_title}
                   onChange={(e) =>
@@ -544,7 +552,7 @@ function TaskAssignments() {
                   Description
                 </label>
                 <textarea
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 placeholder-gray-400 resize-none"
+                  className="w-full px-3 py-2 sm:px-4 sm:py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 placeholder-gray-400 resize-none text-sm sm:text-base"
                   placeholder="Provide detailed task description..."
                   rows={4}
                   value={newTask.task_description}
@@ -559,7 +567,7 @@ function TaskAssignments() {
                   Assign To Category <span className="text-red-500">*</span>
                 </label>
                 <select
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                  className="w-full px-3 py-2 sm:px-4 sm:py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-sm sm:text-base"
                   value={newTask.task_assigned_category}
                   onChange={(e) =>
                     setNewTask({
@@ -581,7 +589,7 @@ function TaskAssignments() {
                 </label>
                 <input
                   type="date"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                  className="w-full px-3 py-2 sm:px-4 sm:py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-sm sm:text-base"
                   value={newTask.task_deadline}
                   onChange={(e) =>
                     setNewTask({ ...newTask, task_deadline: e.target.value })
@@ -591,16 +599,16 @@ function TaskAssignments() {
             </div>
 
             {/* Modal Footer */}
-            <div className="flex gap-3 p-6 border-t border-gray-100 bg-gray-50 rounded-b-2xl">
+            <div className="flex flex-col sm:flex-row gap-3 p-4 sm:p-6 border-t border-gray-100 bg-gray-50 rounded-b-2xl">
               <button
                 onClick={() => setShowCreateForm(false)}
-                className="flex-1 px-6 py-3 text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors duration-200 font-medium"
+                className="flex-1 px-4 py-2 sm:px-6 sm:py-3 text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors duration-200 font-medium text-sm sm:text-base"
               >
                 Cancel
               </button>
               <button
                 onClick={createTask}
-                className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-4 py-2 sm:px-6 sm:py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
                 disabled={
                   !newTask.task_title ||
                   !newTask.task_assigned_category ||
