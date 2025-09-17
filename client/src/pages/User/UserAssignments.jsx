@@ -301,9 +301,8 @@ function UserAssignments() {
           </div>
         </div>
       </div>
-
       <div className="p-6">
-        <div className="max-w-7xl mx-auto">
+        <div className="container mx-auto">
           {activeView === "formData" ? (
             <div>
               <div className="bg-white rounded-lg p-4 mb-6 shadow-sm border border-gray-200">

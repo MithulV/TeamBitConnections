@@ -21,7 +21,7 @@ import Avatar from "../../assets/Avatar.png";
 
 function Navbar() {
   const { pathname } = useLocation();
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
