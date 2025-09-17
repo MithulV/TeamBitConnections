@@ -48,26 +48,54 @@ const MiddleManCard = ({ contact, onDelete, onEdit }) => {
   };
 
   // Calculate how many skills can fit based on available space
-  useEffect(() => {
-    const calculateVisibleSkills = () => {
-      if (skillsContainerRef.current && contact.skills?.length > 0) {
-        const containerWidth = skillsContainerRef.current.offsetWidth;
-        // Estimate: each skill takes roughly 80-120px, +N counter takes 40px
-        // Leave some buffer space
-        if (containerWidth < 250) {
-          setVisibleSkillsCount(1);
-        } else if (containerWidth < 350) {
-          setVisibleSkillsCount(2);
-        } else {
-          setVisibleSkillsCount(3);
-        }
-      }
+useEffect(() => {
+  // ---------- helper ----------
+  const debounce = (fn, wait = 150) => {
+    let t;
+    return (...args) => {
+      clearTimeout(t);
+      t = setTimeout(() => fn(...args), wait);
     };
+  };
 
-    calculateVisibleSkills();
-    window.addEventListener('resize', calculateVisibleSkills);
-    return () => window.removeEventListener('resize', calculateVisibleSkills);
-  }, [contact.skills]);
+  // ---------- main ----------
+  const calculateVisibleSkills = () => {
+    const container = skillsContainerRef.current;
+    if (!container || !contact.skills?.length) return;
+
+    const counterWidth = 45;                    // “+N” badge
+    const spaceLeft  = container.offsetWidth - counterWidth;
+    const pills      = [...container.children].filter(
+      (el) => el.dataset.skill === "true"       // mark real pills only
+    );
+
+    let used = 0;
+    let visible = 0;
+
+    for (const pill of pills) {
+      const style      = getComputedStyle(pill);
+      const pillWidth  =
+        pill.offsetWidth +               // real width
+        parseFloat(style.marginLeft) +
+        parseFloat(style.marginRight);   // horizontal gap
+
+      if (used + pillWidth > spaceLeft) break;
+      used += pillWidth;
+      visible += 1;
+    }
+
+    // Always show at least one pill
+    setVisibleSkillsCount(Math.max(1, visible));
+  };
+
+  // initial run and debounced resize listener
+  const onResize = debounce(calculateVisibleSkills, 150);
+
+  calculateVisibleSkills();
+  window.addEventListener("resize", onResize);
+  return () => window.removeEventListener("resize", onResize);
+}, [contact.skills]);
+
 
   return (
     <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-lg hover:border-gray-200 transition-all duration-300 max-w-sm">
@@ -179,6 +207,7 @@ const MiddleManCard = ({ contact, onDelete, onEdit }) => {
           {contact.skills.slice(0, visibleSkillsCount).map((skill, index) => (
             <span
               key={index}
+              data-skill="true"
               className="px-2 py-0.5 bg-gray-100 text-gray-700 rounded-full text-xs font-medium whitespace-nowrap flex-shrink-0 max-w-[120px] truncate shadow-sm"
               title={skill}
             >
