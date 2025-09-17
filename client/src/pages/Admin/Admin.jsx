@@ -119,7 +119,7 @@ function Admin() {
     totalEvents: 0,
     completedTasks: 0,
     pendingTasks: 0,
-    totalImages: 0,
+    totalUnverifiedContacts: 0,
     activeAssignments: 0,
     dataQualityScore: 0,
     monthlyAcquisitionRate: 0,
@@ -529,7 +529,7 @@ function Admin() {
           (c) => !c.verified || c.contact_status === "pending"
         ).length,
         totalEvents,
-        totalImages: unverifiedImages.length,
+        totalUnverifiedContacts: unverifiedImages.length+unverifiedContacts.length,
         dataQualityScore,
         monthlyAcquisitionRate,
         linkedinConnections,
@@ -835,7 +835,7 @@ function Admin() {
             />
             <StatCard
               title="Data Verification Queue"
-              value={stats.totalImages.toLocaleString()}
+              value={stats.totalUnverifiedContacts.toLocaleString()}
               icon={AlertTriangle}
               color="bg-gradient-to-r from-red-500 to-red-600"
               subtext="Awaiting review"
