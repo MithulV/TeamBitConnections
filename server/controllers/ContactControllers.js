@@ -69,11 +69,11 @@ export const GetAllContact = async (req, res) => {
           STRING_AGG(DISTINCT e.updated_at::text, '; ') as event_details_updated_at
           
         FROM contact c
-        LEFT JOIN login l ON c.created_by = l.id
         LEFT JOIN contact_address ca ON c.contact_id = ca.contact_id
         LEFT JOIN contact_education ce ON c.contact_id = ce.contact_id
         LEFT JOIN contact_experience cex ON c.contact_id = cex.contact_id
         LEFT JOIN event e ON c.contact_id = e.contact_id
+        LEFT JOIN login l ON e.created_by = l.id
         GROUP BY 
           c.contact_id, c.created_by, l.email, c.created_at, c.name,
           c.phone_number, c.secondary_phone_number, c.email_address,
@@ -148,11 +148,11 @@ export const GetAllContact = async (req, res) => {
           STRING_AGG(DISTINCT e.updated_at::text, '; ') as event_details_updated_at
           
         FROM contact c
-        LEFT JOIN login l ON c.created_by = l.id
         LEFT JOIN contact_address ca ON c.contact_id = ca.contact_id
         LEFT JOIN contact_education ce ON c.contact_id = ce.contact_id
         LEFT JOIN contact_experience cex ON c.contact_id = cex.contact_id
         LEFT JOIN event e ON c.contact_id = e.contact_id
+        LEFT JOIN login l ON e.created_by = l.id
         GROUP BY 
           c.contact_id, c.created_by, l.email, c.created_at, c.name,
           c.phone_number, c.secondary_phone_number, c.email_address,
@@ -167,6 +167,13 @@ export const GetAllContact = async (req, res) => {
 
     const result = await query;
 
+    // Log the view operation
+    try {
+      await logContactModification(db, null, req.user?.id || 'system', "VIEW ALL");
+    } catch (err) {
+      console.warn("Contact modification logging failed:", err.message);
+    }
+
     res.status(200).json({
       success: true,
       data: result,
@@ -180,6 +187,7 @@ export const GetAllContact = async (req, res) => {
     });
   }
 };
+
 // In admin and User
 export const CreateContact = async (req, res) => {
   const {
