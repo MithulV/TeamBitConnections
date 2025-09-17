@@ -215,19 +215,18 @@ const TasksPage = () => {
           </h3>
           <div className="flex items-center gap-3 mb-3">
             <span
-              className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                task.task_type === "assigned"
+              className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${task.task_type === "assigned"
                   ? "bg-blue-100 text-blue-700"
                   : task.task_type === "automated"
-                  ? "bg-purple-100 text-purple-700"
-                  : "bg-gray-100 text-gray-700"
-              }`}
+                    ? "bg-purple-100 text-purple-700"
+                    : "bg-gray-100 text-gray-700"
+                }`}
             >
               {task.task_type === "assigned"
                 ? "👤 Assigned"
                 : task.task_type === "automated"
-                ? "🤖 Automated"
-                : `📋 ${task.task_type}`}
+                  ? "🤖 Automated"
+                  : `📋 ${task.task_type}`}
             </span>
           </div>
           <div className="flex items-center gap-4 text-sm text-gray-600 mb-3">
@@ -286,8 +285,11 @@ const TasksPage = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <Header />
-      <div className="p-6">
+      <div className="w-full bg-white shadow-sm sticky top-0 z-50 border-b-2 border-b-gray-50">
+        <div className="flex justify-end">
+          <Header />
+        </div>
+      </div>      <div className="p-6">
         <div className="container mx-auto">
           <h1 className="text-3xl font-semibold text-gray-800 mb-4">Tasks</h1>
           <p className="text-gray-600 mb-6">
@@ -404,19 +406,18 @@ const TasksPage = () => {
               {/* Task Type and Category */}
               <div className="flex items-center gap-3 mb-4">
                 <span
-                  className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                    selectedTask.task_type === "assigned"
+                  className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${selectedTask.task_type === "assigned"
                       ? "bg-blue-100 text-blue-700"
                       : selectedTask.task_type === "automated"
-                      ? "bg-purple-100 text-purple-700"
-                      : "bg-gray-100 text-gray-700"
-                  }`}
+                        ? "bg-purple-100 text-purple-700"
+                        : "bg-gray-100 text-gray-700"
+                    }`}
                 >
                   {selectedTask.task_type === "assigned"
                     ? "👤 Assigned"
                     : selectedTask.task_type === "automated"
-                    ? "🤖 Automated"
-                    : `📋 ${selectedTask.task_type}`}
+                      ? "🤖 Automated"
+                      : `📋 ${selectedTask.task_type}`}
                 </span>
                 <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-700">
                   Category: {selectedTask.task_assigned_category}

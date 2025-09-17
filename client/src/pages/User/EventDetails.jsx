@@ -124,7 +124,11 @@ function EventDetails() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
+      <div className="w-full bg-white shadow-sm sticky top-0 z-50 border-b-2 border-b-gray-50">
+        <div className="flex justify-end">
+          <Header />
+        </div>
+      </div>
       <Alert
         isOpen={alert.isOpen}
         onClose={closeAlert}

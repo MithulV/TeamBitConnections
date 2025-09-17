@@ -76,7 +76,7 @@ function Referral() {
     return (
       <div className="h-screen bg-slate-50 overflow-hidden">
         <Header />
-        <div className="flex items-center justify-center h-3/4">
+        <div className="flex items-center justify-center h-3/4 pt-20">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-500 border-t-transparent mx-auto mb-4"></div>
             <h3 className="text-lg font-semibold text-gray-700 mb-2">
@@ -92,16 +92,22 @@ function Referral() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-      <Header />
+    <div className="w-full min-h-screen flex flex-col bg-gradient-to-br from-slate-50 to-blue-50">
 
-      {/* Main Container - Responsive Layout */}
-      <div className="flex items-center justify-center min-h-[calc(100vh-80px)] px-4 py-8 overflow-y-auto">
+      <div className="w-full bg-white shadow-sm sticky top-0 z-50 border-b-2 border-b-gray-50">
+        <div className="flex justify-end">
+          <Header />
+        </div>
+      </div>
+
+      {/* Main Container - Responsive Layout with mobile-safe padding */}
+      <div className="flex items-center justify-center min-h-[calc(100vh-80px)] px-4 py-8 pt-8 sm:pt-16 md:pt-8 overflow-y-auto">
         <div className="flex flex-col lg:flex-row items-center justify-center gap-8 lg:gap-12 w-full max-w-6xl">
           {/* Left Section - Visual/Info */}
           <div className="flex-1 max-w-lg w-full">
             <div className="text-center lg:text-left">
-              <div className="inline-flex items-center justify-center w-16 h-16 lg:w-20 lg:h-20 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full mb-4 lg:mb-6 shadow-lg">
+              {/* Icon with mobile-safe margin */}
+              <div className="inline-flex items-center justify-center w-16 h-16 lg:w-20 lg:h-20 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full mb-4 lg:mb-6 mt-4 sm:mt-0 shadow-lg">
                 <svg
                   className="w-8 h-8 lg:w-10 lg:h-10 text-white"
                   fill="none"
@@ -274,11 +280,10 @@ function Referral() {
                 <button
                   type="submit"
                   disabled={loading || !inviteeEmail}
-                  className={`w-full py-3 lg:py-4 px-6 rounded-lg font-semibold text-white transition duration-200 transform text-sm lg:text-base ${
-                    loading || !inviteeEmail
-                      ? "bg-gray-400 cursor-not-allowed"
-                      : "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl"
-                  }`}
+                  className={`w-full py-3 lg:py-4 px-6 rounded-lg font-semibold text-white transition duration-200 transform text-sm lg:text-base ${loading || !inviteeEmail
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl"
+                    }`}
                 >
                   {loading ? (
                     <div className="flex items-center justify-center">
