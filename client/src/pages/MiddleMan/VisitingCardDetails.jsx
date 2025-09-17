@@ -1637,46 +1637,41 @@ const VisitingCardDetails = () => {
         duration={4000}
       />
 
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={() => {
-                  console.log("Navigating with state:", {
-                    view: "visitingCards",
-                  });
-                  navigate("/verify-records", {
-                    state: { view: "visitingCards" },
-                  });
-                }}
-                className="p-2 hover:bg-gray-50 rounded-lg transition-colors"
-              >
-                <ArrowLeft className="w-5 h-5 text-gray-600" />
-              </button>
-              <div>
-                <h1 className="text-xl font-semibold text-gray-900">
-                  Visiting Card Extraction
-                </h1>
-                <p className="text-sm text-gray-500">
-                  Extract and manage contact information - Card ID: {id}
-                </p>
-              </div>
+      {/* Header - Mobile Responsive */}
+      <header className="bg-white border-b sticky top-0 z-50 border-gray-200">
+        <div className="container mx-auto px-10 py-1  sm:px-6 sm:py-4">
+          <div className="flex items-center space-x-3 sm:space-x-4">
+            <button
+              onClick={() => {
+                console.log("Navigating with state:", {
+                  view: "visitingCards",
+                });
+                navigate("/verify-records", {
+                  state: { view: "visitingCards" },
+                });
+              }}
+              className="p-2 hover:bg-gray-50 rounded-lg transition-colors"
+            >
+              <ArrowLeft className="w-5 h-5 text-gray-600" />
+            </button>
+            <div>
+              <h1 className="text-lg sm:text-xl font-semibold text-gray-900">
+                Visiting Card Extraction
+              </h1>
             </div>
           </div>
         </div>
       </header>
 
-      <main className="container mx-auto p-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <main className="container mx-auto p-4 sm:p-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
           <div className="lg:col-span-1 space-y-6">
             <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
-              <div className="p-6">
+              <div className="p-4 sm:p-6">
                 <h2 className="text-lg font-medium text-gray-900 mb-4">
                   Visiting Card
                 </h2>
-                <div className="relative bg-gray-50 rounded-lg p-6 mb-6">
+                <div className="relative bg-gray-50 rounded-lg p-4 sm:p-6 mb-6">
                   <div
                     className="aspect-[4/3] bg-white rounded-md shadow-sm border overflow-hidden cursor-pointer hover:shadow-md transition-shadow duration-200"
                     onClick={() => setIsModalOpen(true)}
@@ -1688,7 +1683,7 @@ const VisitingCardDetails = () => {
                           "/"
                         )}`}
                         alt="Visiting Card"
-                        className="w-full h-full object-contain hover:scale-105 transition-transform duration-200"
+                        className="w-full h-full object-fill hover:scale-105 transition-transform duration-200"
                         onError={(e) => {
                           e.target.src =
                             "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 240'%3E%3Crect width='400' height='240' fill='%23f5f5f5'/%3E%3Ctext x='200' y='120' text-anchor='middle' fill='%23999' font-family='Arial' font-size='14'%3EImage not found%3C/text%3E%3C/svg%3E";
@@ -1745,7 +1740,7 @@ const VisitingCardDetails = () => {
             {/* Extraction Results */}
             {isExtracted && (
               <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
-                <div className="p-6">
+                <div className="p-4 sm:p-6">
                   <h3 className="text-lg font-medium text-gray-900 mb-4">
                     Extracted Information
                   </h3>
@@ -1869,9 +1864,9 @@ const VisitingCardDetails = () => {
           {/* Right Panel - Form with Stepper */}
           <div className="lg:col-span-2">
             <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
-              {/* Horizontal Stepper */}
-              <div className="px-6 py-4 border-b border-gray-200">
-                <div className="flex items-center justify-between">
+              {/* Mobile-Responsive Horizontal Stepper */}
+              <div className="px-3 sm:px-6 py-4 border-b border-gray-200 overflow-x-auto">
+                <div className="flex items-center justify-between min-w-max sm:min-w-0">
                   {steps.map((step, index) => {
                     const status = getStepStatus(index);
                     const Icon = step.icon;
@@ -1881,7 +1876,7 @@ const VisitingCardDetails = () => {
                         {/* Step Circle */}
                         <button
                           onClick={() => goToStep(index)}
-                          className={`relative flex items-center justify-center w-10 h-10 rounded-full text-sm font-medium transition-colors ${
+                          className={`relative flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full text-sm font-medium transition-colors ${
                             status === "completed"
                               ? "bg-blue-600 text-white hover:bg-blue-700"
                               : status === "current"
@@ -1890,16 +1885,16 @@ const VisitingCardDetails = () => {
                           }`}
                         >
                           {status === "completed" ? (
-                            <Check className="w-5 h-5" />
+                            <Check className="w-4 h-4 sm:w-5 sm:h-5" />
                           ) : (
-                            <Icon className="w-5 h-5" />
+                            <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
                           )}
                         </button>
 
                         {/* Step Connector */}
                         {index < steps.length - 1 && (
                           <div
-                            className={`h-0.5 w-8 mx-2 ${
+                            className={`h-0.5 w-6 sm:w-8 mx-1 sm:mx-2 ${
                               index < currentStep
                                 ? "bg-blue-600"
                                 : "bg-gray-200"
@@ -1911,8 +1906,8 @@ const VisitingCardDetails = () => {
                   })}
                 </div>
 
-                {/* Step Labels */}
-                <div className="flex items-center justify-between mt-3">
+                {/* Step Labels - Mobile Scrollable */}
+                <div className="flex items-center justify-between mt-3 min-w-max sm:min-w-0">
                   {steps.map((step, index) => {
                     const status = getStepStatus(index);
 
@@ -1920,7 +1915,7 @@ const VisitingCardDetails = () => {
                       <div key={step.id} className="flex items-center">
                         <div className="text-center">
                           <p
-                            className={`text-xs font-medium ${
+                            className={`text-xs font-medium whitespace-nowrap ${
                               status === "current"
                                 ? "text-blue-600"
                                 : status === "completed"
@@ -1928,11 +1923,12 @@ const VisitingCardDetails = () => {
                                 : "text-gray-400"
                             }`}
                           >
-                            {step.shortTitle}
+                            <span className="hidden sm:inline">{step.shortTitle}</span>
+                            <span className="sm:hidden">{step.shortTitle.slice(0,4)}</span>
                           </p>
                         </div>
                         {index < steps.length - 1 && (
-                          <div className="w-8 mx-2"></div>
+                          <div className="w-6 sm:w-8 mx-1 sm:mx-2"></div>
                         )}
                       </div>
                     );
@@ -1941,10 +1937,10 @@ const VisitingCardDetails = () => {
               </div>
 
               {/* Form Content */}
-              <div className="p-6">
+              <div className="p-4 sm:p-6">
                 {/* Step Title */}
                 <div className="mb-6">
-                  <h2 className="text-xl font-semibold text-gray-900">
+                  <h2 className="text-lg sm:text-xl font-semibold text-gray-900">
                     {steps[currentStep].title}
                   </h2>
                   <p className="text-sm text-gray-500 mt-1">
@@ -1953,15 +1949,15 @@ const VisitingCardDetails = () => {
                 </div>
 
                 {/* Step Content */}
-                <div className="min-h-[500px]">{renderStepContent()}</div>
+                <div className="min-h-[400px] sm:min-h-[500px]">{renderStepContent()}</div>
 
                 {/* Navigation Buttons */}
-                <div className="flex justify-between items-center pt-6 border-t border-gray-200 mt-8">
+                <div className="flex flex-col sm:flex-row justify-between items-center pt-6 border-t border-gray-200 mt-8 gap-4 sm:gap-0">
                   <button
                     type="button"
                     onClick={prevStep}
                     disabled={currentStep === 0}
-                    className={`flex items-center space-x-2 px-6 py-2.5 text-sm font-medium rounded-lg transition-colors ${
+                    className={`flex items-center justify-center space-x-2 px-6 py-2.5 text-sm font-medium rounded-lg transition-colors w-full sm:w-auto ${
                       currentStep === 0
                         ? "text-gray-400 cursor-not-allowed"
                         : "text-gray-700 hover:bg-gray-50 border border-gray-300"
@@ -1971,14 +1967,14 @@ const VisitingCardDetails = () => {
                     <span>Previous</span>
                   </button>
 
-                  <div className="flex space-x-3">
+                  <div className="flex space-x-3 w-full sm:w-auto">
                     {currentStep === steps.length - 1 ? (
                       <button
                         type="button"
                         onClick={() => {
                           handleSave();
                         }}
-                        className="flex items-center space-x-2 px-6 py-2.5 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
+                        className="flex items-center justify-center space-x-2 px-6 py-2.5 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors w-full sm:w-auto"
                       >
                         <Save className="w-4 h-4" />
                         <span>Save Contact</span>
@@ -1987,7 +1983,7 @@ const VisitingCardDetails = () => {
                       <button
                         type="button"
                         onClick={nextStep}
-                        className="flex items-center space-x-2 px-6 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+                        className="flex items-center justify-center space-x-2 px-6 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors w-full sm:w-auto"
                       >
                         <span>Next</span>
                         <ChevronRight className="w-4 h-4" />
