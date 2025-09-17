@@ -229,7 +229,7 @@ function UserEntries() {
             showAlert(
               "success",
               response.data.message ||
-                `${userToDelete.name} has been processed successfully.`
+              `${userToDelete.name} has been processed successfully.`
             );
           }
         } else {
@@ -265,7 +265,7 @@ function UserEntries() {
             showAlert(
               "success",
               response.data.message ||
-                `${userToDelete.name} has been processed successfully.`
+              `${userToDelete.name} has been processed successfully.`
             );
           }
         }
@@ -279,7 +279,7 @@ function UserEntries() {
           showAlert(
             "error",
             error.response.data.message ||
-              "You don't have permission to delete this item."
+            "You don't have permission to delete this item."
           );
         } else if (error.response?.status === 404) {
           showAlert(
@@ -319,24 +319,24 @@ function UserEntries() {
           events:
             participant.events?.length > 0
               ? participant.events.map((event) => ({
-                  // **FIXED: Map to the correct property names that FormInput expects**
-                  eventId: event.event_id,
-                  eventName: event.event_name || "",
-                  eventRole: event.event_role || "",
-                  eventDate: event.event_date || "",
-                  eventHeldOrganization: event.event_held_organization || "",
-                  eventLocation: event.event_location || "",
-                }))
+                // **FIXED: Map to the correct property names that FormInput expects**
+                eventId: event.event_id,
+                eventName: event.event_name || "",
+                eventRole: event.event_role || "",
+                eventDate: event.event_date || "",
+                eventHeldOrganization: event.event_held_organization || "",
+                eventLocation: event.event_location || "",
+              }))
               : [
-                  {
-                    eventId: "",
-                    eventName: "",
-                    eventRole: "",
-                    eventDate: "",
-                    eventHeldOrganization: "",
-                    eventLocation: "",
-                  },
-                ],
+                {
+                  eventId: "",
+                  eventName: "",
+                  eventRole: "",
+                  eventDate: "",
+                  eventHeldOrganization: "",
+                  eventLocation: "",
+                },
+              ],
         };
 
         console.log("Prepared user data for edit:", userToEdit);
@@ -395,17 +395,10 @@ function UserEntries() {
         duration={4000}
       />
 
-      {/* Full Width Header Section */}
-      <div className="w-full bg-white shadow-sm">
-        <div className="flex items-center justify-between">
-          <div className="flex-shrink-0">
-            <div></div>
-          </div>
-
-          {/* Right Section - Header always on the right */}
-          <div className="flex-shrink-0">
-            <Header />
-          </div>
+      {/*Header Section */}
+      <div className="w-full bg-white shadow-sm sticky top-0 z-50 border-b-2 border-b-gray-50">
+        <div className="flex justify-end">
+          <Header />
         </div>
       </div>
 
@@ -417,21 +410,19 @@ function UserEntries() {
             <div className="flex gap-4 mb-6">
               <button
                 onClick={() => setActiveView("formDetails")}
-                className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
-                  activeView === "formDetails"
+                className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${activeView === "formDetails"
                     ? "bg-blue-600 text-white shadow-md"
                     : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
-                }`}
+                  }`}
               >
                 Form Details
               </button>
               <button
                 onClick={() => setActiveView("visitingCards")}
-                className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
-                  activeView === "visitingCards"
+                className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${activeView === "visitingCards"
                     ? "bg-blue-600 text-white shadow-md"
                     : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
-                }`}
+                  }`}
               >
                 Visiting Cards
               </button>

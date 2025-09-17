@@ -290,15 +290,9 @@ function UserAssignments() {
         duration={4000}
       />
 
-      <div className="w-full bg-white shadow-sm">
-        <div className="flex items-center justify-between">
-          <div className="flex-shrink-0">
-            <div></div>
-          </div>
-
-          <div className="flex-shrink-0">
-            <Header />
-          </div>
+      <div className="w-full bg-white shadow-sm sticky top-0 z-50 border-b-2 border-b-gray-50">
+        <div className="flex justify-end">
+          <Header />
         </div>
       </div>
       <div className="p-6">
@@ -309,9 +303,8 @@ function UserAssignments() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center">
                     <div
-                      className={`w-3 h-3 ${
-                        data.length === 0 ? "bg-red-500" : "bg-green-400"
-                      } rounded-full mr-2`}
+                      className={`w-3 h-3 ${data.length === 0 ? "bg-red-500" : "bg-green-400"
+                        } rounded-full mr-2`}
                     ></div>
                     <span className="text-sm text-gray-600">
                       {data.length} Assigned Contact
@@ -356,9 +349,9 @@ function UserAssignments() {
                       assignedOn={
                         participant.created_at
                           ? format(
-                              parseISO(participant.created_at),
-                              "MMMM dd, yyyy"
-                            )
+                            parseISO(participant.created_at),
+                            "MMMM dd, yyyy"
+                          )
                           : "N/A"
                       }
                     />
