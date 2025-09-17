@@ -375,9 +375,8 @@ function Admin() {
           role: item.experiences?.[0]?.job_title || "N/A",
           company: item.experiences?.[0]?.company || "N/A",
           location:
-            `${item.address?.city || ""}, ${
-              item.address?.state || ""
-            }`.trim() === ","
+            `${item.address?.city || ""}, ${item.address?.state || ""
+              }`.trim() === ","
               ? "N/A"
               : `${item.address?.city || ""}, ${item.address?.state || ""}`,
           skills: item.skills
@@ -529,7 +528,7 @@ function Admin() {
           (c) => !c.verified || c.contact_status === "pending"
         ).length,
         totalEvents,
-        totalUnverifiedContacts: unverifiedImages.length+unverifiedContacts.length,
+        totalUnverifiedContacts: unverifiedImages.length + unverifiedContacts.length,
         dataQualityScore,
         monthlyAcquisitionRate,
         linkedinConnections,
@@ -612,10 +611,10 @@ function Admin() {
         showAlert(
           "success",
           `CSV Import Complete!\n` +
-            `📊 Total rows processed: ${totalRows}\n` +
-            `✅ Successfully added: ${successCount}\n` +
-            `⚠️ Duplicates skipped: ${duplicateCount}\n` +
-            `❌ Errors encountered: ${errorCount}`
+          `📊 Total rows processed: ${totalRows}\n` +
+          `✅ Successfully added: ${successCount}\n` +
+          `⚠️ Duplicates skipped: ${duplicateCount}\n` +
+          `❌ Errors encountered: ${errorCount}`
         );
 
         fetchDashboardData();
@@ -725,7 +724,11 @@ function Admin() {
         duration={4000}
       />
 
-      <Header />
+      <div className="w-full bg-white shadow-sm sticky top-0 z-50 border-b-2 border-b-gray-50">
+        <div className="flex justify-end">
+          <Header />
+        </div>
+      </div>
 
       <div className="p-6">
         <div className="container mx-auto">
@@ -736,9 +739,6 @@ function Admin() {
                 <h1 className="text-3xl font-bold text-gray-900">
                   Admin Dashboard
                 </h1>
-                <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-3 py-1 rounded-full text-xs font-medium">
-                  Executive
-                </div>
               </div>
               <p className="text-gray-600 mt-1">
                 Data Analytics of Contacts • Last updated:{" "}

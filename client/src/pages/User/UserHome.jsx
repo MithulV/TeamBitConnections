@@ -47,12 +47,9 @@ function UserHome() {
       />
 
       {/* Header Section */}
-      <div className="w-full bg-white shadow-sm">
-        <div className="flex items-center justify-between">
-          <div className="flex-shrink-0"></div>
-          <div className="flex-shrink-0">
-            <Header />
-          </div>
+       <div className="w-full bg-white shadow-sm sticky top-0 z-50 border-b-2 border-b-gray-50">
+        <div className="flex justify-end">
+          <Header />
         </div>
       </div>
 
