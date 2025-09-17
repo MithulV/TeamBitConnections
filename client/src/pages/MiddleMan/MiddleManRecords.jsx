@@ -375,36 +375,74 @@ function MiddleManRecords() {
         <div className="flex justify-end">
           <Header />
         </div>
-      </div>      <div className="p-6">
+      </div>
+      <div className="p-4 sm:p-6">
         <div className="container mx-auto">
-          <div className="flex gap-4 mb-6">
-            <button
-              onClick={() => setActiveView("formData")}
-              className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${activeView === "formData"
+          {/* Mobile-Responsive Tab Buttons */}
+          <div className="mb-6">
+            {/* Mobile: Horizontal scrolling tabs */}
+            <div className="sm:hidden">
+              <div className="flex gap-2  pb-2">
+                <button
+                  onClick={() => setActiveView("formData")}
+                  className={`flex-shrink-0 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap ${activeView === "formData"
+                    ? "bg-blue-600 text-white shadow-md"
+                    : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
+                    }`}
+                >
+                  Form Data
+                </button>
+                <button
+                  onClick={() => setActiveView("visitingCards")}
+                  className={`flex-shrink-0 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap ${activeView === "visitingCards"
+                    ? "bg-blue-600 text-white shadow-md"
+                    : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
+                    }`}
+                >
+                  Cards
+                </button>
+                <button
+                  onClick={() => setActiveView("AssignedToUser")}
+                  className={`flex-shrink-0 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap ${activeView === "AssignedToUser"
+                    ? "bg-blue-600 text-white shadow-md"
+                    : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
+                    }`}
+                >
+                  Assigned
+                </button>
+              </div>
+            </div>
+
+            {/* Desktop/Tablet: Regular flex layout */}
+            <div className="hidden sm:flex gap-4">
+              <button
+                onClick={() => setActiveView("formData")}
+                className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${activeView === "formData"
                   ? "bg-blue-600 text-white shadow-md"
                   : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
-                }`}
-            >
-              Form Data
-            </button>
-            <button
-              onClick={() => setActiveView("visitingCards")}
-              className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${activeView === "visitingCards"
+                  }`}
+              >
+                Form Data
+              </button>
+              <button
+                onClick={() => setActiveView("visitingCards")}
+                className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${activeView === "visitingCards"
                   ? "bg-blue-600 text-white shadow-md"
                   : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
-                }`}
-            >
-              Visiting Cards
-            </button>
-            <button
-              onClick={() => setActiveView("AssignedToUser")}
-              className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${activeView === "AssignedToUser"
+                  }`}
+              >
+                Visiting Cards
+              </button>
+              <button
+                onClick={() => setActiveView("AssignedToUser")}
+                className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${activeView === "AssignedToUser"
                   ? "bg-blue-600 text-white shadow-md"
                   : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
-                }`}
-            >
-              Assigned By Me
-            </button>
+                  }`}
+              >
+                Assigned By Me
+              </button>
+            </div>
           </div>
 
           {activeView === "formData" ? (
@@ -418,7 +456,7 @@ function MiddleManRecords() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                 {data.map((participant, index) => (
                   <BasicDetailCard
                     key={participant.contact_id || index}
@@ -444,10 +482,10 @@ function MiddleManRecords() {
                 ))}
 
                 {data.length === 0 && (
-                  <div className="col-span-full text-center py-16">
-                    <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mb-4">
+                  <div className="col-span-full text-center py-12 sm:py-16">
+                    <div className="inline-flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 bg-gray-100 rounded-full mb-4">
                       <svg
-                        className="w-8 h-8 text-gray-400"
+                        className="w-6 h-6 sm:w-8 sm:h-8 text-gray-400"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -460,10 +498,10 @@ function MiddleManRecords() {
                         />
                       </svg>
                     </div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">
                       No unverified contacts found
                     </h3>
-                    <p className="text-gray-500 mb-6 max-w-md mx-auto">
+                    <p className="text-sm sm:text-base text-gray-500 mb-6 max-w-md mx-auto">
                       All contacts have been verified or there are no pending
                       submissions to review.
                     </p>
@@ -484,25 +522,77 @@ function MiddleManRecords() {
                 </div>
 
                 {visitingCard.length > 0 ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                  <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6">
                     {visitingCard.map((card) => (
                       <div
                         key={card.id}
-                        className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-all duration-200 group cursor-pointer"
+                        className="group cursor-pointer bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-all duration-200 overflow-hidden"
                         onClick={() => {
                           navigate(`/visiting-card-details/${card.id}`);
                         }}
                       >
-                        <div className="relative h-48 bg-gray-50">
+                        {/* Image with overlay buttons - always visible on mobile, hover on desktop */}
+                        <div className="relative">
                           <img
                             src={`http://localhost:8000/${card.file_path.replace(
                               /\\/g,
                               "/"
                             )}`}
                             alt={`Visiting Card ${card.id}`}
-                            className="w-full h-full object-contain p-2"
+                            className="w-full h-32 sm:h-48 object-cover"
                           />
-                          <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100">
+
+                          {/* Mobile: Always visible buttons */}
+                          <div className="absolute top-2 right-2 flex space-x-2 sm:hidden">
+                            <button
+                              className="p-1.5 bg-white rounded-full shadow-lg hover:bg-gray-50 transition-colors duration-200"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/visiting-card-details/${card.id}`);
+                              }}
+                            >
+                              <svg
+                                className="w-4 h-4 text-green-600"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M12 4v16m8-8H4"
+                                />
+                              </svg>
+                            </button>
+                            <button
+                              className="p-1.5 bg-white rounded-full shadow-lg hover:bg-gray-50 transition-colors duration-200"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleVisitingCardDelete(
+                                  card.id,
+                                  `Visiting Card ${card.id}`
+                                );
+                              }}
+                            >
+                              <svg
+                                className="w-4 h-4 text-red-600"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                />
+                              </svg>
+                            </button>
+                          </div>
+
+                          {/* Desktop: Hover overlay buttons */}
+                          <div className="hidden absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-200 sm:flex items-center justify-center opacity-0 group-hover:opacity-100">
                             <div className="flex space-x-3">
                               <button
                                 className="p-2 bg-white rounded-full shadow-lg hover:bg-gray-50 transition-colors duration-200"
@@ -552,34 +642,34 @@ function MiddleManRecords() {
                             </div>
                           </div>
                         </div>
-                        <div className="p-4">
-                          <div className="flex items-center justify-between mb-3">
-                            <div className="flex items-center text-xs text-gray-500">
-                              <svg
-                                className="w-3 h-3 mr-1"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                                />
-                              </svg>
-                              {new Date(card.created_at).toLocaleDateString()}
-                            </div>
+
+                        {/* Info box attached to image - no gap */}
+                        <div className="p-3 sm:p-4 bg-white border-t border-gray-100">
+                          <div className="flex items-center text-xs text-gray-500">
+                            <svg
+                              className="w-3 h-3 mr-1"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                              />
+                            </svg>
+                            {new Date(card.created_at).toLocaleDateString()}
                           </div>
                         </div>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div className="text-center py-16">
-                    <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mb-4">
+                  <div className="text-center py-12 sm:py-16">
+                    <div className="inline-flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 bg-gray-100 rounded-full mb-4">
                       <svg
-                        className="w-8 h-8 text-gray-400"
+                        className="w-6 h-6 sm:w-8 sm:h-8 text-gray-400"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -592,10 +682,10 @@ function MiddleManRecords() {
                         />
                       </svg>
                     </div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">
                       No visiting cards found
                     </h3>
-                    <p className="text-gray-500 mb-6 max-w-md mx-auto">
+                    <p className="text-sm sm:text-base text-gray-500 mb-6 max-w-md mx-auto">
                       There are no visiting cards pending review at the moment.
                     </p>
                   </div>
@@ -605,19 +695,24 @@ function MiddleManRecords() {
           ) : activeView === "AssignedToUser" ? (
             <div>
               <div className="bg-white rounded-lg p-4 mb-6 shadow-sm border border-gray-200">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-row items-center justify-between gap-3">
                   <div className="flex items-center">
                     <div className="w-3 h-3 bg-green-400 rounded-full mr-2"></div>
                     <span className="text-sm text-gray-600">
                       {assignedByUserData.length} User
-                      {assignedByUserData.length !== 1 ? "s" : ""} Assigned by
-                      You still not completed their update
+                      <span className="text-sm hidden sm:inline">
+                        {assignedByUserData.length !== 1 ? "s" : ""} Assigned by
+                        You still not completed their update
+                      </span>
+                      <span className="text-sm inline sm:hidden">
+                        {assignedByUserData.length !== 1 ? "s" : ""} not completed their update
+                      </span>
                     </span>
                   </div>
                   <button
                     onClick={handleSelectAssignedByUser}
                     disabled={loading}
-                    className="flex items-center gap-2 px-3 py-1 text-xs bg-gray-100 text-gray-600 rounded hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex items-center gap-2 px-3 py-1 text-xs bg-gray-100 text-gray-600 rounded hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed self-start sm:self-auto"
                   >
                     {loading && (
                       <svg
@@ -647,7 +742,7 @@ function MiddleManRecords() {
               </div>
 
               {assignedByUserData.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                   {assignedByUserData.map((participant, index) => (
                     <BasicDetailCard
                       key={participant.contact_id || index}
@@ -684,10 +779,10 @@ function MiddleManRecords() {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-16">
-                  <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mb-4">
+                <div className="text-center py-12 sm:py-16">
+                  <div className="inline-flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 bg-gray-100 rounded-full mb-4">
                     <svg
-                      className="w-8 h-8 text-gray-400"
+                      className="w-6 h-6 sm:w-8 sm:h-8 text-gray-400"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -700,10 +795,10 @@ function MiddleManRecords() {
                       />
                     </svg>
                   </div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">
                     No users assigned by you
                   </h3>
-                  <p className="text-gray-500 mb-6 max-w-md mx-auto">
+                  <p className="text-sm sm:text-base text-gray-500 mb-6 max-w-md mx-auto">
                     You haven't assigned any users yet. Start assigning users to
                     see them here.
                   </p>

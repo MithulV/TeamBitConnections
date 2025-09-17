@@ -1017,7 +1017,7 @@ const MiddleManHome = () => {
           {
             <>
               {/* Search and Filter Controls */}
-              <div className="flex flex-col md:flex-row gap-4 items-center mb-6">
+              <div className="flex md:flex-row gap-4 items-center mb-6">
                 <div className="flex-1 w-full relative">
                   <Search
                     size={20}
@@ -1035,18 +1035,23 @@ const MiddleManHome = () => {
                 {/* Filter Button */}
                 <button
                   onClick={() => setIsFilterModalOpen(true)}
-                  className={`flex items-center gap-2 px-4 py-3 border rounded-lg transition-colors ${getActiveFilterCount() > 0
-                      ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700"
-                      : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                  className={`relative flex items-center gap-2 px-4 py-3 border rounded-lg transition-colors ${getActiveFilterCount() > 0
+                    ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700"
+                    : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
                     }`}
                   title="Open Filters"
                 >
                   <Filter size={20} />
-                  Filters
+                  <span className="hidden md:inline">Filters</span>
                   {getActiveFilterCount() > 0 && (
-                    <span className="bg-white text-blue-600 text-xs px-2 py-1 rounded-full font-medium">
-                      {getActiveFilterCount()}
-                    </span>
+                    <>
+                      <span className="hidden md:flex bg-white text-blue-600 text-xs w-5 h-5 rounded-full font-medium items-center justify-center">
+                        {getActiveFilterCount()}
+                      </span>
+                      <span className="md:hidden absolute -top-2 -right-2 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-medium">
+                        {getActiveFilterCount()}
+                      </span>
+                    </>
                   )}
                 </button>
               </div>
