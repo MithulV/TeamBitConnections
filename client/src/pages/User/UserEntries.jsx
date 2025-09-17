@@ -413,7 +413,7 @@ function UserEntries() {
       <div className="flex-1 overflow-auto">
         {/* View Toggle Buttons */}
         <div className="p-6 pb-0">
-          <div className="max-w-7xl mx-auto">
+          <div className="container mx-auto">
             <div className="flex gap-4 mb-6">
               <button
                 onClick={() => setActiveView("formDetails")}
