@@ -31,7 +31,7 @@ function Header() {
   }
 
   return (
-    <div className="relative md:sticky border-b-2 border-b-gray-200  top-0 z-50 px-8 py-5 bg-white">
+    <div className="relative md:sticky  border-b-2 border-b-gray-200 top-0 z-50 px-8 py-5 bg-white">
       <div className="flex items-center justify-end mx-auto">
         {/* User Info - Hidden on mobile, visible on desktop */}
         <div className="hidden md:flex items-center gap-4 min-w-0 flex-shrink-0">
