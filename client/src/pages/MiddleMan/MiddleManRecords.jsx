@@ -371,37 +371,37 @@ function MiddleManRecords() {
         position="bottom"
         duration={4000}
       />
-      <Header />
-      <div className="p-6">
+      <div className="w-full bg-white shadow-sm sticky top-0 z-50 border-b-2 border-b-gray-50">
+        <div className="flex justify-end">
+          <Header />
+        </div>
+      </div>      <div className="p-6">
         <div className="container mx-auto">
           <div className="flex gap-4 mb-6">
             <button
               onClick={() => setActiveView("formData")}
-              className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
-                activeView === "formData"
+              className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${activeView === "formData"
                   ? "bg-blue-600 text-white shadow-md"
                   : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
-              }`}
+                }`}
             >
               Form Data
             </button>
             <button
               onClick={() => setActiveView("visitingCards")}
-              className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
-                activeView === "visitingCards"
+              className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${activeView === "visitingCards"
                   ? "bg-blue-600 text-white shadow-md"
                   : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
-              }`}
+                }`}
             >
               Visiting Cards
             </button>
             <button
               onClick={() => setActiveView("AssignedToUser")}
-              className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
-                activeView === "AssignedToUser"
+              className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${activeView === "AssignedToUser"
                   ? "bg-blue-600 text-white shadow-md"
                   : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
-              }`}
+                }`}
             >
               Assigned By Me
             </button>
@@ -675,9 +675,9 @@ function MiddleManRecords() {
                       assignedOn={
                         participant.assigned_on
                           ? format(
-                              parseISO(participant.assigned_on),
-                              "MMMM dd, yyyy"
-                            )
+                            parseISO(participant.assigned_on),
+                            "MMMM dd, yyyy"
+                          )
                           : "N/A"
                       }
                     />

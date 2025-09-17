@@ -205,7 +205,11 @@ function TaskAssignments() {
         duration={4000}
       />
 
-      <Header />
+      <div className="w-full bg-white shadow-sm sticky top-0 z-50 border-b-2 border-b-gray-50">
+        <div className="flex justify-end">
+          <Header />
+        </div>
+      </div>
 
       <div className="p-6">
         <div className="container mx-auto">
@@ -238,11 +242,10 @@ function TaskAssignments() {
           <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
             {/* Total Tasks */}
             <div
-              className={`bg-white rounded-xl p-6 shadow-sm border-2 cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-105 ${
-                activeFilter === "total"
+              className={`bg-white rounded-xl p-6 shadow-sm border-2 cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-105 ${activeFilter === "total"
                   ? "border-blue-500 bg-blue-50"
                   : "border-gray-200 hover:border-blue-300"
-              }`}
+                }`}
               onClick={() => handleFilterChange("total")}
             >
               <div className="flex items-center justify-between">
@@ -262,11 +265,10 @@ function TaskAssignments() {
 
             {/* Completed Tasks */}
             <div
-              className={`bg-white rounded-xl p-6 shadow-sm border-2 cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-105 ${
-                activeFilter === "completed"
+              className={`bg-white rounded-xl p-6 shadow-sm border-2 cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-105 ${activeFilter === "completed"
                   ? "border-green-500 bg-green-50"
                   : "border-gray-200 hover:border-green-300"
-              }`}
+                }`}
               onClick={() => handleFilterChange("completed")}
             >
               <div className="flex items-center justify-between">
@@ -284,11 +286,10 @@ function TaskAssignments() {
 
             {/* Pending Tasks */}
             <div
-              className={`bg-white rounded-xl p-6 shadow-sm border-2 cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-105 ${
-                activeFilter === "pending"
+              className={`bg-white rounded-xl p-6 shadow-sm border-2 cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-105 ${activeFilter === "pending"
                   ? "border-orange-500 bg-orange-50"
                   : "border-gray-200 hover:border-orange-300"
-              }`}
+                }`}
               onClick={() => handleFilterChange("pending")}
             >
               <div className="flex items-center justify-between">
@@ -306,11 +307,10 @@ function TaskAssignments() {
 
             {/* Manual Tasks */}
             <div
-              className={`bg-white rounded-xl p-6 shadow-sm border-2 cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-105 ${
-                activeFilter === "manual"
+              className={`bg-white rounded-xl p-6 shadow-sm border-2 cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-105 ${activeFilter === "manual"
                   ? "border-purple-500 bg-purple-50"
                   : "border-gray-200 hover:border-purple-300"
-              }`}
+                }`}
               onClick={() => handleFilterChange("manual")}
             >
               <div className="flex items-center justify-between">
@@ -330,11 +330,10 @@ function TaskAssignments() {
 
             {/* Automated Tasks */}
             <div
-              className={`bg-white rounded-xl p-6 shadow-sm border-2 cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-105 ${
-                activeFilter === "automated"
+              className={`bg-white rounded-xl p-6 shadow-sm border-2 cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-105 ${activeFilter === "automated"
                   ? "border-indigo-500 bg-indigo-50"
                   : "border-gray-200 hover:border-indigo-300"
-              }`}
+                }`}
               onClick={() => handleFilterChange("automated")}
             >
               <div className="flex items-center justify-between">
@@ -411,11 +410,10 @@ function TaskAssignments() {
                                   {priority.label}
                                 </span>
                                 <span
-                                  className={`px-2 py-1 text-xs font-medium rounded-full whitespace-nowrap ${
-                                    task.task_type === "assigned"
+                                  className={`px-2 py-1 text-xs font-medium rounded-full whitespace-nowrap ${task.task_type === "assigned"
                                       ? "bg-blue-100 text-blue-800"
                                       : "bg-gray-100 text-gray-800"
-                                  }`}
+                                    }`}
                                 >
                                   {task.task_type === "assigned"
                                     ? "Manual"

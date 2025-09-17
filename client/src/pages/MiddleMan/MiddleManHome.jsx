@@ -356,14 +356,11 @@ const FilterModal = ({
                 </h2>
                 <p className="text-slate-300 text-xs md:text-sm mt-1">
                   {getActiveFilterCount() > 0
-                    ? `${getActiveFilterCount()} active filters • ${
-                        contacts.length
-                      } contacts found`
-                    : `Filter from ${
-                        filterOptions.skills?.length || 0
-                      }+ skills, ${
-                        filterOptions.companies?.length || 0
-                      }+ companies, and more`}
+                    ? `${getActiveFilterCount()} active filters • ${contacts.length
+                    } contacts found`
+                    : `Filter from ${filterOptions.skills?.length || 0
+                    }+ skills, ${filterOptions.companies?.length || 0
+                    }+ companies, and more`}
                 </p>
               </div>
             </div>
@@ -990,7 +987,11 @@ const MiddleManHome = () => {
         position="bottom"
         duration={4000}
       />
-      <Header />
+      <div className="w-full bg-white shadow-sm sticky top-0 z-50 border-b-2 border-b-gray-50">
+        <div className="flex justify-end">
+          <Header />
+        </div>
+      </div>
 
       {/* Page Title Section */}
       <div className="px-6 pt-6 pb-2">
@@ -1004,9 +1005,8 @@ const MiddleManHome = () => {
             <p className="text-gray-600 mt-1">
               {role === "admin"
                 ? "View and manage all contact records across all categories (A, B, C)"
-                : `Manage your category ${
-                    role === "cata" ? "A" : role === "catb" ? "B" : "C"
-                  } contact records`}
+                : `Manage your category ${role === "cata" ? "A" : role === "catb" ? "B" : "C"
+                } contact records`}
             </p>
           </div>
         </div>
@@ -1035,11 +1035,10 @@ const MiddleManHome = () => {
                 {/* Filter Button */}
                 <button
                   onClick={() => setIsFilterModalOpen(true)}
-                  className={`flex items-center gap-2 px-4 py-3 border rounded-lg transition-colors ${
-                    getActiveFilterCount() > 0
+                  className={`flex items-center gap-2 px-4 py-3 border rounded-lg transition-colors ${getActiveFilterCount() > 0
                       ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700"
                       : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-                  }`}
+                    }`}
                   title="Open Filters"
                 >
                   <Filter size={20} />
