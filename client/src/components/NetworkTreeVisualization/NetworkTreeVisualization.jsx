@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Tree from 'react-d3-tree';
 import { ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
 
@@ -41,7 +41,8 @@ const NetworkTreeVisualization = ({ networkData, searchTerm, filterType }) => {
   const [selectedNode, setSelectedNode] = useState(null);
   const [treeData, setTreeData] = useState(null);
   const [translate, setTranslate] = useState({ x: 0, y: 0 });
-  const [zoom, setZoom] = useState(0.8);
+  const [zoom, setZoom] = useState(1);
+  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const treeContainer = useRef(null);
   const treeRef = useRef(null);
 
@@ -57,6 +58,67 @@ const NetworkTreeVisualization = ({ networkData, searchTerm, filterType }) => {
       }
     };
   }, []);
+
+  // Set up dimensions and initial translate
+  useEffect(() => {
+    if (treeContainer.current) {
+      const rect = treeContainer.current.getBoundingClientRect();
+      const newDimensions = {
+        width: rect.width,
+        height: rect.height
+      };
+      setDimensions(newDimensions);
+      
+      // Set initial translate to center of container
+      if (translate.x === 0 && translate.y === 0) {
+        const centerTranslate = {
+          x: newDimensions.width / 2,
+          y: 100 // Start a bit from the top
+        };
+        setTranslate(centerTranslate);
+      }
+    }
+  }, [treeData, translate.x, translate.y]);
+
+  // Handle window resize
+  useEffect(() => {
+    const handleResize = () => {
+      if (treeContainer.current) {
+        const rect = treeContainer.current.getBoundingClientRect();
+        setDimensions({
+          width: rect.width,
+          height: rect.height
+        });
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Handle zoom/pan updates from react-d3-tree
+  const handleTreeUpdate = useCallback((update) => {
+    if (update && typeof update === 'object') {
+      // Update zoom if it exists and is different
+      if (typeof update.zoom === 'number' && !isNaN(update.zoom)) {
+        const newZoom = Math.max(0.1, Math.min(10, update.zoom));
+        if (Math.abs(newZoom - zoom) > 0.01) {
+          setZoom(newZoom);
+        }
+      }
+      
+      // Update translate if it exists and is different
+      if (update.translate && typeof update.translate === 'object') {
+        const { x, y } = update.translate;
+        if (typeof x === 'number' && typeof y === 'number' && 
+            !isNaN(x) && !isNaN(y)) {
+          if (Math.abs(x - translate.x) > 1 || Math.abs(y - translate.y) > 1) {
+            setTranslate({ x, y });
+          }
+        }
+      }
+    }
+  }, [zoom, translate.x, translate.y]);
 
   const buildTreeStructure = (data) => {
     if (
@@ -175,41 +237,42 @@ const NetworkTreeVisualization = ({ networkData, searchTerm, filterType }) => {
     }
   }, [networkData]);
 
-  useEffect(() => {
-    if (treeContainer.current) {
-      const dimensions = treeContainer.current.getBoundingClientRect();
+  // Controlled zoom functions that update state directly
+  const handleZoomIn = useCallback(() => {
+    const newZoom = Math.min(zoom * 1.2, 10);
+    setZoom(newZoom);
+  }, [zoom]);
+
+  const handleZoomOut = useCallback(() => {
+    const newZoom = Math.max(zoom * 0.8, 0.1);
+    setZoom(newZoom);
+  }, [zoom]);
+
+  const handleResetView = useCallback(() => {
+    if (dimensions.width > 0) {
+      setZoom(1);
       setTranslate({
         x: dimensions.width / 2,
-        y: 80,
+        y: 100
       });
     }
-  }, [treeData]);
+  }, [dimensions]);
 
-  // Zoom control functions
-  const handleZoomIn = () => {
-    setZoom(prevZoom => Math.min(prevZoom * 1.2, 10)); // Max zoom 10x
-  };
-
-  const handleZoomOut = () => {
-    setZoom(prevZoom => Math.max(prevZoom * 0.8, 0.1)); // Min zoom 0.1x
-  };
-
-  const handleResetZoom = () => {
-    setZoom(0.8);
-    if (treeContainer.current) {
-      const dimensions = treeContainer.current.getBoundingClientRect();
+  // Center tree function
+  const handleCenterTree = useCallback(() => {
+    if (dimensions.width > 0) {
       setTranslate({
         x: dimensions.width / 2,
-        y: 80,
+        y: dimensions.height / 2
       });
     }
-  };
+  }, [dimensions]);
 
   const handleNodeClick = (nodeData) => {
     setSelectedNode(nodeData);
   };
 
-  // Updated renderTreeNode function with UNIFORM BOLDNESS for all nodes
+  // Updated renderTreeNode function
   const renderTreeNode = ({ nodeDatum, toggleNode }) => {
     const isRoot =
       nodeDatum.attributes?.type === "virtual_root" ||
@@ -217,7 +280,6 @@ const NetworkTreeVisualization = ({ networkData, searchTerm, filterType }) => {
     const isUser = nodeDatum.attributes?.type === "user";
     const isContact = nodeDatum.attributes?.type === "contact";
     
-    // Check if this node has siblings
     const hasSiblings = nodeDatum.children && nodeDatum.children.length > 0;
 
     const shouldHighlight = () => {
@@ -233,7 +295,6 @@ const NetworkTreeVisualization = ({ networkData, searchTerm, filterType }) => {
 
     const isHighlighted = shouldHighlight();
 
-    // Function to truncate text properly
     const truncateText = (text, maxLength) => {
       if (!text) return "Unknown";
       return text.length > maxLength ? `${text.substring(0, maxLength)}...` : text;
@@ -241,7 +302,6 @@ const NetworkTreeVisualization = ({ networkData, searchTerm, filterType }) => {
 
     return (
       <g data-has-siblings={hasSiblings}>
-        {/* Enhanced highlight ring for better visibility */}
         {isHighlighted && (
           <circle
             r="50"
@@ -252,7 +312,6 @@ const NetworkTreeVisualization = ({ networkData, searchTerm, filterType }) => {
           />
         )}
 
-        {/* Improved node shapes with better contrast */}
         {isRoot ? (
           <rect
             x="-35"
@@ -299,9 +358,7 @@ const NetworkTreeVisualization = ({ networkData, searchTerm, filterType }) => {
           />
         )}
 
-        {/* UNIFORM BOLD TEXT FOR ALL NODES */}
         <g className="node-text-group" data-has-siblings={hasSiblings}>
-          {/* Wider text background to accommodate longer text */}
           <rect
             x="-75"
             y="42"
@@ -314,18 +371,17 @@ const NetworkTreeVisualization = ({ networkData, searchTerm, filterType }) => {
             filter="drop-shadow(0 2px 4px rgba(0,0,0,0.1))"
           />
           
-          {/* Main name text - SAME BOLDNESS FOR ALL */}
           <text
             fill="#4b5563"
             x="0"
             y="58"
             textAnchor="middle"
             fontSize="12px"
-            fontWeight="600" // UNIFORM BOLDNESS
+            fontWeight="600"
             fontFamily="ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif"
             style={{ 
               userSelect: "none",
-              fontWeight: "600 !important", // SAME FOR ALL - no conditional
+              fontWeight: "600 !important",
               WebkitFontSmoothing: "antialiased",
               textRendering: "geometricPrecision",
               fontSynthesis: "none",
@@ -336,18 +392,17 @@ const NetworkTreeVisualization = ({ networkData, searchTerm, filterType }) => {
             {truncateText(nodeDatum.name, 20)}
           </text>
 
-          {/* Type and connection text - SAME BOLDNESS FOR ALL */}
           <text
             fill="#6b7280"
             x="0"
             y="75"
             textAnchor="middle"
             fontSize="10px"
-            fontWeight="500" // UNIFORM BOLDNESS
+            fontWeight="500"
             fontFamily="ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif"
             style={{ 
               userSelect: "none",
-              fontWeight: "500 !important", // SAME FOR ALL - no conditional
+              fontWeight: "500 !important",
               WebkitFontSmoothing: "antialiased",
               textRendering: "geometricPrecision",
               fontSynthesis: "none",
@@ -362,7 +417,6 @@ const NetworkTreeVisualization = ({ networkData, searchTerm, filterType }) => {
           </text>
         </g>
 
-        {/* Enhanced badges with bold text */}
         {isUser && nodeDatum.attributes?.connections > 0 && (
           <g>
             <circle
@@ -380,7 +434,7 @@ const NetworkTreeVisualization = ({ networkData, searchTerm, filterType }) => {
               textAnchor="middle"
               fontSize="10px"
               fill="white"
-              fontWeight="600" // UNIFORM BOLDNESS
+              fontWeight="600"
               fontFamily="ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif"
               style={{ 
                 fontWeight: "600 !important",
@@ -410,7 +464,7 @@ const NetworkTreeVisualization = ({ networkData, searchTerm, filterType }) => {
               textAnchor="middle"
               fontSize="9px"
               fill="white"
-              fontWeight="600" // UNIFORM BOLDNESS
+              fontWeight="600"
               fontFamily="ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif"
               style={{ 
                 fontWeight: "600 !important",
@@ -439,7 +493,6 @@ const NetworkTreeVisualization = ({ networkData, searchTerm, filterType }) => {
 
   return (
     <div>
-      {/* Inject inline styles to override any library defaults */}
       <style>{treeStyles}</style>
       
       <div className="flex justify-between items-center mb-6">
@@ -459,33 +512,13 @@ const NetworkTreeVisualization = ({ networkData, searchTerm, filterType }) => {
           How Network Tree Works:
         </h4>
         <ul className="text-sm text-blue-800 space-y-1">
-          <li>
-            • <strong>Users (Blue Circles):</strong> People who have
-            accounts in your system
-          </li>
-          <li>
-            • <strong>Contacts (Green Rectangles):</strong> People
-            added through events
-          </li>
-          <li>
-            • <strong>Hierarchy:</strong> Shows who referred whom and
-            who added which contacts
-          </li>
-          <li>
-            • <strong>Orange Badge:</strong> Number of direct
-            connections for each user
-          </li>
-          <li>
-            • <strong>Pink Badge:</strong> Number of events attended
-            by contacts
-          </li>
-          <li>
-            • <strong>Click nodes:</strong> Expand/collapse branches
-            and view details
-          </li>
-          <li>
-            • <strong>Zoom Controls:</strong> Use buttons or mouse wheel to zoom in/out
-          </li>
+          <li>• <strong>Users (Blue Circles):</strong> People who have accounts in your system</li>
+          <li>• <strong>Contacts (Green Rectangles):</strong> People added through events</li>
+          <li>• <strong>Hierarchy:</strong> Shows who referred whom and who added which contacts</li>
+          <li>• <strong>Orange Badge:</strong> Number of direct connections for each user</li>
+          <li>• <strong>Pink Badge:</strong> Number of events attended by contacts</li>
+          <li>• <strong>Click nodes:</strong> Expand/collapse branches and view details</li>
+          <li>• <strong>Zoom & Pan:</strong> Use mouse wheel to zoom, drag to pan around</li>
         </ul>
       </div>
 
@@ -496,39 +529,29 @@ const NetworkTreeVisualization = ({ networkData, searchTerm, filterType }) => {
             <div
               className="w-6 h-6 bg-purple-500 rounded mr-2"
               style={{
-                clipPath:
-                  "polygon(20% 0%, 80% 0%, 100% 50%, 80% 100%, 20% 100%, 0% 50%)",
+                clipPath: "polygon(20% 0%, 80% 0%, 100% 50%, 80% 100%, 20% 100%, 0% 50%)",
               }}
             ></div>
-            <span className="font-medium text-gray-700">
-              Network Root
-            </span>
+            <span className="font-medium text-gray-700">Network Root</span>
           </div>
           <div className="flex items-center">
             <div className="w-6 h-6 bg-blue-500 rounded-full mr-2"></div>
-            <span className="font-medium text-gray-700">
-              Users ({networkData?.totalUsers || 0})
-            </span>
+            <span className="font-medium text-gray-700">Users ({networkData?.totalUsers || 0})</span>
           </div>
           <div className="flex items-center">
             <div className="w-6 h-4 bg-green-500 rounded mr-2"></div>
-            <span className="font-medium text-gray-700">
-              Contacts ({networkData?.totalContacts || 0})
-            </span>
+            <span className="font-medium text-gray-700">Contacts ({networkData?.totalContacts || 0})</span>
           </div>
           <div className="flex items-center">
             <div className="w-4 h-4 bg-orange-500 rounded-full mr-2"></div>
-            <span className="font-medium text-gray-700">
-              Connection Count
-            </span>
+            <span className="font-medium text-gray-700">Connection Count</span>
           </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Tree Visualization with Zoom Controls */}
         <div className="lg:col-span-3 relative">
-          {/* Zoom Control Panel */}
+          {/* Enhanced Control Panel */}
           <div className="absolute top-4 right-4 z-10 bg-white rounded-lg shadow-lg border p-2 flex flex-col gap-2">
             <button
               onClick={handleZoomIn}
@@ -545,11 +568,18 @@ const NetworkTreeVisualization = ({ networkData, searchTerm, filterType }) => {
               <ZoomOut className="w-4 h-4" />
             </button>
             <button
-              onClick={handleResetZoom}
+              onClick={handleResetView}
               className="p-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors flex items-center justify-center"
-              title="Reset Zoom"
+              title="Reset View"
             >
               <RotateCcw className="w-4 h-4" />
+            </button>
+            <button
+              onClick={handleCenterTree}
+              className="p-2 bg-green-500 text-white rounded hover:bg-green-600 transition-colors flex items-center justify-center text-xs"
+              title="Center Tree"
+            >
+              📍
             </button>
             <div className="text-xs text-gray-600 text-center px-2 py-1 bg-gray-100 rounded">
               {Math.round(zoom * 100)}%
@@ -559,45 +589,40 @@ const NetworkTreeVisualization = ({ networkData, searchTerm, filterType }) => {
           <div
             id="treeWrapper"
             ref={treeContainer}
-            className="bg-white border border-gray-300 rounded-lg overflow-hidden"
+            className="bg-white border border-gray-300 rounded-lg overflow-hidden relative"
             style={{ width: "100%", height: "700px" }}
           >
+            {/* Navigation hint */}
+            <div className="absolute top-4 left-4 z-10 bg-black bg-opacity-70 text-white text-xs p-2 rounded">
+              💡 Drag to pan • Scroll to zoom
+            </div>
+            
             {treeData ? (
               <Tree
                 ref={treeRef}
                 data={treeData}
                 translate={translate}
+                zoom={zoom}
                 orientation="vertical"
                 pathFunc="step"
-                separation={{ siblings: 2.2, nonSiblings: 2.8 }}
-                nodeSize={{ x: 280, y: 160 }}
+                separation={{ siblings: 2.5, nonSiblings: 3 }}
+                nodeSize={{ x: 300, y: 180 }}
                 renderCustomNodeElement={renderTreeNode}
-                zoom={zoom}
                 scaleExtent={{ min: 0.1, max: 10 }}
-                enableLegacyTransitions={true}
+                enableLegacyTransitions={false}
                 shouldCollapseNeighborNodes={false}
                 collapsible={true}
-                depthFactor={160}
+                depthFactor={180}
+                zoomable={true}
+                draggable={true}
+                pannable={true}
+                onUpdate={handleTreeUpdate}
                 styles={{
                   links: {
                     stroke: '#94a3b8',
                     strokeWidth: 2,
                     strokeOpacity: 0.6,
                   },
-                  nodes: {
-                    node: {
-                      name: {
-                        fontWeight: '600 !important', // UNIFORM BOLDNESS
-                        fontFamily: 'ui-sans-serif, system-ui, sans-serif !important',
-                        fontSynthesis: 'none !important'
-                      },
-                      attributes: {
-                        fontWeight: '500 !important', // UNIFORM BOLDNESS
-                        fontFamily: 'ui-sans-serif, system-ui, sans-serif !important',
-                        fontSynthesis: 'none !important'
-                      }
-                    }
-                  }
                 }}
                 onLinkClick={(linkSource, linkTarget) => {
                   console.log('Link clicked:', linkSource, linkTarget);
@@ -652,9 +677,7 @@ const NetworkTreeVisualization = ({ networkData, searchTerm, filterType }) => {
                 <div className="space-y-3 text-sm">
                   {selectedNode.attributes?.email && (
                     <div>
-                      <span className="font-medium text-gray-700">
-                        Email:
-                      </span>
+                      <span className="font-medium text-gray-700">Email:</span>
                       <p className="text-gray-600 text-xs break-all">
                         {selectedNode.attributes.email}
                       </p>
@@ -666,17 +689,13 @@ const NetworkTreeVisualization = ({ networkData, searchTerm, filterType }) => {
                       <div className="text-lg font-semibold text-blue-600">
                         {selectedNode.attributes?.connections || 0}
                       </div>
-                      <div className="text-xs text-gray-600">
-                        Connections
-                      </div>
+                      <div className="text-xs text-gray-600">Connections</div>
                     </div>
                     <div className="bg-gray-50 p-2 rounded text-center">
                       <div className="text-lg font-semibold text-green-600">
                         {selectedNode.children?.length || 0}
                       </div>
-                      <div className="text-xs text-gray-600">
-                        Children
-                      </div>
+                      <div className="text-xs text-gray-600">Children</div>
                     </div>
                   </div>
 
@@ -710,8 +729,7 @@ const NetworkTreeVisualization = ({ networkData, searchTerm, filterType }) => {
                         Events:
                       </span>
                       <p className="text-pink-600 text-xs">
-                        {selectedNode.attributes.totalEvents} events
-                        attended
+                        {selectedNode.attributes.totalEvents} events attended
                       </p>
                     </div>
                   )}
