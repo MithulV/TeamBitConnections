@@ -249,25 +249,25 @@ function DetailsInput() {
         event_location: firstEvent.event_location || "",
         experience:
           Array.isArray(initialData.experiences) &&
-          initialData.experiences.length > 0
+            initialData.experiences.length > 0
             ? initialData.experiences.map((exp) => ({
-                job_title: exp.job_title || "",
-                company: exp.company || "",
-                department: exp.department || "",
-                from_date: formatDate(exp.from_date),
-                to_date: formatDate(exp.to_date),
-                company_skills: exp.company_skills || "",
-              }))
+              job_title: exp.job_title || "",
+              company: exp.company || "",
+              department: exp.department || "",
+              from_date: formatDate(exp.from_date),
+              to_date: formatDate(exp.to_date),
+              company_skills: exp.company_skills || "",
+            }))
             : [
-                {
-                  job_title: "",
-                  company: "",
-                  department: "",
-                  from_date: "",
-                  to_date: "",
-                  company_skills: "",
-                },
-              ],
+              {
+                job_title: "",
+                company: "",
+                department: "",
+                from_date: "",
+                to_date: "",
+                company_skills: "",
+              },
+            ],
         logger: initialData.logger || "",
       }));
     }
@@ -847,12 +847,12 @@ function DetailsInput() {
 
     const address = hasAddressData
       ? {
-          street: formData.street || null,
-          city: formData.city || null,
-          state: formData.state || null,
-          country: formData.country || null,
-          zipcode: formData.zipcode || null,
-        }
+        street: formData.street || null,
+        city: formData.city || null,
+        state: formData.state || null,
+        country: formData.country || null,
+        zipcode: formData.zipcode || null,
+      }
       : null;
 
     const educationFields = Object.keys(formData.education);
@@ -862,17 +862,17 @@ function DetailsInput() {
 
     const education = hasEducationData
       ? {
-          pg_course_name: formData.education.pg_course_name || null,
-          pg_college: formData.education.pg_college || null,
-          pg_university: formData.education.pg_university || null,
-          pg_from_date: formData.education.pg_from_date || null,
-          pg_to_date: formData.education.pg_to_date || null,
-          ug_course_name: formData.education.ug_course_name || null,
-          ug_college: formData.education.ug_college || null,
-          ug_university: formData.education.ug_university || null,
-          ug_from_date: formData.education.ug_from_date || null,
-          ug_to_date: formData.education.ug_to_date || null,
-        }
+        pg_course_name: formData.education.pg_course_name || null,
+        pg_college: formData.education.pg_college || null,
+        pg_university: formData.education.pg_university || null,
+        pg_from_date: formData.education.pg_from_date || null,
+        pg_to_date: formData.education.pg_to_date || null,
+        ug_course_name: formData.education.ug_course_name || null,
+        ug_college: formData.education.ug_college || null,
+        ug_university: formData.education.ug_university || null,
+        ug_from_date: formData.education.ug_from_date || null,
+        ug_to_date: formData.education.ug_to_date || null,
+      }
       : null;
 
     const experiences = formData.experience
@@ -945,9 +945,8 @@ function DetailsInput() {
             `/api/update-contact/${apiPayload.contact_id}?contact_status=approved&event_verified=true&userId=${id}`,
             apiPayload
           );
-          successMessage = `${
-            apiPayload.name || initialData.name
-          } has been successfully verified and added to contacts.`;
+          successMessage = `${apiPayload.name || initialData.name
+            } has been successfully verified and added to contacts.`;
           console.log("MiddleMan Update response:", response);
         } else if (source === "userassignments") {
           // For UserAssignments - update as pending
@@ -957,8 +956,7 @@ function DetailsInput() {
           );
           successMessage =
             successCallback?.message ||
-            `${
-              apiPayload.name || initialData.name
+            `${apiPayload.name || initialData.name
             } has been successfully updated.`;
           console.log("UserAssignments Update response:", response);
         }
@@ -993,9 +991,8 @@ function DetailsInput() {
             `/api/create-contact-by-admin/?contact_status=approved&event_verified=true`,
             apiPayload
           );
-          successMessage = `${
-            apiPayload.name || initialData.name
-          } has been successfully added to contacts.`;
+          successMessage = `${apiPayload.name || initialData.name
+            } has been successfully added to contacts.`;
           console.log("admin Update response:", response);
           showAlert("success", successMessage);
           setTimeout(() => {
@@ -1158,25 +1155,25 @@ function DetailsInput() {
       event_location: firstEvent.event_location || "",
       experience:
         Array.isArray(initialData.experiences) &&
-        initialData.experiences.length > 0
+          initialData.experiences.length > 0
           ? initialData.experiences.map((exp) => ({
-              job_title: exp.job_title || "",
-              company: exp.company || "",
-              department: exp.department || "",
-              from_date: formatDate(exp.from_date),
-              to_date: formatDate(exp.to_date),
-              company_skills: exp.company_skills || "",
-            }))
+            job_title: exp.job_title || "",
+            company: exp.company || "",
+            department: exp.department || "",
+            from_date: formatDate(exp.from_date),
+            to_date: formatDate(exp.to_date),
+            company_skills: exp.company_skills || "",
+          }))
           : [
-              {
-                job_title: "",
-                company: "",
-                department: "",
-                from_date: "",
-                to_date: "",
-                company_skills: "",
-              },
-            ],
+            {
+              job_title: "",
+              company: "",
+              department: "",
+              from_date: "",
+              to_date: "",
+              company_skills: "",
+            },
+          ],
       logger: "",
       event_verified: true,
     });
@@ -1219,9 +1216,8 @@ function DetailsInput() {
           required={field.label.includes("*")}
           readOnly={field.readOnly || false}
           rows={3}
-          className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0077b8] resize-vertical ${
-            field.readOnly ? "bg-gray-100 cursor-not-allowed" : ""
-          }`}
+          className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0077b8] resize-vertical ${field.readOnly ? "bg-gray-100 cursor-not-allowed" : ""
+            }`}
         />
       ) : field.type === "date" ? (
         <DatePicker
@@ -1265,9 +1261,8 @@ function DetailsInput() {
           onChange={handleInputChange}
           required={field.label.includes("*")}
           readOnly={field.readOnly || false}
-          className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0077b8] ${
-            field.readOnly ? "bg-gray-100 cursor-not-allowed" : ""
-          }`}
+          className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0077b8] ${field.readOnly ? "bg-gray-100 cursor-not-allowed" : ""
+            }`}
         />
       )}
     </div>
@@ -1360,35 +1355,31 @@ function DetailsInput() {
       />
 
       {/* Header */}
-      <div className="w-full bg-white shadow-sm border-b border-gray-200">
+      <div className="w-full bg-white shadow-sm border-b sticky top-0 z-50 border-gray-200">
         <div className="flex items-center justify-end">
           <div className="flex-shrink-0">
             <Header />
           </div>
         </div>
       </div>
-
-      {/* Back Button Row */}
-      <div className="bg-white px-4 md:px-6 py-4 border-b border-gray-100">
-        <div className="max-w-7xl mx-auto">
-          <button
-            onClick={handleBack}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors duration-200 bg-gray-100 hover:bg-gray-200 px-3 py-2 rounded-lg"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span className="font-medium text-sm md:text-base">Back</span>
-          </button>
-        </div>
+     <div className="w-full container mx-auto px-4 md:px-6 pt-4">
+        <button
+          onClick={handleBack}
+          className="flex items-center gap-2 text-gray-700 hover:text-gray-900 transition-colors duration-200 bg-white hover:bg-gray-50 px-4 py-2 rounded-lg border border-gray-200 shadow-sm mb-4"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span className="font-medium text-sm md:text-base">Back</span>
+        </button>
       </div>
-
       {/* Main content area */}
       <div className="flex-1 overflow-auto">
         <form
           onSubmit={handleSubmit}
-          className="w-full max-w-7xl mx-auto p-4 md:p-6"
+          className="w-full container mx-auto p-4 md:p-6"
         >
           <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm space-y-6 md:space-y-8">
-            <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 pr-0 md:pr-20">
+            <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-8 pr-0 md:pr-20">
+
               <div>
                 <h2 className="text-xl md:text-2xl font-semibold text-gray-800 mb-2">
                   {getTitle()}
