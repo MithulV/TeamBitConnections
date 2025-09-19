@@ -58,6 +58,11 @@ function FormInput() {
   const [selectedContact, setSelectedContact] = useState(null);
   const debounceTimeout = useRef(null);
 
+  // State for event autocomplete
+  const [eventSuggestions, setEventSuggestions] = useState([]);
+  const [showEventSuggestions, setShowEventSuggestions] = useState(false);
+  const [activeEventField, setActiveEventField] = useState("");
+
   // Alert helper functions
   const showAlert = (severity, message) => {
     setAlert({
@@ -72,6 +77,56 @@ function FormInput() {
       ...prev,
       isOpen: false,
     }));
+  };
+
+  // Event autocomplete helper functions
+  const getRecentEvents = () => {
+    try {
+      const stored = localStorage.getItem(`recent-events-${id}`);
+      return stored ? JSON.parse(stored) : [];
+    } catch (error) {
+      console.error("Error loading recent events:", error);
+      return [];
+    }
+  };
+
+  const saveRecentEvent = (eventData) => {
+    try {
+      const existing = getRecentEvents();
+      
+      // Create a unique key for each event based on all fields
+      const eventKey = `${eventData.event_name}-${eventData.event_held_organization}-${eventData.event_location}`;
+      
+      // Remove if already exists to avoid duplicates
+      const filtered = existing.filter(event => {
+        const existingKey = `${event.event_name}-${event.event_held_organization}-${event.event_location}`;
+        return existingKey !== eventKey;
+      });
+      
+      // Add to beginning of array
+      const updated = [eventData, ...filtered].slice(0, 10); // Keep only 10 most recent
+      
+      localStorage.setItem(`recent-events-${id}`, JSON.stringify(updated));
+    } catch (error) {
+      console.error("Error saving recent event:", error);
+    }
+  };
+
+  const getEventSuggestions = (query, fieldName) => {
+    const recentEvents = getRecentEvents();
+    
+    if (!query || query.length < 1) return [];
+    
+    return recentEvents
+      .filter(event => {
+        const fieldValue = event[fieldName];
+        return fieldValue && fieldValue.toLowerCase().includes(query.toLowerCase());
+      })
+      .map(event => ({
+        ...event,
+        matchedField: fieldName
+      }))
+      .slice(0, 5); // Show max 5 suggestions
   };
 
   // Decide if form is in "fixed" mode (existing contact selected)
@@ -141,6 +196,12 @@ function FormInput() {
           formData
         );
         showAlert("success", `Contact has been successfully added.`);
+      }
+
+      // Save event to recent events for future autocomplete
+      const eventData = formData.events[0];
+      if (eventData.event_name && eventData.event_held_organization && eventData.event_location) {
+        saveRecentEvent(eventData);
       }
 
       setTimeout(() => {
@@ -219,6 +280,21 @@ function FormInput() {
     setSuggestions([]);
     setShowSuggestions(false);
   }, [isEditMode, initialData, id]);
+
+  // Click outside handler to close dropdowns
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (!event.target.closest('.autocomplete-container')) {
+        setShowSuggestions(false);
+        setShowEventSuggestions(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   // Allow only digits for phone input
   const handlePhoneKeyPress = (e) => {
@@ -341,12 +417,30 @@ function FormInput() {
         }, 300);
       }
     }
+
+    // Handle event field autocomplete
+    const eventAutocompleteFields = ["event_name", "event_held_organization", "event_location"];
+    if (eventAutocompleteFields.includes(name) && value.trim().length > 0) {
+      const suggestions = getEventSuggestions(value, name);
+      setEventSuggestions(suggestions);
+      setActiveEventField(name);
+      setShowEventSuggestions(suggestions.length > 0);
+    } else if (eventAutocompleteFields.includes(name)) {
+      setEventSuggestions([]);
+      setShowEventSuggestions(false);
+    }
   };
 
   // Close suggestions dropdown
   const closeSuggestions = () => {
     setShowSuggestions(false);
     setSuggestions([]);
+  };
+
+  // Close event suggestions dropdown
+  const closeEventSuggestions = () => {
+    setShowEventSuggestions(false);
+    setEventSuggestions([]);
   };
 
   // On selecting a suggestion, fill form fields and store selected contact
@@ -361,6 +455,25 @@ function FormInput() {
     }));
     setSelectedContact(contact);
     setShowSuggestions(false);
+  };
+
+  // On selecting an event suggestion, fill all event fields from that event
+  const handleSelectEventSuggestion = (eventData) => {
+    setFormData((prev) => ({
+      ...prev,
+      events: [
+        {
+          ...prev.events[0],
+          event_name: eventData.event_name,
+          event_role: eventData.event_role || prev.events[0].event_role,
+          event_date: eventData.event_date || prev.events[0].event_date,
+          event_held_organization: eventData.event_held_organization,
+          event_location: eventData.event_location,
+        },
+      ],
+    }));
+    setShowEventSuggestions(false);
+    setEventSuggestions([]);
   };
 
   // Handle form submit
@@ -422,6 +535,8 @@ function FormInput() {
     }
     setSuggestions([]);
     setShowSuggestions(false);
+    setEventSuggestions([]);
+    setShowEventSuggestions(false);
   };
 
   // Check if contact info has changed from selected contact
@@ -462,6 +577,45 @@ function FormInput() {
         </div>
         <div className="flex-shrink-0">
           <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+        </div>
+      </div>
+    </li>
+  );
+
+  // Event suggestion item component
+  const EventSuggestionItem = ({ event, onSelect }) => (
+    <li
+      onClick={() => onSelect(event)}
+      className="cursor-pointer px-4 py-3 hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 transition-all duration-200 border-b border-gray-100 last:border-b-0"
+    >
+      <div className="flex items-center space-x-3">
+        <div className="flex-shrink-0">
+          <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center">
+            <span className="text-white text-xs font-bold">E</span>
+          </div>
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-gray-900 truncate">
+            {event.event_name}
+          </p>
+          <div className="flex flex-col space-y-1 mt-1">
+            <p className="text-xs text-gray-600 truncate">
+              📍 {event.event_location}
+            </p>
+            <p className="text-xs text-gray-600 truncate">
+              🏢 {event.event_held_organization}
+            </p>
+            {event.event_date && (
+              <p className="text-xs text-gray-500">
+                📅 {new Date(event.event_date).toLocaleDateString()}
+              </p>
+            )}
+          </div>
+        </div>
+        <div className="flex-shrink-0">
+          <div className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-medium">
+            Recent
+          </div>
         </div>
       </div>
     </li>
@@ -571,7 +725,7 @@ function FormInput() {
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                     {/* Name Field with autocomplete */}
-                    <div className="relative">
+                    <div className="relative autocomplete-container">
                       <label
                         htmlFor="name"
                         className="block text-sm font-medium text-gray-700 mb-2"
@@ -626,7 +780,7 @@ function FormInput() {
                     </div>
 
                     {/* Phone Number Field */}
-                    <div className="relative">
+                    <div className="relative autocomplete-container">
                       <label
                         htmlFor="phone_number"
                         className="block text-sm font-medium text-gray-700 mb-2"
@@ -683,7 +837,7 @@ function FormInput() {
                     </div>
 
                     {/* Email Address Field */}
-                    <div className="md:col-span-2 relative">
+                    <div className="md:col-span-2 relative autocomplete-container">
                       <label
                         htmlFor="email_address"
                         className="block text-sm font-medium text-gray-700 mb-2"
@@ -749,7 +903,7 @@ function FormInput() {
                     Event & Role Information
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-                    <div>
+                    <div className="relative autocomplete-container">
                       <label
                         htmlFor="event_name"
                         className="block text-sm font-medium text-gray-700 mb-2"
@@ -763,9 +917,38 @@ function FormInput() {
                         value={formData.events[0].event_name}
                         placeholder="Enter event name"
                         onChange={handleInputChange}
+                        autoComplete="off"
                         required
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 hover:border-gray-400 transition-all duration-200 shadow-sm"
                       />
+                      {showEventSuggestions &&
+                        activeEventField === "event_name" &&
+                        eventSuggestions.length > 0 && (
+                          <div className="absolute z-20 w-full bg-white border border-gray-200 rounded-xl mt-1 shadow-2xl overflow-hidden max-h-80">
+                            <div className="px-4 py-2 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
+                              <p className="text-xs font-medium text-gray-600">
+                                Recent events ({eventSuggestions.length} found)
+                              </p>
+                              <button
+                                type="button"
+                                onClick={closeEventSuggestions}
+                                className="text-gray-400 hover:text-gray-600 transition-colors"
+                                title="Close suggestions"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                            <ul className="max-h-64 overflow-auto">
+                              {eventSuggestions.map((event, index) => (
+                                <EventSuggestionItem
+                                  key={index}
+                                  event={event}
+                                  onSelect={handleSelectEventSuggestion}
+                                />
+                              ))}
+                            </ul>
+                          </div>
+                        )}
                     </div>
 
                     <div>
@@ -805,7 +988,7 @@ function FormInput() {
                       />
                     </div>
 
-                    <div>
+                    <div className="relative autocomplete-container">
                       <label
                         htmlFor="event_held_organization"
                         className="block text-sm font-medium text-gray-700 mb-2"
@@ -819,12 +1002,41 @@ function FormInput() {
                         value={formData.events[0].event_held_organization}
                         placeholder="Enter organization name"
                         onChange={handleInputChange}
+                        autoComplete="off"
                         required
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 hover:border-gray-400 transition-all duration-200 shadow-sm"
                       />
+                      {showEventSuggestions &&
+                        activeEventField === "event_held_organization" &&
+                        eventSuggestions.length > 0 && (
+                          <div className="absolute z-20 w-full bg-white border border-gray-200 rounded-xl mt-1 shadow-2xl overflow-hidden max-h-80">
+                            <div className="px-4 py-2 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
+                              <p className="text-xs font-medium text-gray-600">
+                                Recent organizations ({eventSuggestions.length} found)
+                              </p>
+                              <button
+                                type="button"
+                                onClick={closeEventSuggestions}
+                                className="text-gray-400 hover:text-gray-600 transition-colors"
+                                title="Close suggestions"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                            <ul className="max-h-64 overflow-auto">
+                              {eventSuggestions.map((event, index) => (
+                                <EventSuggestionItem
+                                  key={index}
+                                  event={event}
+                                  onSelect={handleSelectEventSuggestion}
+                                />
+                              ))}
+                            </ul>
+                          </div>
+                        )}
                     </div>
 
-                    <div className="md:col-span-2">
+                    <div className="md:col-span-2 relative autocomplete-container">
                       <label
                         htmlFor="event_location"
                         className="block text-sm font-medium text-gray-700 mb-2"
@@ -838,9 +1050,38 @@ function FormInput() {
                         value={formData.events[0].event_location}
                         placeholder="Enter event location"
                         onChange={handleInputChange}
+                        autoComplete="off"
                         required
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 hover:border-gray-400 transition-all duration-200 shadow-sm"
                       />
+                      {showEventSuggestions &&
+                        activeEventField === "event_location" &&
+                        eventSuggestions.length > 0 && (
+                          <div className="absolute z-20 w-full bg-white border border-gray-200 rounded-xl mt-1 shadow-2xl overflow-hidden max-h-80">
+                            <div className="px-4 py-2 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
+                              <p className="text-xs font-medium text-gray-600">
+                                Recent locations ({eventSuggestions.length} found)
+                              </p>
+                              <button
+                                type="button"
+                                onClick={closeEventSuggestions}
+                                className="text-gray-400 hover:text-gray-600 transition-colors"
+                                title="Close suggestions"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                            <ul className="max-h-64 overflow-auto">
+                              {eventSuggestions.map((event, index) => (
+                                <EventSuggestionItem
+                                  key={index}
+                                  event={event}
+                                  onSelect={handleSelectEventSuggestion}
+                                />
+                              ))}
+                            </ul>
+                          </div>
+                        )}
                     </div>
                   </div>
                 </div>
