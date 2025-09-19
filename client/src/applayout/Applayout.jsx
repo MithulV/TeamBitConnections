@@ -18,7 +18,6 @@ import TaskAssignments from "../pages/Admin/TaskAssignments";
 import CameraInput from "../components/Forms/CameraInput";
 import FormInput from "../components/Forms/FormInput";
 import EventDetails from "../pages/User/EventDetails";
-import axios from "axios";
 import Referral from "../pages/User/Referral";
 import ReferralSignup from "../pages/User/ReferralSignup";
 import ContactNetworkAnalysis from "../pages/Admin/ContactNetworkAnalysis";
@@ -26,7 +25,7 @@ import api from "../utils/axios";
 // A helper component to render the correct home page based on role
 const RoleBasedHome = () => {
   const { role } = useAuthStore();
-
+  
   switch (role) {
     case "user":
       return <UserHome />;
@@ -81,7 +80,7 @@ function Applayout() {
           console.error("Ping failed:", error);
         }
       }
-    }, 10000); // 10 seconds
+    }, 10000);
 
     return () => clearInterval(pingInterval);
   }, [id]); // Added id to dependencies

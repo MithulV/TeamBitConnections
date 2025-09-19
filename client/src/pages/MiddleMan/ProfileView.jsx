@@ -8,23 +8,15 @@ import {
   CheckCircle,
   Edit3,
   Users,
-  Shield,
   Phone,
-  Mail,
   Calendar,
   User,
   Clock,
-  MessageCircle,
-  ChevronUp,
-  ChevronDown,
   X,
-  UserCheck,
   UserPlus,
   Trash2,
-  Settings,
   FileText,
   Activity,
-  Star,
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../store/AuthStore";

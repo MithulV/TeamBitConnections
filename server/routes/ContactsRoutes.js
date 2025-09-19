@@ -104,7 +104,7 @@ router.post("/create-task", CreateTask);
 // History routes
 router.get("/get-modification-history/:id", getContactModificationHistory);
 router.get("/get-all-modification-history/", getAllContactModificationHistory);
-// Referral routes
+// Referral routes 
 router.post("/send-referral", sendReferralInvitation);
 router.get("/validate-referral/:token", validateReferralLink);
 router.post("/complete-registration", completeRegistration);
