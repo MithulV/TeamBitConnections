@@ -352,14 +352,25 @@ const NetworkTreeVisualization = ({ networkData, searchTerm, filterType }) => {
     }
   };
 
-  // Touch handlers for node dragging
+  // FIXED: Enhanced touch handlers that properly handle both tap and drag on mobile
   const handleNodeTouchStart = (e, node) => {
     if (e.touches.length === 1) {
       const touch = e.touches[0];
       
       e.stopPropagation();
-      e.preventDefault();
       
+      // Store initial touch position to detect movement
+      const initialTouch = {
+        x: touch.clientX,
+        y: touch.clientY,
+        time: Date.now()
+      };
+      
+      // Store on the element for later reference
+      e.currentTarget.initialTouch = initialTouch;
+      e.currentTarget.nodeRef = node;
+      
+      // Set up for potential dragging
       setIsDraggingNode(true);
       setDraggedNode(node);
       
@@ -379,33 +390,59 @@ const NetworkTreeVisualization = ({ networkData, searchTerm, filterType }) => {
 
   const handleNodeTouchMove = (e) => {
     if (isDraggingNode && draggedNode && e.touches.length === 1) {
-      e.preventDefault();
-      
       const touch = e.touches[0];
-      const rect = containerRef.current.getBoundingClientRect();
-      const svgPoint = {
-        x: (touch.clientX - rect.left - pan.x) / zoom,
-        y: (touch.clientY - rect.top - pan.y) / zoom
-      };
+      const initialTouch = e.currentTarget.initialTouch;
       
-      const newX = svgPoint.x - nodeDragStart.x;
-      const newY = svgPoint.y - nodeDragStart.y;
+      // Calculate movement distance
+      const moveDistance = Math.sqrt(
+        Math.pow(touch.clientX - initialTouch.x, 2) + 
+        Math.pow(touch.clientY - initialTouch.y, 2)
+      );
       
-      updateNodePosition(draggedNode.id, newX, newY);
+      // Only start preventing default and dragging if moved more than 10px
+      if (moveDistance > 10) {
+        e.preventDefault();
+        
+        const rect = containerRef.current.getBoundingClientRect();
+        const svgPoint = {
+          x: (touch.clientX - rect.left - pan.x) / zoom,
+          y: (touch.clientY - rect.top - pan.y) / zoom
+        };
+        
+        const newX = svgPoint.x - nodeDragStart.x;
+        const newY = svgPoint.y - nodeDragStart.y;
+        
+        updateNodePosition(draggedNode.id, newX, newY);
+        
+        // Mark that we actually dragged
+        e.currentTarget.didDrag = true;
+      }
     }
   };
 
   const handleNodeTouchEnd = (e) => {
     if (isDraggingNode) {
-      e.preventDefault();
+      const didDrag = e.currentTarget.didDrag;
+      const node = e.currentTarget.nodeRef;
+      const initialTouch = e.currentTarget.initialTouch;
+      
+      // Clean up drag state
       setIsDraggingNode(false);
       setDraggedNode(null);
       setNodeDragStart({ x: 0, y: 0 });
-    } else if (!isDragging) {
-      // Normal tap behavior
-      const node = e.currentTarget.node;
-      if (node) {
-        selectNode(node, e);
+      
+      // Clean up element references
+      delete e.currentTarget.didDrag;
+      delete e.currentTarget.nodeRef;
+      delete e.currentTarget.initialTouch;
+      
+      // If no dragging occurred and it was a quick tap, select the node
+      if (!didDrag && node && initialTouch) {
+        const timeDiff = Date.now() - initialTouch.time;
+        if (timeDiff < 300) { // Quick tap (less than 300ms)
+          console.log('Mobile tap detected, selecting node:', node.name);
+          selectNode(node, e);
+        }
       }
     }
   };
@@ -649,6 +686,7 @@ const NetworkTreeVisualization = ({ networkData, searchTerm, filterType }) => {
     if (e) {
       e.stopPropagation();
     }
+    console.log('Node selected:', node.name); // Debug log
     setSelectedNode(node);
   };
 
@@ -784,7 +822,7 @@ const NetworkTreeVisualization = ({ networkData, searchTerm, filterType }) => {
                 ))}
               </g>
 
-              {/* Nodes with drag functionality */}
+              {/* Nodes with enhanced mobile touch handling */}
               <g className="nodes">
                 {visibleNodes.map((node) => {
                   const isSelected = selectedNode?.id === node.id;
@@ -820,6 +858,8 @@ const NetworkTreeVisualization = ({ networkData, searchTerm, filterType }) => {
                         style={{ cursor: isBeingDragged ? 'grabbing' : 'grab' }}
                         onMouseDown={(e) => handleNodeMouseDown(e, node)}
                         onTouchStart={(e) => handleNodeTouchStart(e, node)}
+                        onTouchMove={handleNodeTouchMove}
+                        onTouchEnd={handleNodeTouchEnd}
                       />
 
                       {/* Avatar Background */}
@@ -862,6 +902,8 @@ const NetworkTreeVisualization = ({ networkData, searchTerm, filterType }) => {
                           }}
                           onMouseDown={(e) => handleNodeMouseDown(e, node)}
                           onTouchStart={(e) => handleNodeTouchStart(e, node)}
+                          onTouchMove={handleNodeTouchMove}
+                          onTouchEnd={handleNodeTouchEnd}
                           onError={(e) => handleAvatarError(e, node)}
                           onLoad={() => console.log('Avatar loaded successfully for:', node.name)}
                         />
@@ -894,6 +936,8 @@ const NetworkTreeVisualization = ({ networkData, searchTerm, filterType }) => {
                         style={{ cursor: isBeingDragged ? 'grabbing' : 'grab' }}
                         onMouseDown={(e) => handleNodeMouseDown(e, node)}
                         onTouchStart={(e) => handleNodeTouchStart(e, node)}
+                        onTouchMove={handleNodeTouchMove}
+                        onTouchEnd={handleNodeTouchEnd}
                       >
                         {node.name}
                       </text>
@@ -912,6 +956,8 @@ const NetworkTreeVisualization = ({ networkData, searchTerm, filterType }) => {
                         style={{ cursor: isBeingDragged ? 'grabbing' : 'grab' }}
                         onMouseDown={(e) => handleNodeMouseDown(e, node)}
                         onTouchStart={(e) => handleNodeTouchStart(e, node)}
+                        onTouchMove={handleNodeTouchMove}
+                        onTouchEnd={handleNodeTouchEnd}
                       >
                         {node.title}
                       </text>
@@ -1011,7 +1057,7 @@ const NetworkTreeVisualization = ({ networkData, searchTerm, filterType }) => {
         </div>
       </div>
 
-            <style jsx>{`
+      <style jsx>{`
         .org-chart-container {
           font-family: Arial, sans-serif;
           background: #f6f6f6;
