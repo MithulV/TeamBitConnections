@@ -289,7 +289,8 @@ const TasksPage = () => {
         <div className="flex justify-end">
           <Header />
         </div>
-      </div>      <div className="p-6">
+      </div>      
+      <div className="p-6">
         <div className="container mx-auto">
           <h1 className="text-3xl font-semibold text-gray-800 mb-4">Tasks</h1>
           <p className="text-gray-600 mb-6">
