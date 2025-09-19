@@ -18,8 +18,16 @@ export const analyzeContactNetwork = async (req, res) => {
                 e.created_by as event_creator_id,
                 creator.email as added_by,
                 creator.referred_by as creator_referred_by_email,
+                creator.first_name as creator_first_name,
+                creator.last_name as creator_last_name,
+                creator.profile_picture as creator_profile_picture,
+                creator.is_online as creator_is_online,
                 referrer.email as creator_referrer_email,
                 referrer.referred_by as creator_referrer_referred_by,
+                referrer.first_name as referrer_first_name,
+                referrer.last_name as referrer_last_name,
+                referrer.profile_picture as referrer_profile_picture,
+                referrer.is_online as referrer_is_online,
                 STRING_AGG(DISTINCT e.event_name, '; ') as events_attended,
                 STRING_AGG(DISTINCT e.event_role, '; ') as event_roles,
                 STRING_AGG(DISTINCT e.event_location, '; ') as event_locations,
@@ -32,18 +40,24 @@ export const analyzeContactNetwork = async (req, res) => {
             GROUP BY 
                 c.contact_id, c.name, c.email_address, c.category, c.created_at,
                 e.created_by, creator.email, creator.referred_by, 
-                referrer.email, referrer.referred_by
+                creator.first_name, creator.last_name, creator.profile_picture, creator.is_online,
+                referrer.email, referrer.referred_by, referrer.first_name, referrer.last_name, 
+                referrer.profile_picture, referrer.is_online
             ORDER BY c.created_at DESC
         `;
 
-        // Also fetch all users for complete network mapping
+        // Also fetch all users for complete network mapping with additional fields
         const allUsers = await db`
             SELECT 
                 id,
                 email,
                 referred_by,
                 created_at,
-                role
+                role,
+                first_name,
+                last_name,
+                profile_picture,
+                is_online
             FROM login
             ORDER BY created_at DESC
         `;
@@ -93,15 +107,21 @@ function buildNetworkGraph(contacts, users) {
 
     console.log('🔗 Building network graph...');
 
-    // First, create all user nodes
+    // First, create all user nodes with enhanced data
     users.forEach(user => {
         const userId = `user_${user.email}`;
         if (!nodes.has(userId)) {
+            const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ') || user.email;
+            
             nodes.set(userId, {
                 id: userId,
                 type: 'user',
-                name: user.email,
+                name: fullName,
                 email: user.email,
+                first_name: user.first_name,
+                last_name: user.last_name,
+                profile_picture: user.profile_picture,
+                is_online: user.is_online,
                 referredBy: user.referred_by,
                 connections: 0,
                 level: 0,
@@ -133,7 +153,7 @@ function buildNetworkGraph(contacts, users) {
         }
     });
 
-    // Process contacts
+    // Process contacts with creator information
     contacts.forEach(contact => {
         const contactNode = {
             id: `contact_${contact.contact_id}`,
@@ -147,6 +167,11 @@ function buildNetworkGraph(contacts, users) {
             totalEvents: parseInt(contact.total_events) || 0,
             createdAt: contact.contact_created_at,
             addedBy: contact.added_by,
+            // Creator information for contact context
+            creatorFirstName: contact.creator_first_name,
+            creatorLastName: contact.creator_last_name,
+            creatorProfilePicture: contact.creator_profile_picture,
+            creatorIsOnline: contact.creator_is_online,
             connections: 0,
             level: 0
         };
@@ -264,7 +289,11 @@ function createHierarchyVisualization(networkGraph) {
             name: node.name,
             type: node.type,
             level: node.level,
-            connections: node.connections
+            connections: node.connections,
+            first_name: node.first_name,
+            last_name: node.last_name,
+            profile_picture: node.profile_picture,
+            is_online: node.is_online
         }))
     };
 }
@@ -280,6 +309,10 @@ function findTopInfluencers(networkGraph) {
         .map(node => ({
             name: node.name,
             email: node.email,
+            first_name: node.first_name,
+            last_name: node.last_name,
+            profile_picture: node.profile_picture,
+            is_online: node.is_online,
             type: node.type,
             connections: node.connections,
             level: node.level,
@@ -320,6 +353,10 @@ function findReferralChains(networkGraph) {
             chain: chain.map(node => ({
                 name: node.name,
                 email: node.email,
+                first_name: node.first_name,
+                last_name: node.last_name,
+                profile_picture: node.profile_picture,
+                is_online: node.is_online,
                 type: node.type,
                 level: node.level
             }))

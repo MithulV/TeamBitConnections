@@ -114,7 +114,7 @@ function Navbar() {
         icon: <NotebookText size={20} />,
         path: "/all-entries",
       },
-      { name: "Analysis", icon: <Microscope size={20} />, path: "/analysis" },
+      { name: "Network Tree", icon: <Microscope size={20} />, path: "/analysis" },
     ],
   };
 
