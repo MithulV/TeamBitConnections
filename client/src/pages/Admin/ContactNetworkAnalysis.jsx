@@ -1,20 +1,13 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import Header from "../../components/Header/Header";
-
-// Import your extracted components
 import NetworkTreeVisualization from "../../components/NetworkTreeVisualization/NetworkTreeVisualization";
-import NetworkStatistics from "../../components/NetworkStatistics/NetworkStatistics";
-import NetworkExplorer from "../../components/NetworkExplorer/NetworkExplorer";
 import { RefreshCw } from "lucide-react";
 
 function ContactNetworkAnalysis() {
   const [networkData, setNetworkData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [activeTab, setActiveTab] = useState("tree");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filterType, setFilterType] = useState("all");
 
   useEffect(() => {
     fetchNetworkData();
@@ -89,76 +82,19 @@ function ContactNetworkAnalysis() {
 
   return (
     <div className="min-h-screen bg-gray-100">
+      {/* Header */}
       <div className="w-full bg-white shadow-sm sticky top-0 z-50 border-b-2 border-b-gray-50">
         <div className="flex justify-end">
           <Header />
         </div>
       </div>
-      <div className="container mx-auto px-6 py-8">
-        <div className="flex items-start justify-between mb-8">
-          {/* Header */}
-          <div className="text-left">
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">
-              Network Dashboard
-            </h1>
-            <div className="text-sm text-gray-500">
-              Last analyzed: {new Date(networkData.timestamp).toLocaleString()}
-            </div>
-          </div>
-          {/* Refresh Button */}
-          <div className="flex-shrink-0">
-            <button
-              onClick={fetchNetworkData}
-              disabled={loading}
-              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg hover:shadow-xl"
-            >
-              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-              {loading ? "Running Analysis..." : "Refresh"}
-            </button>
-          </div>
-        </div>
-        {/* Tab Navigation */}
-        <div className="bg-white rounded-lg shadow mb-8">
-          <div className="border-b border-gray-200">
-            <nav className="flex space-x-8 px-6">
-              {[
-                { key: "tree", label: "Network Tree" },
-                { key: "statistics", label: "Statistics" },
-                { key: "search", label: "Explorer" },
-              ].map((tab) => (
-                <button
-                  key={tab.key}
-                  onClick={() => setActiveTab(tab.key)}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === tab.key
-                    ? "border-blue-500 text-blue-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                    }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </nav>
-          </div>
 
+      {/* Main Content */}
+      <div className="container">
+        {/* Network Tree Visualization - Full Page */}
+        <div className="bg-white shadow">
           <div className="p-6">
-            {/* Network Tree Tab */}
-            {activeTab === "tree" && (
-              <NetworkTreeVisualization
-                networkData={networkData}
-                searchTerm={searchTerm}
-                filterType={filterType}
-              />
-            )}
-
-            {/* Statistics Tab */}
-            {activeTab === "statistics" && (
-              <NetworkStatistics networkData={networkData} />
-            )}
-
-            {/* Explorer Tab */}
-            {activeTab === "search" && (
-              <NetworkExplorer networkData={networkData} />
-            )}
+            <NetworkTreeVisualization networkData={networkData} />
           </div>
         </div>
       </div>
