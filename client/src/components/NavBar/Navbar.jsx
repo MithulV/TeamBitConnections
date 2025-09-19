@@ -25,7 +25,7 @@ function Navbar() {
   const [isMobile, setIsMobile] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
-  const { role, clearAuth, email } = useAuthStore(); // Get role, clearAuth, and email from the store
+  const { role, clearAuth, email, name, profilePicture } = useAuthStore(); // Get role, clearAuth, email, name, and profilePicture from the store
 
   // Detect screen size changes
   useEffect(() => {
@@ -114,7 +114,7 @@ function Navbar() {
         icon: <NotebookText size={20} />,
         path: "/all-entries",
       },
-      { name: "Network Tree", icon: <Microscope size={20} />, path: "/analysis" },
+      { name: "Analysis", icon: <Microscope size={20} />, path: "/analysis" },
     ],
   };
 
@@ -184,7 +184,7 @@ function Navbar() {
           {!isMobile && (
             <button
               onClick={() => setCollapsed(!collapsed)}
-              className={`p-2 rounded-full hover:bg-gray-100 transition-all duration-300 ease-in-out transform hover:scale-105 active:scale-95`}
+              className={`p-2 rounded-md hover:bg-gray-100 transition-all duration-300 ease-in-out transform hover:scale-105 active:scale-95`}
               aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
             >
               <span className="transform transition-transform duration-500 ease-in-out inline-block">
@@ -205,13 +205,16 @@ function Navbar() {
             <div className="p-4">
               <div className="flex items-center gap-3">
                 <img
-                  src={Avatar}
+                  src={profilePicture || Avatar}
                   alt="user profile"
                   className="w-12 h-12 rounded-full object-cover shadow-sm"
+                  onError={(e) => {
+                    e.target.src = Avatar; // Fallback to default avatar if Google image fails
+                  }}
                 />
                 <div>
-                  <p className="text-sm font-semibold text-gray-800 truncate">
-                    {email || "user@gmail.com"}
+                  <p className="text-sm font-semibold text-gray-800 break-words">
+                    {name || email || "user@gmail.com"}
                   </p>
                   <p className="text-xs text-gray-500">Welcome back!</p>
                 </div>

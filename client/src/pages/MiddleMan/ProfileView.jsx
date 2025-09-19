@@ -29,6 +29,7 @@ import {
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../store/AuthStore";
 import api from "../../utils/axios.js";
+import Header from "../../components/Header/Header.jsx";
 function ProfileView() {
   const [showFullHistory, setShowFullHistory] = useState(false);
   const [showExpandedHierarchy, setShowExpandedHierarchy] = useState(false);
@@ -429,9 +430,9 @@ function ProfileView() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-4 md:px-6 py-4 shadow-sm">
-        <div className="max-w-7xl mx-auto flex items-center justify-end">
-          <div className="text-sm text-gray-500">Profile View</div>
+      <div className="w-full bg-white shadow-sm sticky top-0 z-50 border-b-2 border-b-gray-50">
+        <div className="flex justify-end">
+          <Header />
         </div>
       </div>
 

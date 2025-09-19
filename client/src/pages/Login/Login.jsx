@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { Mail, Lock } from "lucide-react";
 import api from "../../utils/axios";
 import { useAuthStore } from "../../store/AuthStore";
-
 const campusImageUrl =
   "https://images.unsplash.com/photo-1562774053-701939374585?q=80&w=2072&auto=format&fit=crop";
 
@@ -55,16 +54,127 @@ const LoginPage = () => {
       });
       if (res.data.success) {
         const { token, user } = res.data;
-        setAuth(token, user.email, user.role, user.id); // Update the store
+        setAuth(
+          token,
+          user.email,
+          user.role,
+          user.id,
+          user.name,
+          user.firstName,
+          user.lastName,
+          user.profilePicture
+        ); // Update the zustand store
         localStorage.setItem("token", token); // Persist token
-        console.log("Login successful:", user);
         navigate("/"); // Redirect on successful login
       }
     } catch (error) {
       console.error("Login failed:", error);
-      // You might want to show an error message to the user here
+      alert("Login failed. Please check your credentials and try again.");
     }
   };
+
+  const handleGoogleSignIn = async (response) => {
+    try {
+      const { credential } = response;
+
+      // Send the credential to your backend
+      const apiResponse = await api.post("/auth/google/verify", { credential });
+
+      if (apiResponse.data.success) {
+        const { token, user } = apiResponse.data;
+
+        // Store the token and user data with enhanced profile information
+        localStorage.setItem("token", token);
+        setAuth(
+          token,
+          user.email,
+          user.role,
+          user.id,
+          user.name,
+          user.firstName,
+          user.lastName,
+          user.profilePicture
+        );
+
+        // Redirect based on user role
+        if (user.role === "admin") {
+          navigate("/admin");
+        } else if (user.role === "middleman") {
+          navigate("/middleman");
+        } else {
+          navigate("/user");
+        }
+      } else {
+        throw new Error(apiResponse.data.message || "Authentication failed");
+      }
+    } catch (error) {
+      console.error("Google sign-in failed:", error);
+
+      // More specific error handling
+      if (error.response?.status === 400) {
+        alert("Invalid Google token. Please try again.");
+      } else if (error.response?.status === 500) {
+        alert("Server error. Please try again later.");
+      } else {
+        alert("Google sign-in failed. Please try again.");
+      }
+    }
+  };
+
+  // Initialize Google Sign-In when component mounts
+  useEffect(() => {
+    if (role) {
+      navigate("/");
+      return;
+    }
+
+    // Initialize Google Sign-In with error handling
+    const initializeGoogleSignIn = () => {
+      try {
+        if (window.google) {
+          window.google.accounts.id.initialize({
+            client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+            callback: handleGoogleSignIn,
+            auto_select: false,
+            cancel_on_tap_outside: true,
+            use_fedcm_for_prompt: false, // Disable FedCM
+          });
+
+          // Render the Google Sign-In button
+          window.google.accounts.id.renderButton(
+            document.getElementById("google-signin-div"),
+            {
+              theme: "outline",
+              size: "large",
+              width: "100%", // Use full width to match container
+              text: "signin_with",
+              shape: "rectangular",
+            }
+          );
+        } else {
+          console.warn("Google Identity Services not loaded");
+        }
+      } catch (error) {
+        console.error("Failed to initialize Google Sign-In:", error);
+      }
+    };
+
+    // Check if Google script is loaded, if not wait for it
+    if (window.google) {
+      initializeGoogleSignIn();
+    } else {
+      // Wait for Google script to load
+      const checkGoogle = setInterval(() => {
+        if (window.google) {
+          clearInterval(checkGoogle);
+          initializeGoogleSignIn();
+        }
+      }, 100);
+
+      // Clean up interval after 10 seconds
+      setTimeout(() => clearInterval(checkGoogle), 10000);
+    }
+  }, [role, navigate]);
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
@@ -146,10 +256,10 @@ const LoginPage = () => {
                 </span>
               </div>
 
-              <button className="w-full bg-white border-2 border-gray-200 p-3 rounded-lg flex items-center justify-center gap-3 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-200 focus:ring-offset-2 transition-all duration-200">
-                <GoogleIcon />
-                <span className="text-gray-700 font-medium">Google</span>
-              </button>
+              <div
+                id="google-signin-div"
+                className="w-full flex justify-center"
+              ></div>
             </div>
           </div>
         </div>
