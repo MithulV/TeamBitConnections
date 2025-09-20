@@ -36,6 +36,9 @@ import {
   GetTasks,
   CompleteTask,
   CreateTask,
+  UpdateTask,
+  DeleteTask,
+  GetTaskById
 } from "../controllers/TaskControllers.js";
 import {
   ImportContactsFromCSV,
@@ -101,6 +104,9 @@ router.get("/analyze-contact-network", analyzeContactNetwork);
 router.get("/get-tasks/", GetTasks);
 router.put("/complete-task/:id", CompleteTask);
 router.post("/create-task", CreateTask);
+router.put('/update-task/:id', UpdateTask);
+router.delete('/delete-task/:id', DeleteTask);
+router.get('/task/:id', GetTaskById);
 // History routes
 router.get("/get-modification-history/:id", getContactModificationHistory);
 router.get("/get-all-modification-history/", getAllContactModificationHistory);

@@ -8,101 +8,7 @@ import api from "../../utils/axios";
 import { ArrowLeft, Trash2 } from "lucide-react";
 import { parseISO, format } from "date-fns";
 import { useAuthStore } from "../../store/AuthStore";
-
-const DeleteConfirmationModal = ({
-  isOpen,
-  onConfirm,
-  onCancel,
-  itemName = "this user",
-  isDeleting = false,
-}) => {
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Backdrop with blur effect */}
-      <div
-        className="absolute inset-0 bg-black/60 bg-opacity-50 backdrop-blur-sm transition-all duration-300"
-        onClick={!isDeleting ? onCancel : undefined}
-      ></div>
-
-      {/* Modal */}
-      <div className="relative bg-white rounded-lg shadow-2xl max-w-md w-full transform transition-all duration-300 scale-100 animate-fadeIn">
-        {/* Header with Material Design styling */}
-        <div className="flex items-start gap-3 p-6 pb-4">
-          {/* Warning Icon with circular background */}
-          <div className="flex items-center justify-center w-10 h-10 bg-orange-50 rounded-full flex-shrink-0 mt-1">
-            <svg
-              className="w-6 h-6 text-orange-500"
-              fill="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z" />
-            </svg>
-          </div>
-          <div className="flex-1">
-            <h2 className="text-xl font-medium text-gray-900 mb-1">
-              Confirm Delete
-            </h2>
-          </div>
-        </div>
-
-        {/* Content */}
-        <div className="px-6 pb-6">
-          <p className="text-gray-600 text-sm leading-relaxed pl-13">
-            Are you sure you want to delete{" "}
-            <span className="font-medium">{itemName}</span>? This action cannot
-            be undone.
-          </p>
-        </div>
-
-        {/* Actions with Material Design button styling */}
-        <div className="flex justify-end gap-3 px-6 pb-6">
-          <button
-            onClick={onCancel}
-            disabled={isDeleting}
-            className="px-6 py-2 text-sm font-medium text-blue-600 bg-transparent border-none rounded-md hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-all duration-200 uppercase tracking-wide disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={onConfirm}
-            disabled={isDeleting}
-            className="px-6 py-2 text-sm font-medium text-red-600 bg-transparent border-none rounded-md hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 transition-all duration-200 uppercase tracking-wide disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 min-w-[100px]"
-          >
-            {isDeleting ? (
-              <>
-                <svg
-                  className="animate-spin h-4 w-4 text-red-600"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  ></circle>
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8v8z"
-                  ></path>
-                </svg>
-                Deleting...
-              </>
-            ) : (
-              "Delete"
-            )}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
+import DeleteConfirmationModal from "../../components/Modals/DeleteConfirmationModal";
 
 function UserEntries() {
   const navigate = useNavigate();
@@ -575,6 +481,7 @@ function UserEntries() {
           onConfirm={confirmDelete}
           onCancel={cancelDelete}
           itemName={userToDelete?.name}
+          deleteType="Entries"
           isDeleting={isDeleting}
         />
       </div>

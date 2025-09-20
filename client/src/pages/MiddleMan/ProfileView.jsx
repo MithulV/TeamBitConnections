@@ -30,6 +30,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../store/AuthStore";
 import api from "../../utils/axios.js";
 import Header from "../../components/Header/Header.jsx";
+
 function ProfileView() {
   const [showFullHistory, setShowFullHistory] = useState(false);
   const [showExpandedHierarchy, setShowExpandedHierarchy] = useState(false);
@@ -43,7 +44,7 @@ function ProfileView() {
   // Access the state object passed during navigation
   const contact = location.state || {};
   console.log(contact);
-  console.log("education",contact.education);
+  console.log("education", contact.education);
 
   // Fetch modification history from API
   useEffect(() => {
@@ -71,8 +72,16 @@ function ProfileView() {
     fetchModificationHistory();
   }, [contact]);
 
+  // Updated handleCloseProfile to go back to previous page [web:587][web:589]
   const handleCloseProfile = () => {
-    navigate("/contacts");
+    // Check if there's history to go back to
+    if (window.history.length > 1) {
+      // Go back to the previous page using navigate(-1) [web:587][web:595]
+      navigate(-1);
+    } else {
+      // Fallback to contacts page if no history (e.g., direct access to profile) [web:597]
+      navigate("/contacts");
+    }
   };
 
   const handleEditProfile = () => {
@@ -128,7 +137,7 @@ function ProfileView() {
         return <Trash2 className="w-4 h-4" />;
       case "CONTACT":
         return <Phone className="w-4 h-4" />;
-      case "UPDATE USER EVENT": // New case for adding events
+      case "UPDATE USER EVENT":
         return <Calendar className="w-4 h-4" />;
       default:
         return <Activity className="w-4 h-4" />;
@@ -152,7 +161,7 @@ function ProfileView() {
         return "Contact Removed";
       case "CONTACT":
         return "Contact Activity";
-      case "UPDATE USER EVENT": // New case for adding events
+      case "UPDATE USER EVENT":
         return "Event Added";
       default:
         return "Activity Logged";
@@ -176,7 +185,7 @@ function ProfileView() {
         return "from-rose-50 to-red-100 border-rose-200 text-rose-700";
       case "CONTACT":
         return "from-pink-50 to-fuchsia-100 border-pink-200 text-pink-700";
-      case "UPDATE USER EVENT": // New case for adding events
+      case "UPDATE USER EVENT":
         return "from-yellow-50 to-amber-100 border-yellow-200 text-yellow-700";
       default:
         return "from-slate-50 to-gray-100 border-slate-200 text-slate-700";
@@ -361,9 +370,7 @@ function ProfileView() {
                     <div
                       className={`w-14 h-14 rounded-xl flex items-center justify-center shadow-sm bg-gradient-to-br ${
                         historyItem.type === "modification"
-                          ? getModificationTypeColor(
-                              historyItem.modificationType
-                            )
+                          ? getModificationTypeColor(historyItem.modificationType)
                           : getContactTypeColor(historyItem.type)
                       }`}
                     >
@@ -407,9 +414,7 @@ function ProfileView() {
                         <span
                           className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gradient-to-r ${
                             historyItem.type === "modification"
-                              ? getModificationTypeColor(
-                                  historyItem.modificationType
-                                )
+                              ? getModificationTypeColor(historyItem.modificationType)
                               : getContactTypeColor(historyItem.type)
                           }`}
                         >
@@ -437,7 +442,7 @@ function ProfileView() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8">
-        {/* Back Button Row */}
+        {/* Back Button Row - Updated with proper back navigation [web:587][web:592] */}
         <div className="flex items-center mb-6">
           <button
             className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors duration-200 bg-gray-100 hover:bg-gray-200 px-3 py-2 rounded-lg"
@@ -445,7 +450,7 @@ function ProfileView() {
           >
             <ArrowLeft className="w-4 h-4" />
             <span className="font-medium text-sm md:text-base">
-              Back to Contacts
+              Back
             </span>
           </button>
         </div>
@@ -608,16 +613,12 @@ function ProfileView() {
                           <div
                             className={`w-12 h-12 rounded-xl flex items-center justify-center text-lg flex-shrink-0 shadow-sm bg-gradient-to-br ${
                               historyItem.type === "modification"
-                                ? getModificationTypeColor(
-                                    historyItem.modificationType
-                                  )
+                                ? getModificationTypeColor(historyItem.modificationType)
                                 : getContactTypeColor(historyItem.type)
                             }`}
                           >
                             {historyItem.type === "modification"
-                              ? getModificationTypeIcon(
-                                  historyItem.modificationType
-                                )
+                              ? getModificationTypeIcon(historyItem.modificationType)
                               : getContactTypeIcon(historyItem.type)}
                           </div>
                           <div className="flex-1 min-w-0">
@@ -652,8 +653,7 @@ function ProfileView() {
                   className="w-full mt-6 py-3 text-center bg-gradient-to-r from-indigo-50 to-purple-50 hover:from-indigo-100 hover:to-purple-100 transition-all duration-200 rounded-xl font-semibold text-indigo-700 border border-indigo-200 hover:border-indigo-300 flex items-center justify-center gap-2"
                 >
                   <Clock className="w-4 h-4" />
-                  View Complete Timeline ({combinedContactHistory.length}{" "}
-                  activities)
+                  View Complete Timeline ({combinedContactHistory.length} activities)
                 </button>
               </div>
             </div>
@@ -755,12 +755,10 @@ function ProfileView() {
                               {event.event_name}
                             </h3>
                             <p className="text-amber-700 font-medium mb-1">
-                              {event.event_role} •{" "}
-                              {event.event_held_organization}
+                              {event.event_role} • {event.event_held_organization}
                             </p>
                             <p className="text-gray-600 text-sm">
-                              {formatDate(event.event_date)} •{" "}
-                              {event.event_location}
+                              {formatDate(event.event_date)} • {event.event_location}
                             </p>
                             {event.verified && (
                               <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 mt-2">
@@ -806,21 +804,17 @@ function ProfileView() {
               </div>
               <div className="p-6">
                 <div className="space-y-4">
-                  {Object.entries(contactData.contactInfo).map(
-                    ([key, value]) => (
-                      <div
-                        key={key}
-                        className="flex justify-between items-center py-2 border-b border-gray-100 last:border-b-0"
-                      >
-                        <p className="text-sm text-gray-600 capitalize">
-                          {key.replace(/([A-Z])/g, " $1").trim()}
-                        </p>
-                        <p className="font-medium text-gray-900 text-right">
-                          {value}
-                        </p>
-                      </div>
-                    )
-                  )}
+                  {Object.entries(contactData.contactInfo).map(([key, value]) => (
+                    <div
+                      key={key}
+                      className="flex justify-between items-center py-2 border-b border-gray-100 last:border-b-0"
+                    >
+                      <p className="text-sm text-gray-600 capitalize">
+                        {key.replace(/([A-Z])/g, " $1").trim()}
+                      </p>
+                      <p className="font-medium text-gray-900 text-right">{value}</p>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
@@ -837,9 +831,7 @@ function ProfileView() {
                 <div className="p-6">
                   <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
                     <div className="space-y-2 text-gray-700">
-                      <p className="font-medium">
-                        {contactData.address.street}
-                      </p>
+                      <p className="font-medium">{contactData.address.street}</p>
                       <p>
                         {contactData.address.city}, {contactData.address.state}
                       </p>

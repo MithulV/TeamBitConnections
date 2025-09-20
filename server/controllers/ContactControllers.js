@@ -4,10 +4,12 @@ import { logContactModification } from "./ModificationHistoryControllers.js";
 export const GetAllContact = async (req, res) => {
   const { limit } = req.query;
   const limitValue = limit ? parseInt(limit, 10) : null;
-  let query;
+  
   try {
+    // First, get all unique contacts with created_by information
+    let baseContactsQuery;
     if (limitValue && limitValue > 0) {
-      query = db`
+      baseContactsQuery = db`
         SELECT 
           c.contact_id,
           c.created_by,
@@ -29,7 +31,8 @@ export const GetAllContact = async (req, res) => {
           c.emergency_contact_relationship,
           c.logger,
           c.updated_at,
-
+          
+          -- Address data
           ca.street,
           ca.city,
           ca.state,
@@ -38,6 +41,7 @@ export const GetAllContact = async (req, res) => {
           ca.created_at as address_created_at,
           ca.updated_at as address_updated_at,
           
+          -- Education data (aggregated)
           STRING_AGG(DISTINCT ce.pg_course_name, '; ') as pg_course_name,
           STRING_AGG(DISTINCT ce.pg_college, '; ') as pg_college_name,
           STRING_AGG(DISTINCT ce.pg_university, '; ') as pg_university_type,
@@ -51,42 +55,34 @@ export const GetAllContact = async (req, res) => {
           STRING_AGG(DISTINCT ce.created_at::text, '; ') as education_created_at,
           STRING_AGG(DISTINCT ce.updated_at::text, '; ') as education_updated_at,
           
+          -- Experience data (aggregated)
           STRING_AGG(DISTINCT cex.job_title, '; ') as job_title,
           STRING_AGG(DISTINCT cex.company, '; ') as company_name,
           STRING_AGG(DISTINCT cex.department, '; ') as department_type,
           STRING_AGG(DISTINCT cex.from_date::text, '; ') as from_date,
           STRING_AGG(DISTINCT cex.to_date::text, '; ') as to_date,
           STRING_AGG(DISTINCT cex.created_at::text, '; ') as experience_created_at,
-          STRING_AGG(DISTINCT cex.updated_at::text, '; ') as experience_updated_at,
-          
-          STRING_AGG(DISTINCT e.event_name, '; ') as event_name,
-          STRING_AGG(DISTINCT e.event_role, '; ') as event_role,
-          STRING_AGG(DISTINCT e.event_held_organization, '; ') as event_held_organization,
-          STRING_AGG(DISTINCT e.event_location, '; ') as event_location,
-          BOOL_OR(e.verified) as verified,
-          STRING_AGG(DISTINCT e.contact_status, '; ') as contact_status,
-          STRING_AGG(DISTINCT e.created_at::text, '; ') as event_created_at,
-          STRING_AGG(DISTINCT e.updated_at::text, '; ') as event_details_updated_at
+          STRING_AGG(DISTINCT cex.updated_at::text, '; ') as experience_updated_at
           
         FROM contact c
+        LEFT JOIN login l ON c.created_by = l.id
         LEFT JOIN contact_address ca ON c.contact_id = ca.contact_id
         LEFT JOIN contact_education ce ON c.contact_id = ce.contact_id
         LEFT JOIN contact_experience cex ON c.contact_id = cex.contact_id
-        LEFT JOIN event e ON c.contact_id = e.contact_id
-        LEFT JOIN login l ON e.created_by = l.id
+        WHERE (c.rejected = false OR c.rejected IS NULL)
         GROUP BY 
           c.contact_id, c.created_by, l.email, c.created_at, c.name,
           c.phone_number, c.secondary_phone_number, c.email_address,
-          c.secondary_email, c.skills, c.linkedin_url, c.dob, c.gender, 
-          c.nationality, c.marital_status, c.category, c.emergency_contact_name, 
-          c.emergency_contact_relationship, c.logger, c.updated_at,
-          ca.street, ca.city, ca.state, ca.country, ca.zipcode, 
-          ca.created_at, ca.updated_at
+          c.secondary_email, c.skills, c.linkedin_url, c.dob, 
+          c.gender, c.nationality, c.marital_status, c.category, 
+          c.emergency_contact_name, c.emergency_contact_relationship, 
+          c.logger, c.updated_at, ca.street, ca.city, ca.state, 
+          ca.country, ca.zipcode, ca.created_at, ca.updated_at
         ORDER BY c.created_at DESC
         LIMIT ${limitValue}
       `;
     } else {
-      query = db`
+      baseContactsQuery = db`
         SELECT 
           c.contact_id,
           c.created_by,
@@ -109,6 +105,7 @@ export const GetAllContact = async (req, res) => {
           c.logger,
           c.updated_at,
           
+          -- Address data
           ca.street,
           ca.city,
           ca.state,
@@ -117,6 +114,7 @@ export const GetAllContact = async (req, res) => {
           ca.created_at as address_created_at,
           ca.updated_at as address_updated_at,
           
+          -- Education data (aggregated)
           STRING_AGG(DISTINCT ce.pg_course_name, '; ') as pg_course_name,
           STRING_AGG(DISTINCT ce.pg_college, '; ') as pg_college_name,
           STRING_AGG(DISTINCT ce.pg_university, '; ') as pg_university_type,
@@ -130,54 +128,227 @@ export const GetAllContact = async (req, res) => {
           STRING_AGG(DISTINCT ce.created_at::text, '; ') as education_created_at,
           STRING_AGG(DISTINCT ce.updated_at::text, '; ') as education_updated_at,
           
+          -- Experience data (aggregated)
           STRING_AGG(DISTINCT cex.job_title, '; ') as job_title,
           STRING_AGG(DISTINCT cex.company, '; ') as company_name,
           STRING_AGG(DISTINCT cex.department, '; ') as department_type,
           STRING_AGG(DISTINCT cex.from_date::text, '; ') as from_date,
           STRING_AGG(DISTINCT cex.to_date::text, '; ') as to_date,
           STRING_AGG(DISTINCT cex.created_at::text, '; ') as experience_created_at,
-          STRING_AGG(DISTINCT cex.updated_at::text, '; ') as experience_updated_at,
-          
-          STRING_AGG(DISTINCT e.event_name, '; ') as event_name,
-          STRING_AGG(DISTINCT e.event_role, '; ') as event_role,
-          STRING_AGG(DISTINCT e.event_held_organization, '; ') as event_held_organization,
-          STRING_AGG(DISTINCT e.event_location, '; ') as event_location,
-          BOOL_OR(e.verified) as verified,
-          STRING_AGG(DISTINCT e.contact_status, '; ') as contact_status,
-          STRING_AGG(DISTINCT e.created_at::text, '; ') as event_created_at,
-          STRING_AGG(DISTINCT e.updated_at::text, '; ') as event_details_updated_at
+          STRING_AGG(DISTINCT cex.updated_at::text, '; ') as experience_updated_at
           
         FROM contact c
+        LEFT JOIN login l ON c.created_by = l.id
         LEFT JOIN contact_address ca ON c.contact_id = ca.contact_id
         LEFT JOIN contact_education ce ON c.contact_id = ce.contact_id
         LEFT JOIN contact_experience cex ON c.contact_id = cex.contact_id
-        LEFT JOIN event e ON c.contact_id = e.contact_id
-        LEFT JOIN login l ON e.created_by = l.id
+        WHERE (c.rejected = false OR c.rejected IS NULL)
         GROUP BY 
           c.contact_id, c.created_by, l.email, c.created_at, c.name,
           c.phone_number, c.secondary_phone_number, c.email_address,
-          c.secondary_email, c.skills, c.linkedin_url, c.dob, c.gender, 
-          c.nationality, c.marital_status, c.category, c.emergency_contact_name, 
-          c.emergency_contact_relationship, c.logger, c.updated_at,
-          ca.street, ca.city, ca.state, ca.country, ca.zipcode, 
-          ca.created_at, ca.updated_at
+          c.secondary_email, c.skills, c.linkedin_url, c.dob, 
+          c.gender, c.nationality, c.marital_status, c.category, 
+          c.emergency_contact_name, c.emergency_contact_relationship, 
+          c.logger, c.updated_at, ca.street, ca.city, ca.state, 
+          ca.country, ca.zipcode, ca.created_at, ca.updated_at
         ORDER BY c.created_at DESC
       `;
     }
 
-    const result = await query;
+    const contacts = await baseContactsQuery;
+    console.log(`🔍 Found ${contacts.length} contacts`);
+    
+    // Calculate acquisition metrics using PostgreSQL DATE_TRUNC [web:304][web:315]
+    const acquisitionMetrics = await db`
+      WITH daily_counts AS (
+        SELECT 
+          DATE_TRUNC('day', created_at) as period,
+          COUNT(*) as count
+        FROM contact 
+        WHERE (rejected = false OR rejected IS NULL)
+          AND created_at >= CURRENT_DATE - INTERVAL '30 days'
+        GROUP BY DATE_TRUNC('day', created_at)
+      ),
+      weekly_counts AS (
+        SELECT 
+          DATE_TRUNC('week', created_at) as period,
+          COUNT(*) as count
+        FROM contact 
+        WHERE (rejected = false OR rejected IS NULL)
+          AND created_at >= CURRENT_DATE - INTERVAL '12 weeks'
+        GROUP BY DATE_TRUNC('week', created_at)
+      ),
+      monthly_counts AS (
+        SELECT 
+          DATE_TRUNC('month', created_at) as period,
+          COUNT(*) as count
+        FROM contact 
+        WHERE (rejected = false OR rejected IS NULL)
+          AND created_at >= CURRENT_DATE - INTERVAL '12 months'
+        GROUP BY DATE_TRUNC('month', created_at)
+      )
+      SELECT 
+        'daily' as period_type,
+        ROUND(AVG(count), 2) as avg_rate,
+        MAX(count) as max_count,
+        MIN(count) as min_count,
+        SUM(CASE WHEN period = DATE_TRUNC('day', CURRENT_DATE) THEN count ELSE 0 END) as today_count,
+        SUM(CASE WHEN period = DATE_TRUNC('day', CURRENT_DATE - INTERVAL '1 day') THEN count ELSE 0 END) as yesterday_count
+      FROM daily_counts
+      UNION ALL
+      SELECT 
+        'weekly' as period_type,
+        ROUND(AVG(count), 2) as avg_rate,
+        MAX(count) as max_count,
+        MIN(count) as min_count,
+        SUM(CASE WHEN period = DATE_TRUNC('week', CURRENT_DATE) THEN count ELSE 0 END) as today_count,
+        SUM(CASE WHEN period = DATE_TRUNC('week', CURRENT_DATE - INTERVAL '1 week') THEN count ELSE 0 END) as yesterday_count
+      FROM weekly_counts
+      UNION ALL
+      SELECT 
+        'monthly' as period_type,
+        ROUND(AVG(count), 2) as avg_rate,
+        MAX(count) as max_count,
+        MIN(count) as min_count,
+        SUM(CASE WHEN period = DATE_TRUNC('month', CURRENT_DATE) THEN count ELSE 0 END) as today_count,
+        SUM(CASE WHEN period = DATE_TRUNC('month', CURRENT_DATE - INTERVAL '1 month') THEN count ELSE 0 END) as yesterday_count
+      FROM monthly_counts
+    `;
 
-    // Log the view operation
-    try {
-      await logContactModification(db, null, req.user?.id || 'system', "VIEW ALL");
-    } catch (err) {
-      console.warn("Contact modification logging failed:", err.message);
+    // Get top contributors [web:306][web:310]
+    const topContributors = await db`
+      SELECT 
+        c.created_by,
+        l.email,
+        COUNT(*) as contact_count,
+        MIN(c.created_at) as first_contribution,
+        MAX(c.created_at) as latest_contribution,
+        ROUND(
+          COUNT(*) * 100.0 / (
+            SELECT COUNT(*) 
+            FROM contact 
+            WHERE (rejected = false OR rejected IS NULL)
+          ), 2
+        ) as contribution_percentage
+      FROM contact c
+      LEFT JOIN login l ON c.created_by = l.id
+      WHERE (c.rejected = false OR c.rejected IS NULL)
+        AND c.created_by IS NOT NULL
+      GROUP BY c.created_by, l.email
+      ORDER BY contact_count DESC
+      LIMIT 10
+    `;
+
+    // Get events for these contacts
+    if (contacts.length > 0) {
+      const contactIds = contacts.map(c => parseInt(c.contact_id)).filter(id => !isNaN(id));
+      
+      const events = await db`
+        SELECT 
+          e.contact_id,
+          e.event_name,
+          e.event_role,
+          e.event_held_organization,
+          e.event_location,
+          e.event_date,
+          e.verified,
+          e.contact_status,
+          e.created_at as event_created_at,
+          e.updated_at as event_updated_at,
+          l.email as event_added_by
+        FROM event e
+        LEFT JOIN login l ON e.created_by = l.id
+        WHERE e.contact_id = ANY(${contactIds})
+        ORDER BY e.contact_id, e.created_at DESC
+      `;
+      
+      // Group events by contact_id
+      const eventsByContact = events.reduce((acc, event) => {
+        const contactId = parseInt(event.contact_id);
+        if (!acc[contactId]) {
+          acc[contactId] = [];
+        }
+        acc[contactId].push(event);
+        return acc;
+      }, {});
+      
+      // Attach events to contacts
+      const result = contacts.map(contact => {
+        const contactId = parseInt(contact.contact_id);
+        const contactEvents = eventsByContact[contactId] || [];
+        
+        // Calculate aggregated event fields for backward compatibility
+        const eventNames = contactEvents.map(e => e.event_name).filter(Boolean);
+        const eventRoles = contactEvents.map(e => e.event_role).filter(Boolean);
+        const eventOrganizations = contactEvents.map(e => e.event_held_organization).filter(Boolean);
+        const eventLocations = contactEvents.map(e => e.event_location).filter(Boolean);
+        const eventCreatedAts = contactEvents.map(e => e.event_created_at).filter(Boolean);
+        const eventUpdatedAts = contactEvents.map(e => e.event_updated_at).filter(Boolean);
+        
+        return {
+          ...contact,
+          // Backward compatibility: aggregated fields
+          event_name: eventNames.length > 0 ? eventNames.join('; ') : null,
+          event_role: eventRoles.length > 0 ? eventRoles.join('; ') : null,
+          event_held_organization: eventOrganizations.length > 0 ? eventOrganizations.join('; ') : null,
+          event_location: eventLocations.length > 0 ? eventLocations.join('; ') : null,
+          verified: contactEvents.some(e => e.verified),
+          contact_status: contactEvents.length > 0 ? contactEvents.map(e => e.contact_status).filter(Boolean).join('; ') : null,
+          event_created_at: eventCreatedAts.length > 0 ? eventCreatedAts.join('; ') : null,
+          event_details_updated_at: eventUpdatedAts.length > 0 ? eventUpdatedAts.join('; ') : null,
+          
+          // NEW: Array of individual events for detailed processing
+          events: contactEvents,
+          event_count: contactEvents.length
+        };
+      });
+      
+      // Log the view operation
+      try {
+        await logContactModification(db, null, req.user?.id || 'system', "VIEW ALL");
+      } catch (err) {
+        console.warn("Contact modification logging failed:", err.message);
+      }
+
+      return res.status(200).json({
+        success: true,
+        data: result,
+        meta: {
+          total_contacts: result.length,
+          total_events: events.length,
+          contacts_with_events: result.filter(c => c.events.length > 0).length,
+          contacts_without_events: result.filter(c => c.events.length === 0).length,
+          // NEW: Acquisition metrics
+          acquisition_metrics: acquisitionMetrics.reduce((acc, metric) => {
+            acc[metric.period_type] = {
+              avg_rate: parseFloat(metric.avg_rate),
+              max_count: metric.max_count,
+              min_count: metric.min_count,
+              current_count: metric.today_count,
+              previous_count: metric.yesterday_count,
+              trend: metric.today_count > metric.yesterday_count ? 'up' : 
+                     metric.today_count < metric.yesterday_count ? 'down' : 'stable'
+            };
+            return acc;
+          }, {}),
+          // NEW: Top contributors
+          top_contributors: topContributors
+        }
+      });
+    } else {
+      return res.status(200).json({
+        success: true,
+        data: [],
+        meta: {
+          total_contacts: 0,
+          total_events: 0,
+          contacts_with_events: 0,
+          contacts_without_events: 0,
+          acquisition_metrics: {},
+          top_contributors: []
+        }
+      });
     }
-
-    res.status(200).json({
-      success: true,
-      data: result,
-    });
   } catch (error) {
     console.error("Error in GetAllContact:", error);
     res.status(500).json({
@@ -1332,7 +1503,7 @@ export const DeleteVerifiedContact = async (req, res) => {
       if (["cata", "catb", "catc", "admin"].includes(userType)) {
         // Delete from contact table - foreign key constraints will handle cascading
         const result = await t`
-          DELETE FROM contact WHERE contact_id = ${contactId}
+          UPDATE contact SET rejected=${true} WHERE contact_id = ${contactId}
         `;
 
         if (result.count === 0) {

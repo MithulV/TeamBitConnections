@@ -9,34 +9,40 @@ import {
   Plus,
   Clock,
   CheckCircle,
-  AlertCircle,
   Calendar,
   User,
-  FileText,
   Target,
   ChevronLeft,
   ChevronRight,
-  Zap,
-  X,
+  BarChart3,
+  Edit,
+  Trash2,
+  UserCheck,
 } from "lucide-react";
+
+import ContactAutocomplete from "../../components/ContactAutocomplete/ContactAutocomplete";
+import DeleteConfirmationModal from "../../components/Modals/DeleteConfirmationModal";
+import TaskModal from "../../components/Modals/TaskModal";
+import TaskStatsCards from "../../components/TaskStats/TaskStatsCards";
+import PerformanceAnalytics from "../../components/TaskAnalytics/PerformanceAnalytics";
 
 function TaskAssignments() {
   const [data, setData] = useState([]);
   const [allTasks, setAllTasks] = useState({});
   const [stats, setStats] = useState({});
+  const [categoryStats, setCategoryStats] = useState({});
   const [loading, setLoading] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [showEditForm, setShowEditForm] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [activeFilter, setActiveFilter] = useState("pending");
   const [currentPage, setCurrentPage] = useState(1);
   const [tasksPerPage] = useState(5);
+  const [editingTask, setEditingTask] = useState(null);
+  const [deletingTask, setDeletingTask] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const { id, role } = useAuthStore();
-
-  const [newTask, setNewTask] = useState({
-    task_title: "",
-    task_description: "",
-    task_deadline: "",
-    task_assigned_category: "",
-  });
 
   const [alert, setAlert] = useState({
     isOpen: false,
@@ -70,7 +76,6 @@ function TaskAssignments() {
       setData(response.data.data);
       setStats(response.data.stats);
 
-      // Store all task types for admin
       if (role === "admin" && response.data.adminData) {
         setAllTasks({
           pending: response.data.adminData.pendingTasks,
@@ -80,7 +85,6 @@ function TaskAssignments() {
           automated: response.data.adminData.automatedTasks,
         });
       } else {
-        // For non-admin, set the data appropriately
         setAllTasks({
           pending: response.data.data,
           total: response.data.data,
@@ -90,10 +94,11 @@ function TaskAssignments() {
           automated: response.data.data.filter(
             (task) => task.task_type === "automated"
           ),
-          completed: [], // Non-admin doesn't see completed tasks
+          completed: [],
         });
       }
 
+      calculateCategoryStats(response.data.data, response.data.adminData);
       console.log(response.data);
     } catch (error) {
       console.error(error);
@@ -103,33 +108,113 @@ function TaskAssignments() {
     }
   };
 
-  const createTask = async () => {
-    if (
-      !newTask.task_title ||
-      !newTask.task_assigned_category ||
-      !newTask.task_deadline
-    ) {
-      showAlert("error", "Please fill all required fields");
-      return;
-    }
+  const calculateCategoryStats = (tasks, adminData) => {
+    const categories = ['A', 'B', 'C'];
+    const categoryPerformance = {};
 
+    categories.forEach(category => {
+      const categoryTasks = tasks?.filter(task => task.task_assigned_category === category) || [];
+      const completedTasks = categoryTasks.filter(task => task.task_completion);
+      const totalTasks = categoryTasks.length;
+      const completionPercentage = totalTasks > 0 ? Math.round((completedTasks.length / totalTasks) * 100) : 0;
+
+      categoryPerformance[category] = {
+        total: totalTasks,
+        completed: completedTasks.length,
+        pending: totalTasks - completedTasks.length,
+        percentage: completionPercentage,
+        isUnderperforming: completionPercentage < 80,
+      };
+    });
+
+    setCategoryStats(categoryPerformance);
+  };
+
+  const createTask = async (taskData) => {
     try {
-      await api.post("/api/create-task", newTask);
-
-      setNewTask({
-        task_title: "",
-        task_description: "",
-        task_deadline: "",
-        task_assigned_category: "",
-      });
-
+      setIsSubmitting(true);
+      console.log("Creating task with data:", taskData);
+      await api.post("/api/create-task", taskData);
       setShowCreateForm(false);
       showAlert("success", "Task created successfully");
       getTasks();
     } catch (error) {
       console.error(error);
       showAlert("error", "Failed to create task");
+    } finally {
+      setIsSubmitting(false);
     }
+  };
+
+  const updateTask = async (taskData) => {
+    try {
+      setIsSubmitting(true);
+      
+      console.log("🔧 Editing task:", editingTask);
+      console.log("🔧 Update data:", taskData);
+      
+      // Handle different possible ID field names
+      const taskId = editingTask.task_id || editingTask.id || editingTask._id;
+      
+      console.log("🔧 Using task ID:", taskId);
+      
+      if (!taskId) {
+        console.error("❌ No task ID found in editingTask:", editingTask);
+        showAlert("error", "Task ID not found");
+        return;
+      }
+      
+      const response = await api.put(`/api/update-task/${taskId}`, taskData);
+      console.log("🔧 Update response:", response.data);
+      
+      setShowEditForm(false);
+      setEditingTask(null);
+      showAlert("success", "Task updated successfully");
+      getTasks();
+    } catch (error) {
+      console.error("❌ Update error:", error);
+      console.error("❌ Error response:", error.response?.data);
+      showAlert("error", "Failed to update task");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const deleteTask = async () => {
+    try {
+      setIsDeleting(true);
+      
+      // Handle different possible ID field names
+      const taskId = deletingTask.task_id || deletingTask.id || deletingTask._id;
+      
+      if (!taskId) {
+        showAlert("error", "Task ID not found");
+        return;
+      }
+      
+      await api.delete(`/api/delete-task/${taskId}`);
+      setShowDeleteConfirm(false);
+      setDeletingTask(null);
+      showAlert("success", "Task deleted successfully");
+      getTasks();
+    } catch (error) {
+      console.error(error);
+      showAlert("error", "Failed to delete task");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleEditClick = (task) => {
+    console.log("Edit clicked for task:", task);
+    setEditingTask(task);
+    setShowEditForm(true);
+  };
+
+  const handleDeleteClick = (task) => {
+    console.log("Delete clicked for task:", task);
+    setDeletingTask(task);
+    setShowDeleteConfirm(true);
   };
 
   const getTaskPriority = (deadline) => {
@@ -148,7 +233,6 @@ function TaskAssignments() {
     return { label: "Normal", color: "bg-green-100 text-green-800" };
   };
 
-  // Get current tasks based on filter and pagination
   const getCurrentTasks = () => {
     const tasks = allTasks[activeFilter] || [];
     const indexOfLastTask = currentPage * tasksPerPage;
@@ -189,6 +273,8 @@ function TaskAssignments() {
         return "Manual Tasks";
       case "automated":
         return "Automated Tasks";
+      case "performance":
+        return "Category Performance Analytics";
       default:
         return "Tasks";
     }
@@ -213,7 +299,7 @@ function TaskAssignments() {
 
       <div className="p-4 sm:p-6">
         <div className="container mx-auto">
-          {/* Header Section - Mobile Responsive */}
+          {/* Header Section */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-blue-100 rounded-lg">
@@ -238,263 +324,201 @@ function TaskAssignments() {
             </button>
           </div>
 
-          {/* Stats Cards - Mobile Responsive Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 lg:gap-6 mb-8">
-            {/* Total Tasks */}
-            <div
-              className={`bg-white rounded-xl p-4 sm:p-6 shadow-sm border-2 cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-105 ${
-                activeFilter === "total"
-                  ? "border-blue-500 bg-blue-50"
-                  : "border-gray-200 hover:border-blue-300"
-              }`}
-              onClick={() => handleFilterChange("total")}
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs sm:text-sm font-medium text-gray-600">
-                    Total Tasks
-                  </p>
-                  <p className="text-2xl sm:text-3xl font-bold text-gray-900">
-                    {stats.total || 0}
-                  </p>
-                </div>
-                <div className="p-2 sm:p-3 bg-blue-100 rounded-full">
-                  <Target className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
-                </div>
-              </div>
-            </div>
+          {/* Stats Cards Component */}
+          <TaskStatsCards 
+            stats={stats}
+            categoryStats={categoryStats}
+            activeFilter={activeFilter}
+            handleFilterChange={handleFilterChange}
+          />
 
-            {/* Completed Tasks */}
-            <div
-              className={`bg-white rounded-xl p-4 sm:p-6 shadow-sm border-2 cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-105 ${
-                activeFilter === "completed"
-                  ? "border-green-500 bg-green-50"
-                  : "border-gray-200 hover:border-green-300"
-              }`}
-              onClick={() => handleFilterChange("completed")}
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs sm:text-sm font-medium text-gray-600">Completed</p>
-                  <p className="text-2xl sm:text-3xl font-bold text-green-600">
-                    {stats.completed || 0}
-                  </p>
-                </div>
-                <div className="p-2 sm:p-3 bg-green-100 rounded-full">
-                  <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
-                </div>
-              </div>
-            </div>
-
-            {/* Pending Tasks */}
-            <div
-              className={`bg-white rounded-xl p-4 sm:p-6 shadow-sm border-2 cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-105 ${
-                activeFilter === "pending"
-                  ? "border-orange-500 bg-orange-50"
-                  : "border-gray-200 hover:border-orange-300"
-              }`}
-              onClick={() => handleFilterChange("pending")}
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs sm:text-sm font-medium text-gray-600">Pending</p>
-                  <p className="text-2xl sm:text-3xl font-bold text-orange-600">
-                    {stats.pending || 0}
-                  </p>
-                </div>
-                <div className="p-2 sm:p-3 bg-orange-100 rounded-full">
-                  <Clock className="w-5 h-5 sm:w-6 sm:h-6 text-orange-600" />
-                </div>
-              </div>
-            </div>
-
-            {/* Manual Tasks */}
-            <div
-              className={`bg-white rounded-xl p-4 sm:p-6 shadow-sm border-2 cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-105 ${
-                activeFilter === "manual"
-                  ? "border-purple-500 bg-purple-50"
-                  : "border-gray-200 hover:border-purple-300"
-              }`}
-              onClick={() => handleFilterChange("manual")}
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs sm:text-sm font-medium text-gray-600">
-                    Manual Tasks
-                  </p>
-                  <p className="text-2xl sm:text-3xl font-bold text-purple-600">
-                    {stats.breakdown?.assigned?.total || 0}
-                  </p>
-                </div>
-                <div className="p-2 sm:p-3 bg-purple-100 rounded-full">
-                  <User className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
-                </div>
-              </div>
-            </div>
-
-            {/* Automated Tasks */}
-            <div
-              className={`bg-white rounded-xl p-4 sm:p-6 shadow-sm border-2 cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-105 ${
-                activeFilter === "automated"
-                  ? "border-indigo-500 bg-indigo-50"
-                  : "border-gray-200 hover:border-indigo-300"
-              }`}
-              onClick={() => handleFilterChange("automated")}
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs sm:text-sm font-medium text-gray-600">Automated</p>
-                  <p className="text-2xl sm:text-3xl font-bold text-indigo-600">
-                    {stats.breakdown?.automated?.total || 0}
-                  </p>
-                </div>
-                <div className="p-2 sm:p-3 bg-indigo-100 rounded-full">
-                  <Zap className="w-5 h-5 sm:w-6 sm:h-6 text-indigo-600" />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Tasks List with Pagination - Mobile Responsive */}
+          {/* Tasks List */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200">
             <div className="p-4 sm:p-6 border-b border-gray-200">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
+                  {activeFilter === "performance" ? (
+                    <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
+                  ) : (
+                    <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
+                  )}
                   <h2 className="text-lg sm:text-xl font-semibold text-gray-900">
                     {getFilterTitle()}
                   </h2>
-                  <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-xs sm:text-sm">
-                    {allTasks[activeFilter]?.length || 0} tasks
-                  </span>
+                  {activeFilter !== "performance" && (
+                    <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-xs sm:text-sm">
+                      {allTasks[activeFilter]?.length || 0} tasks
+                    </span>
+                  )}
                 </div>
 
-                {/* Pagination Info */}
-                <div className="text-xs sm:text-sm text-gray-500">
-                  Page {currentPage} of {totalPages || 1}
-                </div>
+                {activeFilter !== "performance" && (
+                  <div className="text-xs sm:text-sm text-gray-500">
+                    Page {currentPage} of {totalPages || 1}
+                  </div>
+                )}
               </div>
             </div>
 
             <div className="p-4 sm:p-6">
-              {loading ? (
-                <div className="flex items-center justify-center py-12">
-                  <div className="animate-spin rounded-full h-8 w-8 sm:h-12 sm:w-12 border-b-2 border-blue-600"></div>
-                </div>
-              ) : getCurrentTasks().length === 0 ? (
-                <div className="text-center py-12">
-                  <div className="inline-flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 bg-gray-100 rounded-full mb-4">
-                    <CheckCircle className="w-6 h-6 sm:w-8 sm:h-8 text-gray-400" />
-                  </div>
-                  <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">
-                    No {activeFilter} tasks
-                  </h3>
-                  <p className="text-sm sm:text-base text-gray-500">
-                    No tasks found for this category.
-                  </p>
-                </div>
+              {activeFilter === "performance" ? (
+                <PerformanceAnalytics categoryStats={categoryStats} />
               ) : (
                 <>
-                  <div className="space-y-4">
-                    {getCurrentTasks().map((task, index) => {
-                      const priority = getTaskPriority(task.task_deadline);
-                      return (
-                        <div
-                          key={index}
-                          className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow duration-200 overflow-hidden"
-                        >
-                          {/* Mobile-first column layout, desktop row layout */}
-                          <div className="flex flex-col space-y-3 min-w-0">
-                            <div className="flex-1 min-w-0">
-                              {/* Title and badges - stacked on mobile, inline on larger screens */}
-                              <div className="flex flex-col space-y-2 sm:space-y-0 sm:flex-row sm:items-center sm:gap-3 mb-3">
-                                <h3 className="text-base sm:text-lg font-semibold text-gray-900 break-words hyphens-auto min-w-0 order-1">
-                                  {task.task_title}
-                                </h3>
-                                
-                                {/* Badges container - stacked on mobile, inline on larger screens */}
-                                <div className="flex flex-wrap gap-2 order-2">
-                                  <span
-                                    className={`px-2 py-1 text-xs font-medium rounded-full whitespace-nowrap ${priority.color}`}
-                                  >
-                                    {priority.label}
-                                  </span>
-                                  <span
-                                    className={`px-2 py-1 text-xs font-medium rounded-full whitespace-nowrap ${
-                                      task.task_type === "assigned"
-                                        ? "bg-blue-100 text-blue-800"
-                                        : "bg-gray-100 text-gray-800"
-                                    }`}
-                                  >
-                                    {task.task_type === "assigned" ? "Manual" : "Automated"}
-                                  </span>
-                                  {task.task_completion && (
-                                    <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800 whitespace-nowrap">
-                                      Completed
-                                    </span>
+                  {loading ? (
+                    <div className="flex items-center justify-center py-12">
+                      <div className="animate-spin rounded-full h-8 w-8 sm:h-12 sm:w-12 border-b-2 border-blue-600"></div>
+                    </div>
+                  ) : getCurrentTasks().length === 0 ? (
+                    <div className="text-center py-12">
+                      <div className="inline-flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 bg-gray-100 rounded-full mb-4">
+                        <CheckCircle className="w-6 h-6 sm:w-8 sm:h-8 text-gray-400" />
+                      </div>
+                      <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">
+                        No {activeFilter} tasks
+                      </h3>
+                      <p className="text-sm sm:text-base text-gray-500">
+                        No tasks found for this category.
+                      </p>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="space-y-4">
+                        {getCurrentTasks().map((task, index) => {
+                          const priority = getTaskPriority(task.task_deadline);
+                          const isCompleted = task.task_completion;
+                          const showActions = !isCompleted && activeFilter !== "completed";
+
+                          return (
+                            <div
+                              key={task.task_id || task.id || index}
+                              className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow duration-200 overflow-hidden relative"
+                            >
+                              <div className="flex flex-col space-y-3 min-w-0">
+                                <div className="flex-1 min-w-0">
+                                  {/* Title and badges with edit/delete icons */}
+                                  <div className="flex flex-col space-y-3 mb-3">
+                                    {/* Title and Action Icons Row */}
+                                    <div className="flex justify-between items-start w-full">
+                                      <h3 className="text-base sm:text-lg font-semibold text-gray-900 break-words hyphens-auto min-w-0 flex-1 pr-2">
+                                        {task.task_title}
+                                      </h3>
+
+                                      {/* Edit and Delete Icons - Top Right Corner */}
+                                      {showActions && (
+                                        <div className="flex gap-2 flex-shrink-0">
+                                          <button
+                                            onClick={() => handleEditClick(task)}
+                                            className="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-100 rounded-lg transition-colors duration-200"
+                                            title="Edit Task"
+                                          >
+                                            <Edit className="w-4 h-4" />
+                                          </button>
+                                          <button
+                                            onClick={() => handleDeleteClick(task)}
+                                            className="p-1.5 text-red-600 hover:text-red-800 hover:bg-red-100 rounded-lg transition-colors duration-200"
+                                            title="Delete Task"
+                                          >
+                                            <Trash2 className="w-4 h-4" />
+                                          </button>
+                                        </div>
+                                      )}
+                                    </div>
+
+                                    {/* Badges container - Separate line */}
+                                    <div className="flex flex-wrap gap-2">
+                                      <span
+                                        className={`px-2 py-1 text-xs font-medium rounded-full whitespace-nowrap ${priority.color}`}
+                                      >
+                                        {priority.label}
+                                      </span>
+                                      <span
+                                        className={`px-2 py-1 text-xs font-medium rounded-full whitespace-nowrap ${
+                                          task.task_type === "assigned"
+                                            ? "bg-blue-100 text-blue-800"
+                                            : "bg-gray-100 text-gray-800"
+                                        }`}
+                                      >
+                                        {task.task_type === "assigned" ? "Manual" : "Automated"}
+                                      </span>
+                                      {task.task_completion && (
+                                        <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800 whitespace-nowrap">
+                                          Completed
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  {/* Description */}
+                                  {task.task_description && (
+                                    <p className="text-sm sm:text-base text-gray-600 mb-3 break-words hyphens-auto whitespace-pre-wrap">
+                                      {task.task_description}
+                                    </p>
                                   )}
-                                </div>
-                              </div>
 
-                              {/* Description */}
-                              {task.task_description && (
-                                <p className="text-sm sm:text-base text-gray-600 mb-3 break-words hyphens-auto whitespace-pre-wrap">
-                                  {task.task_description}
-                                </p>
-                              )}
-
-                              {/* Task details - column on mobile, row on larger screens */}
-                              <div className="flex flex-col space-y-2 sm:space-y-0 sm:flex-row sm:items-center sm:gap-6 text-xs sm:text-sm text-gray-500">
-                                <div className="flex items-center gap-1 whitespace-nowrap">
-                                  <Calendar className="w-3 h-3 sm:w-4 sm:h-4" />
-                                  <span>
-                                    Due: {format(parseISO(task.task_deadline), "PPP")}
-                                  </span>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                  <User className="w-3 h-3 sm:w-4 sm:h-4" />
-                                  <span className="break-words">
-                                    Category: {task.task_assigned_category}
-                                  </span>
+                                  {/* Task details */}
+                                  <div className="flex flex-col space-y-2 sm:space-y-0 sm:flex-row sm:items-center sm:gap-6 text-xs sm:text-sm text-gray-500">
+                                    <div className="flex items-center gap-1 whitespace-nowrap">
+                                      <Calendar className="w-3 h-3 sm:w-4 sm:h-4" />
+                                      <span>
+                                        Due: {format(parseISO(task.task_deadline), "PPP")}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                      <User className="w-3 h-3 sm:w-4 sm:h-4" />
+                                      <span className="break-words">
+                                        Category: {task.task_assigned_category}
+                                      </span>
+                                    </div>
+                                    {/* Show assigned contact if available */}
+                                    {task.assigned_to_name && (
+                                      <div className="flex items-center gap-1">
+                                        <UserCheck className="w-3 h-3 sm:w-4 sm:h-4" />
+                                        <span className="break-words">
+                                          Assigned: {task.assigned_to_name}
+                                        </span>
+                                      </div>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
                             </div>
-                          </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* Pagination Controls */}
+                      {totalPages > 1 && (
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-6 pt-4 border-t border-gray-200">
+                          <button
+                            onClick={prevPage}
+                            disabled={currentPage === 1}
+                            className="flex items-center justify-center gap-2 px-3 py-2 sm:px-4 text-xs sm:text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white transition-colors duration-200"
+                          >
+                            <ChevronLeft className="w-3 h-3 sm:w-4 sm:h-4" />
+                            Previous
+                          </button>
+
+                          <span className="text-xs sm:text-sm text-gray-700 text-center">
+                            Showing {(currentPage - 1) * tasksPerPage + 1} to{" "}
+                            {Math.min(
+                              currentPage * tasksPerPage,
+                              allTasks[activeFilter]?.length || 0
+                            )}{" "}
+                            of {allTasks[activeFilter]?.length || 0} tasks
+                          </span>
+
+                          <button
+                            onClick={nextPage}
+                            disabled={currentPage === totalPages}
+                            className="flex items-center justify-center gap-2 px-3 py-2 sm:px-4 text-xs sm:text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white transition-colors duration-200"
+                          >
+                            Next
+                            <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4" />
+                          </button>
                         </div>
-                      );
-                    })}
-                  </div>
-
-                  {/* Pagination Controls - Mobile Responsive */}
-                  {totalPages > 1 && (
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-6 pt-4 border-t border-gray-200">
-                      <button
-                        onClick={prevPage}
-                        disabled={currentPage === 1}
-                        className="flex items-center justify-center gap-2 px-3 py-2 sm:px-4 text-xs sm:text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white transition-colors duration-200"
-                      >
-                        <ChevronLeft className="w-3 h-3 sm:w-4 sm:h-4" />
-                        Previous
-                      </button>
-
-                      <span className="text-xs sm:text-sm text-gray-700 text-center">
-                        Showing {(currentPage - 1) * tasksPerPage + 1} to{" "}
-                        {Math.min(
-                          currentPage * tasksPerPage,
-                          allTasks[activeFilter]?.length || 0
-                        )}{" "}
-                        of {allTasks[activeFilter]?.length || 0} tasks
-                      </span>
-
-                      <button
-                        onClick={nextPage}
-                        disabled={currentPage === totalPages}
-                        className="flex items-center justify-center gap-2 px-3 py-2 sm:px-4 text-xs sm:text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white transition-colors duration-200"
-                      >
-                        Next
-                        <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4" />
-                      </button>
-                    </div>
+                      )}
+                    </>
                   )}
                 </>
               )}
@@ -503,124 +527,44 @@ function TaskAssignments() {
         </div>
       </div>
 
-      {/* Enhanced Create Task Modal - Mobile Responsive */}
-      {showCreateForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div
-            className="absolute inset-0 bg-black bg-opacity-60 backdrop-blur-sm"
-            onClick={() => setShowCreateForm(false)}
-          ></div>
+      {/* Enhanced Create Task Modal */}
+      <TaskModal
+        isOpen={showCreateForm}
+        onClose={() => setShowCreateForm(false)}
+        onSubmit={createTask}
+        title="Create New Task"
+        submitText="Create Task"
+        mode="create"
+        isSubmitting={isSubmitting}
+      />
 
-          <div className="relative bg-white rounded-2xl shadow-2xl max-w-lg w-full mx-4 transform transition-all duration-300 scale-100 max-h-[90vh] overflow-y-auto">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-100">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <Plus className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
-                </div>
-                <h2 className="text-lg sm:text-xl font-bold text-gray-900">
-                  Create New Task
-                </h2>
-              </div>
-              <button
-                onClick={() => setShowCreateForm(false)}
-                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors duration-200"
-              >
-                <X className="w-4 h-4 sm:w-5 sm:h-5" />
-              </button>
-            </div>
+      {/* Enhanced Edit Task Modal */}
+      <TaskModal
+        isOpen={showEditForm}
+        onClose={() => {
+          setShowEditForm(false);
+          setEditingTask(null);
+        }}
+        onSubmit={updateTask}
+        title="Edit Task"
+        submitText="Update Task"
+        task={editingTask}
+        mode="edit"
+        isSubmitting={isSubmitting}
+      />
 
-            {/* Modal Body */}
-            <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Task Title <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  className="w-full px-3 py-2 sm:px-4 sm:py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 placeholder-gray-400 text-sm sm:text-base"
-                  placeholder="Enter a descriptive task title"
-                  value={newTask.task_title}
-                  onChange={(e) =>
-                    setNewTask({ ...newTask, task_title: e.target.value })
-                  }
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Description
-                </label>
-                <textarea
-                  className="w-full px-3 py-2 sm:px-4 sm:py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 placeholder-gray-400 resize-none text-sm sm:text-base"
-                  placeholder="Provide detailed task description..."
-                  rows={4}
-                  value={newTask.task_description}
-                  onChange={(e) =>
-                    setNewTask({ ...newTask, task_description: e.target.value })
-                  }
-                ></textarea>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Assign To Category <span className="text-red-500">*</span>
-                </label>
-                <select
-                  className="w-full px-3 py-2 sm:px-4 sm:py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-sm sm:text-base"
-                  value={newTask.task_assigned_category}
-                  onChange={(e) =>
-                    setNewTask({
-                      ...newTask,
-                      task_assigned_category: e.target.value,
-                    })
-                  }
-                >
-                  <option value="">Select a category</option>
-                  <option value="A">Category A</option>
-                  <option value="B">Category B</option>
-                  <option value="C">Category C</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Deadline <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="date"
-                  className="w-full px-3 py-2 sm:px-4 sm:py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-sm sm:text-base"
-                  value={newTask.task_deadline}
-                  onChange={(e) =>
-                    setNewTask({ ...newTask, task_deadline: e.target.value })
-                  }
-                />
-              </div>
-            </div>
-
-            {/* Modal Footer */}
-            <div className="flex flex-col sm:flex-row gap-3 p-4 sm:p-6 border-t border-gray-100 bg-gray-50 rounded-b-2xl">
-              <button
-                onClick={() => setShowCreateForm(false)}
-                className="flex-1 px-4 py-2 sm:px-6 sm:py-3 text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors duration-200 font-medium text-sm sm:text-base"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={createTask}
-                className="flex-1 px-4 py-2 sm:px-6 sm:py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
-                disabled={
-                  !newTask.task_title ||
-                  !newTask.task_assigned_category ||
-                  !newTask.task_deadline
-                }
-              >
-                Create Task
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Enhanced Delete Confirmation Modal */}
+      <DeleteConfirmationModal
+        isOpen={showDeleteConfirm}
+        onConfirm={deleteTask}
+        onCancel={() => {
+          setShowDeleteConfirm(false);
+          setDeletingTask(null);
+        }}
+        itemName={deletingTask?.task_title}
+        deleteType="task"
+        isDeleting={isDeleting}
+      />
     </div>
   );
 }

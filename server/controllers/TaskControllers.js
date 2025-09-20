@@ -158,12 +158,12 @@ const checkLastContactDate = async () => {
             ORDER BY days_since_last_contact DESC
         `;
 
-        console.log(`Found ${contactsNeedingContact.length} contacts needing follow-up contact:`, 
-                   contactsNeedingContact.map(c => ({ 
-                       name: c.name, 
-                       days: Math.floor(c.days_since_last_contact),
-                       totalContacts: c.total_contacts 
-                   })));
+        console.log(`Found ${contactsNeedingContact.length} contacts needing follow-up contact:`,
+            contactsNeedingContact.map(c => ({
+                name: c.name,
+                days: Math.floor(c.days_since_last_contact),
+                totalContacts: c.total_contacts
+            })));
 
         // Create tasks for each contact that needs follow-up
         for (const contact of contactsNeedingContact) {
@@ -190,10 +190,10 @@ const createContactFollowupTask = async (contact) => {
         const formattedDeadline = deadline.toISOString().split("T")[0];
 
         const daysSince = Math.floor(contact.days_since_last_contact);
-        const contactHistory = contact.total_contacts > 0 ? 
-            `Last contacted ${daysSince} days ago` : 
+        const contactHistory = contact.total_contacts > 0 ?
+            `Last contacted ${daysSince} days ago` :
             `Never been contacted (${daysSince} days since added)`;
-        
+
         const taskDescription = `Follow-up contact needed for ${contact.name} (Phone: ${contact.phone_number}, Email: ${contact.email_address}). ${contactHistory}. Total previous contacts: ${contact.total_contacts}. Please reach out to maintain relationship.`;
 
         // Check if similar task already exists (prevent duplicates)
@@ -244,7 +244,7 @@ const createContactFollowupTask = async (contact) => {
 
 // Create manual task
 export const CreateTask = async (req, res) => {
-    const { task_title, task_description, task_deadline, task_assigned_category } = req.body;
+    const { task_title, task_description, task_deadline, task_assigned_category, contact_id } = req.body;
 
     if (!task_title || !task_deadline || !task_assigned_category) {
         return res.status(400).json({
@@ -255,22 +255,24 @@ export const CreateTask = async (req, res) => {
 
     try {
         const result = await db`
-      INSERT INTO tasks (
-        task_title, 
-        task_description, 
-        task_deadline, 
-        task_assigned_category, 
-        task_type, 
-        task_completion
-      ) VALUES (
-        ${task_title}, 
-        ${task_description}, 
-        ${task_deadline}, 
-        ${task_assigned_category}, 
-        'assigned', 
-        FALSE
-      )
-    `;
+            INSERT INTO tasks (
+                task_title, 
+                task_description, 
+                task_deadline, 
+                task_assigned_category, 
+                task_type, 
+                task_completion,
+                contact_id
+            ) VALUES (
+                ${task_title}, 
+                ${task_description}, 
+                ${task_deadline}, 
+                ${task_assigned_category}, 
+                'assigned', 
+                FALSE,
+                ${contact_id || null}
+            )
+        `;
 
         return res.status(201).json({
             success: true,
@@ -284,7 +286,6 @@ export const CreateTask = async (req, res) => {
         });
     }
 };
-
 
 export const GetTasks = async (req, res) => {
     const { category } = req.query;
@@ -305,41 +306,71 @@ export const GetTasks = async (req, res) => {
         let automatedTasks = [];
 
         if (category === 'admin') {
-            // Admin: Get all tasks with their records
+            // Admin: Get all tasks with their records including contact names
 
-            // Get pending tasks (task_completion = FALSE)
+            // Get pending tasks (task_completion = FALSE) with contact names
             pendingTasks = await db`
-      SELECT * FROM tasks 
-      WHERE task_completion = FALSE 
-      ORDER BY task_deadline ASC
-    `;
+                SELECT 
+                    t.*,
+                    c.name as assigned_to_name,
+                    c.email_address as assigned_to_email,
+                    c.phone_number as assigned_to_phone
+                FROM tasks t
+                LEFT JOIN contact c ON t.contact_id = c.contact_id
+                WHERE t.task_completion = FALSE 
+                ORDER BY t.task_deadline ASC
+            `;
 
-            // Get completed tasks (task_completion = TRUE)
+            // Get completed tasks (task_completion = TRUE) with contact names
             completedTasks = await db`
-      SELECT * FROM tasks 
-      WHERE task_completion = TRUE 
-      ORDER BY task_deadline DESC
-    `;
+                SELECT 
+                    t.*,
+                    c.name as assigned_to_name,
+                    c.email_address as assigned_to_email,
+                    c.phone_number as assigned_to_phone
+                FROM tasks t
+                LEFT JOIN contact c ON t.contact_id = c.contact_id
+                WHERE t.task_completion = TRUE 
+                ORDER BY t.task_deadline DESC
+            `;
 
-            // Get all tasks
+            // Get all tasks with contact names
             totalTasks = await db`
-      SELECT * FROM tasks 
-      ORDER BY task_deadline ASC
-    `;
+                SELECT 
+                    t.*,
+                    c.name as assigned_to_name,
+                    c.email_address as assigned_to_email,
+                    c.phone_number as assigned_to_phone
+                FROM tasks t
+                LEFT JOIN contact c ON t.contact_id = c.contact_id
+                ORDER BY t.task_deadline ASC
+            `;
 
-            // Get manual tasks (task_type = 'assigned')
+            // Get manual tasks (task_type = 'assigned') with contact names
             manualTasks = await db`
-      SELECT * FROM tasks 
-      WHERE task_type = 'assigned' 
-      ORDER BY task_deadline ASC
-    `;
+                SELECT 
+                    t.*,
+                    c.name as assigned_to_name,
+                    c.email_address as assigned_to_email,
+                    c.phone_number as assigned_to_phone
+                FROM tasks t
+                LEFT JOIN contact c ON t.contact_id = c.contact_id
+                WHERE t.task_type = 'assigned' 
+                ORDER BY t.task_deadline ASC
+            `;
 
-            // Get automated tasks (task_type = 'automated')
+            // Get automated tasks (task_type = 'automated') with contact names
             automatedTasks = await db`
-      SELECT * FROM tasks 
-      WHERE task_type = 'automated' 
-      ORDER BY task_deadline ASC
-    `;
+                SELECT 
+                    t.*,
+                    c.name as assigned_to_name,
+                    c.email_address as assigned_to_email,
+                    c.phone_number as assigned_to_phone
+                FROM tasks t
+                LEFT JOIN contact c ON t.contact_id = c.contact_id
+                WHERE t.task_type = 'automated' 
+                ORDER BY t.task_deadline ASC
+            `;
 
             // Get counts for stats
             totalCount = await db`SELECT COUNT(*) as count FROM tasks`;
@@ -353,13 +384,19 @@ export const GetTasks = async (req, res) => {
             tasks = pendingTasks;
 
         } else {
-            // Other roles: Get pending tasks for their category ordered by deadline ASC
+            // Other roles: Get pending tasks for their category ordered by deadline ASC with contact names
             tasks = await db`
-      SELECT * FROM tasks 
-      WHERE task_completion = FALSE 
-      AND task_assigned_category = ${category}
-      ORDER BY task_deadline ASC
-    `;
+                SELECT 
+                    t.*,
+                    c.name as assigned_to_name,
+                    c.email_address as assigned_to_email,
+                    c.phone_number as assigned_to_phone
+                FROM tasks t
+                LEFT JOIN contact c ON t.contact_id = c.contact_id
+                WHERE t.task_completion = FALSE 
+                AND t.task_assigned_category = ${category}
+                ORDER BY t.task_deadline ASC
+            `;
 
             totalCount = await db`SELECT COUNT(*) as count FROM tasks WHERE task_assigned_category = ${category}`;
             completedCount = await db`SELECT COUNT(*) as count FROM tasks WHERE task_assigned_category = ${category} AND task_completion = TRUE`;
@@ -394,7 +431,7 @@ export const GetTasks = async (req, res) => {
         // Build response object
         const response = {
             success: true,
-            data: tasks, // This will be pending tasks
+            data: tasks, // This will be pending tasks with contact info
             stats: stats,
         };
 
@@ -425,15 +462,15 @@ export const CompleteTask = async (req, res) => {
     const { id } = req.params;
     console.log(id)
     const { modified_by } = req.body;
-    
+
     try {
         // Get task details including contact_id
         const taskDetails = await db`SELECT * FROM tasks WHERE id=${id} LIMIT 1`;
-        
+
         if (taskDetails.length === 0) {
-            return res.status(404).json({ 
-                success: false, 
-                error: "Task not found" 
+            return res.status(404).json({
+                success: false,
+                error: "Task not found"
             });
         }
 
@@ -452,9 +489,172 @@ export const CompleteTask = async (req, res) => {
 
     } catch (error) {
         console.error("Error completing task:", error);
-        return res.status(500).json({ 
-            success: false, 
-            error: "An internal server error occurred." 
+        return res.status(500).json({
+            success: false,
+            error: "An internal server error occurred."
+        });
+    }
+};
+export const UpdateTask = async (req, res) => {
+    const { id } = req.params;
+    const { task_title, task_description, task_deadline, task_assigned_category, contact_id } = req.body;
+    if (!task_title || !task_deadline || !task_assigned_category) {
+        return res.status(400).json({
+            success: false,
+            error: "Missing required fields"
+        });
+    }
+
+    if (!id) {
+        return res.status(400).json({
+            success: false,
+            error: "Task ID is required"
+        });
+    }
+
+    try {
+        // Check if task exists and is not completed
+        const existingTask = await db`
+            SELECT id, task_completion FROM tasks 
+            WHERE id = ${id}
+        `;
+
+        if (existingTask.length === 0) {
+            return res.status(404).json({
+                success: false,
+                error: "Task not found"
+            });
+        }
+
+        if (existingTask[0].task_completion) {
+            return res.status(400).json({
+                success: false,
+                error: "Cannot update completed task"
+            });
+        }
+
+        // Update the task including contact_id
+        const result = await db`
+            UPDATE tasks SET
+                task_title = ${task_title},
+                task_description = ${task_description},
+                task_deadline = ${task_deadline},
+                task_assigned_category = ${task_assigned_category},
+                contact_id = ${contact_id || null},
+                updated_at = NOW()
+            WHERE id = ${id} AND task_completion = FALSE
+        `;
+
+        if (result.count === 0) {
+            return res.status(400).json({
+                success: false,
+                error: "Task not found or already completed"
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "Task updated successfully"
+        });
+    } catch (error) {
+        console.error("Error updating task:", error);
+        return res.status(500).json({
+            success: false,
+            error: "Internal server error"
+        });
+    }
+};
+
+// NEW: Delete task
+export const DeleteTask = async (req, res) => {
+    const { id } = req.params;
+
+    if (!id) {
+        return res.status(400).json({
+            success: false,
+            error: "Task ID is required"
+        });
+    }
+
+    try {
+        // Check if task exists and is not completed
+        const existingTask = await db`
+            SELECT id, task_completion, task_title FROM tasks 
+            WHERE id = ${id}
+        `;
+
+        if (existingTask.length === 0) {
+            return res.status(404).json({
+                success: false,
+                error: "Task not found"
+            });
+        }
+
+        if (existingTask[0].task_completion) {
+            return res.status(400).json({
+                success: false,
+                error: "Cannot delete completed task"
+            });
+        }
+
+        // Delete the task
+        const result = await db`
+            DELETE FROM tasks 
+            WHERE id = ${id} AND task_completion = FALSE
+        `;
+
+        if (result.count === 0) {
+            return res.status(400).json({
+                success: false,
+                error: "Task not found or already completed"
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: `Task "${existingTask[0].task_title}" deleted successfully`
+        });
+    } catch (error) {
+        console.error("Error deleting task:", error);
+        return res.status(500).json({
+            success: false,
+            error: "Internal server error"
+        });
+    }
+};
+
+// NEW: Get single task (optional - for verification)
+export const GetTaskById = async (req, res) => {
+    const { id } = req.params;
+
+    if (!id) {
+        return res.status(400).json({
+            success: false,
+            error: "Task ID is required"
+        });
+    }
+
+    try {
+        const task = await db`
+            SELECT * FROM tasks WHERE id = ${id}
+        `;
+
+        if (task.length === 0) {
+            return res.status(404).json({
+                success: false,
+                error: "Task not found"
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            data: task[0]
+        });
+    } catch (error) {
+        console.error("Error fetching task:", error);
+        return res.status(500).json({
+            success: false,
+            error: "Internal server error"
         });
     }
 };

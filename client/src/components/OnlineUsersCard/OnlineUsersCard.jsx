@@ -72,7 +72,7 @@ const OnlineUsersCard = () => {
   }
 
   return (
-    <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm border border-gray-200">
+    <div className="bg-white  rounded-lg p-4 sm:p-6 shadow-sm border border-gray-200">
       <div className="flex items-center gap-2 mb-4">
         <Activity className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
         <h2 className="text-base sm:text-lg font-semibold text-gray-900">Online Users</h2>
@@ -115,10 +115,8 @@ const OnlineUsersCard = () => {
           Active Users ({onlineCount})
         </h3>
 
-        {/* FIXED 210px HEIGHT CONTAINER - Responsive content inside */}
         <div 
-          className="overflow-y-auto space-y-2 pr-1 sm:pr-2"
-          style={{ height: '170px' }}
+          className="overflow-y-auto space-y-2 pr-1 sm:pr-2 h-42"
         >
           {onlineUsers.length > 0 ? (
             onlineUsers.map((user) => (
