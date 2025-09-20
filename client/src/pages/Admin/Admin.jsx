@@ -765,8 +765,6 @@ function Admin() {
               value={stats.totalContacts.toLocaleString()}
               icon={Users}
               color="bg-gradient-to-r from-blue-500 to-blue-600"
-              trend={stats.totalContactsTrend >= 0 ? "up" : "down"}
-              trendValue={stats.totalContactsTrend}
               subtext="All registered users"
             />
             <StatCard
@@ -795,7 +793,7 @@ function Admin() {
               value={stats.monthlyAcquisitionRate}
               icon={Calculator}
               color="bg-gradient-to-r from-orange-500 to-orange-600"
-              trend={stats.monthlyAcquisitionTrend >= 0 ? "up" : "down"}
+              trend={stats.monthlyAcquisitionTrend >0 ? "up" : "down"}
               trendValue={stats.monthlyAcquisitionTrend}
               subtext="Contacts per day this month"
             />
@@ -808,7 +806,7 @@ function Admin() {
               value={stats.linkedinConnections.toLocaleString()}
               icon={Globe}
               color="bg-gradient-to-r from-blue-600 to-indigo-600"
-              trend={stats.linkedinTrend >= 0 ? "up" : "down"}
+              trend={stats.linkedinTrend >0 ? "up" : "down"}
               trendValue={stats.linkedinTrend}
               subtext="Professional network"
             />
@@ -831,7 +829,7 @@ function Admin() {
               value={stats.totalEvents.toLocaleString()}
               icon={Calendar}
               color="bg-gradient-to-r from-purple-600 to-purple-700"
-              trend={stats.totalEventsTrend >= 0 ? "up" : "down"}
+              trend={stats.totalEventsTrend >0 ? "up" : "down"}
               trendValue={stats.totalEventsTrend}
               subtext="Event participations"
             />
