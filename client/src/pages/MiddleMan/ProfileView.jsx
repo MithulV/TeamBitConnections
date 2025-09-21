@@ -30,7 +30,6 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../store/AuthStore";
 import api from "../../utils/axios.js";
 import Header from "../../components/Header/Header.jsx";
-
 function ProfileView() {
   const [showFullHistory, setShowFullHistory] = useState(false);
   const [showExpandedHierarchy, setShowExpandedHierarchy] = useState(false);

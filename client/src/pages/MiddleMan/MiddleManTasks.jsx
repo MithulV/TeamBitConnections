@@ -347,7 +347,6 @@ const TasksPage = () => {
           </div>
         </div>
       </div>
-
       <div className="flex h-19 flex-1">
         <p
           className="text-gray-600 text-sm mb-4 min-w-0"

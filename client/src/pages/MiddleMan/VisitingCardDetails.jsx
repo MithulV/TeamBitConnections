@@ -387,27 +387,8 @@ const VisitingCardDetails = () => {
     } catch (error) {
       console.error("OCR extraction error:", error);
 
-      // Fallback to demo data if API fails
-      const demoData = {
-        name: "THOMAS SMITH",
-        phone_number: "+1 (555) 123-4567",
-        email_address: "thomas.smith@techcorp.com",
-        company_name: "TechCorp Inc.",
-        job_title: "Senior Developer",
-        street: "123 Tech Street, San Francisco, CA",
-      };
-
-      setVisitingCardDetails((prev) => ({
-        ...prev,
-        ...demoData,
-      }));
-
-      setExtractedData(demoData);
-      setIsExtracted(true);
-
       showAlert(
-        "warning",
-        `OCR service is temporarily unavailable (Python 3.13 compatibility issue). Using demo data for now. Please see setup guide for Python 3.11/3.12 installation.`
+        "error","OCR text extraction failed. Please fill in the form manually or try again later.This may be due to image quality or server issues."
       );
     } finally {
       setIsExtracting(false);
@@ -1923,8 +1904,12 @@ const VisitingCardDetails = () => {
                                 : "text-gray-400"
                             }`}
                           >
-                            <span className="hidden sm:inline">{step.shortTitle}</span>
-                            <span className="sm:hidden">{step.shortTitle.slice(0,4)}</span>
+                            <span className="hidden sm:inline">
+                              {step.shortTitle}
+                            </span>
+                            <span className="sm:hidden">
+                              {step.shortTitle.slice(0, 4)}
+                            </span>
                           </p>
                         </div>
                         {index < steps.length - 1 && (
@@ -1949,7 +1934,9 @@ const VisitingCardDetails = () => {
                 </div>
 
                 {/* Step Content */}
-                <div className="min-h-[400px] sm:min-h-[500px]">{renderStepContent()}</div>
+                <div className="min-h-[400px] sm:min-h-[500px]">
+                  {renderStepContent()}
+                </div>
 
                 {/* Navigation Buttons */}
                 <div className="flex flex-col sm:flex-row justify-between items-center pt-6 border-t border-gray-200 mt-8 gap-4 sm:gap-0">

@@ -25,7 +25,7 @@ function Navbar() {
   const [isMobile, setIsMobile] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
-  const { role, clearAuth, email, name, profilePicture } = useAuthStore(); // Get role, clearAuth, email, name, and profilePicture from the store
+  const { role, logout, email, name, profilePicture } = useAuthStore(); // Get role, logout, email, name, and profilePicture from the store
 
   // Detect screen size changes
   useEffect(() => {
@@ -121,10 +121,15 @@ function Navbar() {
   // Get the menu items for the current role
   const currentMenuItems = menuItemsByRole[role] || [];
 
-  const handleLogout = () => {
-    clearAuth();
-    localStorage.removeItem("token");
-    navigate("/login");
+  const handleLogout = async () => {
+    try {
+      await logout(); // This will call the backend logout and clear cookies
+      navigate("/login");
+    } catch (error) {
+      console.error("Logout failed:", error);
+      // Navigate to login anyway
+      navigate("/login");
+    }
   };
 
   const menuTopItems = useMemo(() => menuItemsByRole[role] || [], [role]);
@@ -214,7 +219,7 @@ function Navbar() {
                 />
                 <div>
                   <p className="text-sm font-semibold text-gray-800 break-words">
-                    {name || email || "user@gmail.com"}
+                    {name || email || "User"}
                   </p>
                   <p className="text-xs text-gray-500">Welcome back!</p>
                 </div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import axios from "axios";
+import api from "../../utils/axios.js";
 import {
   Users,
   UserCheck,
@@ -31,7 +31,7 @@ import {
   differenceInDays,
   differenceInWeeks,
   differenceInMonths,
-  isWithinInterval
+  isWithinInterval,
 } from "date-fns";
 import { useNavigate } from "react-router-dom";
 import { saveAs } from "file-saver";
@@ -102,19 +102,22 @@ const calculateAcquisitionRates = (contacts) => {
   const startOfThisMonth = startOfMonth(now);
 
   // Filter contacts by time periods
-  const todaysContacts = contacts.filter(c => {
+  const todaysContacts = contacts.filter((c) => {
     if (!c.created_at) return false;
     const createdAt = parseISO(c.created_at);
-    return isWithinInterval(createdAt, { start: startOfToday, end: endOfDay(now) });
+    return isWithinInterval(createdAt, {
+      start: startOfToday,
+      end: endOfDay(now),
+    });
   });
 
-  const thisWeekContacts = contacts.filter(c => {
+  const thisWeekContacts = contacts.filter((c) => {
     if (!c.created_at) return false;
     const createdAt = parseISO(c.created_at);
     return isWithinInterval(createdAt, { start: startOfThisWeek, end: now });
   });
 
-  const thisMonthContacts = contacts.filter(c => {
+  const thisMonthContacts = contacts.filter((c) => {
     if (!c.created_at) return false;
     const createdAt = parseISO(c.created_at);
     return isWithinInterval(createdAt, { start: startOfThisMonth, end: now });
@@ -126,11 +129,14 @@ const calculateAcquisitionRates = (contacts) => {
 
   return {
     daily: todaysContacts.length,
-    weekly: Math.round((thisWeekContacts.length / Math.max(1, daysInWeek)) * 10) / 10,
-    monthly: Math.round((thisMonthContacts.length / Math.max(1, daysInMonth)) * 10) / 10,
+    weekly:
+      Math.round((thisWeekContacts.length / Math.max(1, daysInWeek)) * 10) / 10,
+    monthly:
+      Math.round((thisMonthContacts.length / Math.max(1, daysInMonth)) * 10) /
+      10,
     todaysContacts: todaysContacts.length,
     thisWeekContacts: thisWeekContacts.length,
-    thisMonthContacts: thisMonthContacts.length
+    thisMonthContacts: thisMonthContacts.length,
   };
 };
 
@@ -193,15 +199,47 @@ function Admin() {
   // CSV export function
   const exportCsv = (contacts) => {
     const headers = [
-      "Added By", "Created At", "Name", "Phone Number", "Secondary Phone Number",
-      "Email Address", "Secondary Email", "Skills", "Linkedin Url", "Job Title",
-      "Company Name", "Department Type", "From Date", "To Date", "Event Name",
-      "Event Role", "Event held Organization", "Event location", "Date of Birth",
-      "Gender", "Nationality", "Marital Status", "Category", "Emergency Contact Name",
-      "Emergency Contact Relationship", "Logger", "Street", "City", "State",
-      "Country", "ZipCode", "Pg Course Name", "Pg College Name", "Pg University Type",
-      "Pg Start Date", "Pg End Date", "Ug Course Name", "Ug College Name",
-      "Ug University Type", "Ug Start Date", "Ug End Date",
+      "Added By",
+      "Created At",
+      "Name",
+      "Phone Number",
+      "Secondary Phone Number",
+      "Email Address",
+      "Secondary Email",
+      "Skills",
+      "Linkedin Url",
+      "Job Title",
+      "Company Name",
+      "Department Type",
+      "From Date",
+      "To Date",
+      "Event Name",
+      "Event Role",
+      "Event held Organization",
+      "Event location",
+      "Date of Birth",
+      "Gender",
+      "Nationality",
+      "Marital Status",
+      "Category",
+      "Emergency Contact Name",
+      "Emergency Contact Relationship",
+      "Logger",
+      "Street",
+      "City",
+      "State",
+      "Country",
+      "ZipCode",
+      "Pg Course Name",
+      "Pg College Name",
+      "Pg University Type",
+      "Pg Start Date",
+      "Pg End Date",
+      "Ug Course Name",
+      "Ug College Name",
+      "Ug University Type",
+      "Ug Start Date",
+      "Ug End Date",
     ];
 
     const csvRows = [];
@@ -210,22 +248,48 @@ function Admin() {
     contacts.forEach((contact) => {
       const row = [
         contact.added_by || "",
-        contact.created_at ? format(parseISO(contact.created_at), "yyyy-MM-dd HH:mm:ss") : "",
-        contact.name || "", contact.phone_number || "", contact.secondary_phone_number || "",
-        contact.email_address || "", contact.secondary_email || "", contact.skills || "",
-        contact.linkedin_url || "", contact.job_title || "", contact.company_name || "",
-        contact.department_type || "", contact.from_date || "", contact.to_date || "",
-        contact.event_name || "", contact.event_role || "", contact.event_held_organization || "",
-        contact.event_location || "", contact.dob ? format(parseISO(contact.dob), "yyyy-MM-dd") : "",
-        contact.gender || "", contact.nationality || "", contact.marital_status || "",
-        contact.category || "", contact.emergency_contact_name || "",
-        contact.emergency_contact_relationship || "", contact.logger || "",
-        contact.street || "", contact.city || "", contact.state || "",
-        contact.country || "", contact.zipcode || "", contact.pg_course_name || "",
-        contact.pg_college_name || "", contact.pg_university_type || "",
-        contact.pg_start_date || "", contact.pg_end_date || "", contact.ug_course_name || "",
-        contact.ug_college_name || "", contact.ug_university_type || "",
-        contact.ug_start_date || "", contact.ug_end_date || "",
+        contact.created_at
+          ? format(parseISO(contact.created_at), "yyyy-MM-dd HH:mm:ss")
+          : "",
+        contact.name || "",
+        contact.phone_number || "",
+        contact.secondary_phone_number || "",
+        contact.email_address || "",
+        contact.secondary_email || "",
+        contact.skills || "",
+        contact.linkedin_url || "",
+        contact.job_title || "",
+        contact.company_name || "",
+        contact.department_type || "",
+        contact.from_date || "",
+        contact.to_date || "",
+        contact.event_name || "",
+        contact.event_role || "",
+        contact.event_held_organization || "",
+        contact.event_location || "",
+        contact.dob ? format(parseISO(contact.dob), "yyyy-MM-dd") : "",
+        contact.gender || "",
+        contact.nationality || "",
+        contact.marital_status || "",
+        contact.category || "",
+        contact.emergency_contact_name || "",
+        contact.emergency_contact_relationship || "",
+        contact.logger || "",
+        contact.street || "",
+        contact.city || "",
+        contact.state || "",
+        contact.country || "",
+        contact.zipcode || "",
+        contact.pg_course_name || "",
+        contact.pg_college_name || "",
+        contact.pg_university_type || "",
+        contact.pg_start_date || "",
+        contact.pg_end_date || "",
+        contact.ug_course_name || "",
+        contact.ug_college_name || "",
+        contact.ug_university_type || "",
+        contact.ug_start_date || "",
+        contact.ug_end_date || "",
       ];
 
       csvRows.push(
@@ -239,15 +303,21 @@ function Admin() {
   const exportContactsToCSV = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`http://localhost:8000/api/get-all-contact/`);
+      const response = await api.get(`/api/get-all-contact/`);
       const contacts = response.data.data || [];
 
       const csvContent = exportCsv(contacts);
       const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-      const fileName = `contacts-export-${format(new Date(), "yyyy-MM-dd-HHmm")}.csv`;
+      const fileName = `contacts-export-${format(
+        new Date(),
+        "yyyy-MM-dd-HHmm"
+      )}.csv`;
 
       saveAs(blob, fileName);
-      showAlert("success", `Successfully exported ${contacts.length} contacts to CSV`);
+      showAlert(
+        "success",
+        `Successfully exported ${contacts.length} contacts to CSV`
+      );
     } catch (error) {
       console.error("Error exporting contacts:", error);
       showAlert("error", "Failed to export contacts to CSV");
@@ -272,13 +342,13 @@ function Admin() {
         unverifiedContactsResponse,
         unverifiedImagesResponse,
       ] = await Promise.all([
-        axios.get("http://localhost:8000/api/get-all-contact/"),
-        axios.get(`http://localhost:8000/api/get-all-contact/?limit=5`),
-        axios.get("http://localhost:8000/api/get-contacts-by-category/?category=A"),
-        axios.get("http://localhost:8000/api/get-contacts-by-category/?category=B"),
-        axios.get("http://localhost:8000/api/get-contacts-by-category/?category=C"),
-        axios.get("http://localhost:8000/api/get-unverified-contacts/"),
-        axios.get("http://localhost:8000/api/get-unverified-images/"),
+        api.get("/api/get-all-contact/"),
+        api.get("/api/get-all-contact/?limit=5"),
+        api.get("/api/get-contacts-by-category/?category=A"),
+        api.get("/api/get-contacts-by-category/?category=B"),
+        api.get("/api/get-contacts-by-category/?category=C"),
+        api.get("/api/get-unverified-contacts/"),
+        api.get("/api/get-unverified-images/"),
       ]);
 
       const allContacts = allContactsResponse.data?.data || [];
@@ -298,12 +368,15 @@ function Admin() {
       setRecentContacts(
         recentContactsData.map((item) => ({
           ...item,
-          role: item.job_title?.split(';')[0]?.trim() || "N/A",
-          company: item.company_name?.split(';')[0]?.trim() || "N/A",
-          location: `${item.city || ""}, ${item.state || ""}`.trim() === ","
-            ? "N/A"
-            : `${item.city || ""}, ${item.state || ""}`,
-          skills: item.skills ? item.skills.split(",").map((s) => s.trim()) : [],
+          role: item.job_title?.split(";")[0]?.trim() || "N/A",
+          company: item.company_name?.split(";")[0]?.trim() || "N/A",
+          location:
+            `${item.city || ""}, ${item.state || ""}`.trim() === ","
+              ? "N/A"
+              : `${item.city || ""}, ${item.state || ""}`,
+          skills: item.skills
+            ? item.skills.split(",").map((s) => s.trim())
+            : [],
         }))
       );
 
@@ -315,9 +388,11 @@ function Admin() {
 
       // FIXED: Proper verification logic - contact is verified if ANY event is verified
       const verifiedContacts = allContacts.filter((c) => {
-        const hasVerifiedEvents = c.events && c.events.some(event => event.verified);
+        const hasVerifiedEvents =
+          c.events && c.events.some((event) => event.verified);
         const isDirectlyVerified = c.verified;
-        const hasApprovedStatus = c.contact_status && c.contact_status.includes("approved");
+        const hasApprovedStatus =
+          c.contact_status && c.contact_status.includes("approved");
 
         return hasVerifiedEvents || isDirectlyVerified || hasApprovedStatus;
       }).length;
@@ -326,26 +401,30 @@ function Admin() {
         (c) => c.email_address && c.phone_number && c.skills && c.company_name
       ).length;
 
-      const linkedinConnections = allContacts.filter((c) => c.linkedin_url).length;
-      const dataQualityScore = Math.round((completeProfiles / totalContacts) * 100) || 0;
+      const linkedinConnections = allContacts.filter(
+        (c) => c.linkedin_url
+      ).length;
+      const dataQualityScore =
+        Math.round((completeProfiles / totalContacts) * 100) || 0;
 
       // More advanced normalization with Unicode handling
       const calculateUniqueEvents = (contacts) => {
         const uniqueEventNames = new Set();
 
-        contacts.forEach(contact => {
+        contacts.forEach((contact) => {
           if (contact.events && Array.isArray(contact.events)) {
-            contact.events.forEach(event => {
+            contact.events.forEach((event) => {
               if (event.event_name) {
                 // Advanced normalization: Unicode, trim, lowercase, remove special chars [web:409][web:414]
                 const normalizedEventName = event.event_name
-                  .normalize('NFD')                 // Unicode normalization
-                  .trim()                           // Remove leading/trailing spaces
-                  .toLowerCase()                    // Convert to lowercase
-                  .replace(/[\u0300-\u036f]/g, '')  // Remove diacritical marks
-                  .replace(/[^a-z0-9]/g, '');      // Remove special characters and spaces
+                  .normalize("NFD") // Unicode normalization
+                  .trim() // Remove leading/trailing spaces
+                  .toLowerCase() // Convert to lowercase
+                  .replace(/[\u0300-\u036f]/g, "") // Remove diacritical marks
+                  .replace(/[^a-z0-9]/g, ""); // Remove special characters and spaces
 
-                if (normalizedEventName) {         // Only add non-empty strings
+                if (normalizedEventName) {
+                  // Only add non-empty strings
                   uniqueEventNames.add(normalizedEventName);
                 }
               }
@@ -366,15 +445,21 @@ function Admin() {
       const yesterdayNewContacts = allContacts.filter((c) => {
         if (!c.created_at) return false;
         const createdAt = parseISO(c.created_at);
-        return isWithinInterval(createdAt, { start: yesterdayStart, end: yesterdayEnd });
+        return isWithinInterval(createdAt, {
+          start: yesterdayStart,
+          end: yesterdayEnd,
+        });
       }).length;
 
       // Calculate event trend (simplified using today vs yesterday)
       const todayEvents = allContacts.reduce((acc, contact) => {
         if (!contact.events) return acc;
-        const todayContactEvents = contact.events.filter(event => {
+        const todayContactEvents = contact.events.filter((event) => {
           if (!event.event_created_at) return false;
-          const eventDate = format(parseISO(event.event_created_at), "yyyy-MM-dd");
+          const eventDate = format(
+            parseISO(event.event_created_at),
+            "yyyy-MM-dd"
+          );
           return eventDate === getTodayFormatted();
         });
         return acc + todayContactEvents.length;
@@ -382,24 +467,43 @@ function Admin() {
 
       const yesterdayEvents = allContacts.reduce((acc, contact) => {
         if (!contact.events) return acc;
-        const yesterdayContactEvents = contact.events.filter(event => {
+        const yesterdayContactEvents = contact.events.filter((event) => {
           if (!event.event_created_at) return false;
-          const eventDate = format(parseISO(event.event_created_at), "yyyy-MM-dd");
+          const eventDate = format(
+            parseISO(event.event_created_at),
+            "yyyy-MM-dd"
+          );
           return eventDate === getYesterdayFormatted();
         });
         return acc + yesterdayContactEvents.length;
       }, 0);
 
       // Calculate trends
-      const totalContactsTrend = calculateTrendPercentage(acquisitionRates.todaysContacts, yesterdayNewContacts);
-      const verifiedContactsPercentage = calculateVerifiedPercentage(verifiedContacts, totalContacts);
-      const monthlyAcquisitionTrend = calculateTrendPercentage(acquisitionRates.todaysContacts, yesterdayNewContacts);
+      const totalContactsTrend = calculateTrendPercentage(
+        acquisitionRates.todaysContacts,
+        yesterdayNewContacts
+      );
+      const verifiedContactsPercentage = calculateVerifiedPercentage(
+        verifiedContacts,
+        totalContacts
+      );
+      const monthlyAcquisitionTrend = calculateTrendPercentage(
+        acquisitionRates.todaysContacts,
+        yesterdayNewContacts
+      );
       const linkedinTrend = calculateTrendPercentage(linkedinConnections, 0); // Simplified
-      const completeProfilesPercentage = calculateCompletionPercentage(completeProfiles, totalContacts);
-      const totalEventsTrend = calculateTrendPercentage(todayEvents, yesterdayEvents);
+      const completeProfilesPercentage = calculateCompletionPercentage(
+        completeProfiles,
+        totalContacts
+      );
+      const totalEventsTrend = calculateTrendPercentage(
+        todayEvents,
+        yesterdayEvents
+      );
 
       // CORRECTED: Calculate Data Verification Queue
-      const totalUnverifiedContacts = unverifiedImages.length + unverifiedContacts.length;
+      const totalUnverifiedContacts =
+        unverifiedImages.length + unverifiedContacts.length;
 
       setStats({
         totalContacts,
@@ -463,13 +567,15 @@ function Admin() {
       formData.append("csv_file", file);
       formData.append("created_by", id);
 
-      const response = await axios.post("http://localhost:8000/api/import-csv", formData, {
+      const response = await api.post("/api/import-csv", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
       if (response.data.success) {
-        const { successCount, errorCount, duplicateCount, totalRows } = response.data.data;
-        showAlert("success",
+        const { successCount, errorCount, duplicateCount, totalRows } =
+          response.data.data;
+        showAlert(
+          "success",
           `CSV Import Complete!\n📊 Total rows processed: ${totalRows}\n✅ Successfully added: ${successCount}\n⚠️ Duplicates skipped: ${duplicateCount}\n❌ Errors encountered: ${errorCount}`
         );
         fetchDashboardData();
@@ -478,7 +584,10 @@ function Admin() {
       }
     } catch (error) {
       console.error("CSV import error:", error);
-      showAlert("error", `CSV Import Error: ${error.response?.data?.message || error.message}`);
+      showAlert(
+        "error",
+        `CSV Import Error: ${error.response?.data?.message || error.message}`
+      );
     }
 
     event.target.value = "";
@@ -491,19 +600,20 @@ function Admin() {
       description: "Create verified contact entry",
       icon: Users,
       color: "bg-blue-500",
-      onClick: () => navigate("/details-input", {
-        state: {
-          contact: null,
-          isAddMode: true,
-          source: "admin",
-          currentUserId: id,
-          userRole: role,
-          successCallback: {
-            message: `User has been successfully added to contacts.`,
-            refreshData: true,
+      onClick: () =>
+        navigate("/details-input", {
+          state: {
+            contact: null,
+            isAddMode: true,
+            source: "admin",
+            currentUserId: id,
+            userRole: role,
+            successCallback: {
+              message: `User has been successfully added to contacts.`,
+              refreshData: true,
+            },
           },
-        },
-      }),
+        }),
     },
     {
       title: "Bulk CSV Import",
@@ -539,9 +649,12 @@ function Admin() {
               <Shield className="w-8 h-8 text-blue-600" />
             </div>
           </div>
-          <p className="mt-6 text-gray-700 font-medium">Loading Admin Dashboard...</p>
+          <p className="mt-6 text-gray-700 font-medium">
+            Loading Admin Dashboard...
+          </p>
           <p className="mt-2 text-sm text-gray-500">
-            Preparing executive insights • {format(new Date(), "MMM dd, yyyy HH:mm")}
+            Preparing executive insights •{" "}
+            {format(new Date(), "MMM dd, yyyy HH:mm")}
           </p>
         </div>
       </div>
@@ -578,10 +691,13 @@ function Admin() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 gap-4">
             <div>
               <div className="flex items-center gap-3">
-                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Admin Dashboard</h1>
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+                  Admin Dashboard
+                </h1>
               </div>
               <p className="text-gray-600 mt-1 text-sm sm:text-base">
-                Data Analytics of Contacts • Last updated: {format(new Date(), "HH:mm")}
+                Data Analytics of Contacts • Last updated:{" "}
+                {format(new Date(), "HH:mm")}
               </p>
             </div>
 
@@ -612,7 +728,9 @@ function Admin() {
               color="bg-gradient-to-r from-green-500 to-green-600"
               subtext={
                 <>
-                  <span className="text-green-600 font-semibold">{stats.verifiedContactsTrend}%</span>{" "}
+                  <span className="text-green-600 font-semibold">
+                    {stats.verifiedContactsTrend}%
+                  </span>{" "}
                   of total contacts
                 </>
               }
@@ -653,7 +771,9 @@ function Admin() {
               color="bg-gradient-to-r from-green-600 to-emerald-600"
               subtext={
                 <>
-                  <span className="text-green-600 font-semibold">{stats.completeProfilesTrend}%</span>{" "}
+                  <span className="text-green-600 font-semibold">
+                    {stats.completeProfilesTrend}%
+                  </span>{" "}
                   completion rate
                 </>
               }
@@ -682,7 +802,9 @@ function Admin() {
             <div className="lg:col-span-1">
               <div className="bg-white rounded-lg p-6 shadow-lg border border-gray-200 mb-6">
                 <div className="flex items-center gap-2 mb-4">
-                  <h2 className="text-lg font-semibold text-gray-900">Quick Actions</h2>
+                  <h2 className="text-lg font-semibold text-gray-900">
+                    Quick Actions
+                  </h2>
                   <Sparkles className="w-5 h-5 text-yellow-500" />
                 </div>
                 <div className="space-y-3">
@@ -710,7 +832,9 @@ function Admin() {
             <div className="bg-white rounded-lg p-6 shadow-lg border border-gray-200">
               <div className="flex items-center gap-2 mb-4">
                 <BarChart3 className="w-5 h-5 text-blue-600" />
-                <h2 className="text-lg font-semibold text-gray-900">Contact Activity Over Time</h2>
+                <h2 className="text-lg font-semibold text-gray-900">
+                  Contact Activity Over Time
+                </h2>
               </div>
               <ContactsChart
                 contacts={contacts}

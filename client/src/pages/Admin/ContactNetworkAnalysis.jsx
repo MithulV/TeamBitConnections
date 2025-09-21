@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import api from "../../utils/axios";
 import Header from "../../components/Header/Header";
 import NetworkTreeVisualization from "../../components/NetworkTreeVisualization/NetworkTreeVisualization";
 import { RefreshCw } from "lucide-react";
@@ -16,9 +16,7 @@ function ContactNetworkAnalysis() {
   const fetchNetworkData = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(
-        "http://localhost:8000/api/analyze-contact-network"
-      );
+      const response = await api.get("/analyze-contact-network");
       setNetworkData(response.data);
       console.log("Network data loaded:", response.data);
     } catch (err) {

@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import { Activity, Users, UserX } from 'lucide-react';
-import { format } from 'date-fns';
+import React, { useState, useEffect } from "react";
+import api from "../../utils/axios";
+import { Activity, Users, UserX } from "lucide-react";
+import { format } from "date-fns";
 
 const OnlineUsersCard = () => {
   const [onlineUsers, setOnlineUsers] = useState([]);
@@ -12,9 +12,7 @@ const OnlineUsersCard = () => {
 
   const fetchOnlineUsers = async () => {
     try {
-      const response = await axios.get(
-        "http://localhost:8000/api/users/online"
-      );
+      const response = await api.get("/api/users/online");
 
       if (response.data.success) {
         setOnlineUsers(response.data.data || []);
@@ -58,14 +56,18 @@ const OnlineUsersCard = () => {
       <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm border border-gray-200">
         <div className="flex items-center gap-2 mb-4">
           <Activity className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
-          <h2 className="text-base sm:text-lg font-semibold text-gray-900">Online Users</h2>
+          <h2 className="text-base sm:text-lg font-semibold text-gray-900">
+            Online Users
+          </h2>
           <div className="ml-auto">
             <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
           </div>
         </div>
         <div className="text-center py-6 sm:py-8">
           <div className="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-green-600 mx-auto"></div>
-          <p className="mt-2 text-xs sm:text-sm text-gray-500">Loading online users...</p>
+          <p className="mt-2 text-xs sm:text-sm text-gray-500">
+            Loading online users...
+          </p>
         </div>
       </div>
     );
@@ -75,7 +77,9 @@ const OnlineUsersCard = () => {
     <div className="bg-white  rounded-lg p-4 sm:p-6 shadow-sm border border-gray-200">
       <div className="flex items-center gap-2 mb-4">
         <Activity className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
-        <h2 className="text-base sm:text-lg font-semibold text-gray-900">Online Users</h2>
+        <h2 className="text-base sm:text-lg font-semibold text-gray-900">
+          Online Users
+        </h2>
         <div className="ml-auto flex items-center gap-2">
           <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
           <div className="hidden sm:block bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">
@@ -88,7 +92,9 @@ const OnlineUsersCard = () => {
       <div className="mb-4 p-3 sm:p-4 bg-gradient-to-r from-green-50 to-green-100 rounded-lg border border-green-200">
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-center sm:text-left">
           <div>
-            <p className="text-xs sm:text-sm font-medium text-green-700">Total Users</p>
+            <p className="text-xs sm:text-sm font-medium text-green-700">
+              Total Users
+            </p>
             <p className="text-lg sm:text-2xl font-bold text-green-800">
               {totalUsers.toLocaleString()}
             </p>
@@ -97,10 +103,14 @@ const OnlineUsersCard = () => {
             <p className="text-xs sm:text-sm font-medium text-green-700">
               Currently Online
             </p>
-            <p className="text-lg sm:text-2xl font-bold text-green-800">{onlineCount}</p>
+            <p className="text-lg sm:text-2xl font-bold text-green-800">
+              {onlineCount}
+            </p>
           </div>
           <div className="col-span-2 sm:col-span-1">
-            <p className="text-xs sm:text-sm font-medium text-green-700">Online Rate</p>
+            <p className="text-xs sm:text-sm font-medium text-green-700">
+              Online Rate
+            </p>
             <p className="text-lg sm:text-2xl font-bold text-green-800">
               {onlinePercentage}%
             </p>
@@ -115,9 +125,7 @@ const OnlineUsersCard = () => {
           Active Users ({onlineCount})
         </h3>
 
-        <div 
-          className="overflow-y-auto space-y-2 pr-1 sm:pr-2 h-42"
-        >
+        <div className="overflow-y-auto space-y-2 pr-1 sm:pr-2 h-42">
           {onlineUsers.length > 0 ? (
             onlineUsers.map((user) => (
               <div
@@ -172,7 +180,9 @@ const OnlineUsersCard = () => {
       {/* Refresh Info - Responsive */}
       <div className="mt-3 sm:mt-4 pt-3 border-t border-gray-200">
         <p className="text-xs text-gray-500 text-center">
-          <span className="hidden sm:inline">Auto-refreshes every 10 seconds • </span>
+          <span className="hidden sm:inline">
+            Auto-refreshes every 10 seconds •{" "}
+          </span>
           <span className="sm:hidden">Updates: </span>
           Last updated: {format(new Date(), "HH:mm:ss")}
         </p>
