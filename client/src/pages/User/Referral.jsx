@@ -5,7 +5,13 @@ import Header from "../../components/Header/Header";
 import { useAuthStore } from "../../store/AuthStore";
 
 function Referral() {
-  const { role, email, id } = useAuthStore();
+  const {
+    role,
+    email,
+    id,
+    isAuthenticated,
+    loading: authLoading,
+  } = useAuthStore();
   const [inviteeEmail, setInviteeEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [alert, setAlert] = useState({
@@ -40,13 +46,10 @@ function Referral() {
     }
 
     try {
-      const response = await api.post(
-        "/api/send-referral",
-        {
-          referrerEmail: email,
-          inviteeEmail: inviteeEmail,
-        }
-      );
+      const response = await api.post("/api/send-referral", {
+        referrerEmail: email,
+        inviteeEmail: inviteeEmail,
+      });
 
       if (response.data.success) {
         setAlert({
@@ -71,8 +74,8 @@ function Referral() {
     }
   };
 
-  // Show loading if user data is not yet available
-  if (!email) {
+  // Show loading while authentication is in progress
+  if (authLoading) {
     return (
       <div className="h-screen bg-slate-50 overflow-hidden">
         <Header />
@@ -91,9 +94,25 @@ function Referral() {
     );
   }
 
+  // If not authenticated, show error
+  if (!isAuthenticated || !email) {
+    return (
+      <div className="h-screen bg-slate-50 overflow-hidden">
+        <Header />
+        <div className="flex items-center justify-center h-3/4 pt-20">
+          <div className="text-center">
+            <h3 className="text-lg font-semibold text-gray-700 mb-2">
+              Authentication Required
+            </h3>
+            <p className="text-gray-500">Please log in to access this page.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full min-h-screen flex flex-col bg-gradient-to-br from-slate-50 to-blue-50">
-
       <div className="w-full bg-white shadow-sm sticky top-0 z-50 border-b-2 border-b-gray-50">
         <div className="flex justify-end">
           <Header />
@@ -280,10 +299,11 @@ function Referral() {
                 <button
                   type="submit"
                   disabled={loading || !inviteeEmail}
-                  className={`w-full py-3 lg:py-4 px-6 rounded-lg font-semibold text-white transition duration-200 transform text-sm lg:text-base ${loading || !inviteeEmail
-                    ? "bg-gray-400 cursor-not-allowed"
-                    : "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl"
-                    }`}
+                  className={`w-full py-3 lg:py-4 px-6 rounded-lg font-semibold text-white transition duration-200 transform text-sm lg:text-base ${
+                    loading || !inviteeEmail
+                      ? "bg-gray-400 cursor-not-allowed"
+                      : "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl"
+                  }`}
                 >
                   {loading ? (
                     <div className="flex items-center justify-center">

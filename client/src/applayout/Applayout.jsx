@@ -23,11 +23,16 @@ import Referral from "../pages/User/Referral";
 import ReferralSignup from "../pages/User/ReferralSignup";
 import ContactNetworkAnalysis from "../pages/Admin/ContactNetworkAnalysis";
 import api from "../utils/axios";
+
 // A helper component to render the correct home page based on role
 const RoleBasedHome = () => {
-  const { role } = useAuthStore();
+  const { user } = useAuthStore();
 
-  switch (role) {
+  if (!user || !user.role) {
+    return <Navigate to="/login" />;
+  }
+
+  switch (user.role) {
     case "user":
       return <UserHome />;
     case "cata":
@@ -62,12 +67,31 @@ const MiddleManRoutesWrapper = ({ children }) => {
 };
 
 function Applayout() {
-  const { id } = useAuthStore();
+  const { id, fetchMe, loading, isAuthenticated, clearAuth } = useAuthStore();
   const location = useLocation();
 
-  // Define routes where navbar should be hidden
-  const hideNavbarRoutes = ["/login", "/register"];
-  const shouldShowNavbar = !hideNavbarRoutes.includes(location.pathname);
+  // Combined useEffect for authentication check and online status tracking
+  useEffect(() => {
+    // Check authentication on app load with timeout
+    const checkAuth = async () => {
+      try {
+        await fetchMe();
+      } catch (error) {
+        // No valid session found
+      }
+    };
+
+    // Set a timeout to prevent infinite loading
+    const timeoutId = setTimeout(() => {
+      clearAuth();
+    }, 10000); // 10 second timeout
+
+    checkAuth().finally(() => {
+      clearTimeout(timeoutId);
+    });
+
+    return () => clearTimeout(timeoutId);
+  }, [fetchMe, clearAuth]);
 
   // Online status tracking - ping server every 10 seconds
   useEffect(() => {
@@ -84,7 +108,27 @@ function Applayout() {
     }, 10000); // 10 seconds
 
     return () => clearInterval(pingInterval);
-  }, [id]); // Added id to dependencies
+  }, [id]);
+
+  // Show loading spinner while checking authentication
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <p className="mt-2 text-gray-600">Checking authentication...</p>
+          <p className="mt-1 text-xs text-gray-400">
+            If this takes too long, the server might be down
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Define routes where navbar should be hidden
+  const hideNavbarRoutes = ["/login", "/register"];
+  const shouldShowNavbar =
+    !hideNavbarRoutes.includes(location.pathname) && isAuthenticated;
 
   return (
     <div className="h-screen md:flex">

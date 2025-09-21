@@ -5,19 +5,35 @@ import { useAuthStore } from "../../store/AuthStore";
 function Header() {
   const { email, name, profilePicture } = useAuthStore();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [imageError, setImageError] = useState(false);
   const [imgSrc, setImgSrc] = useState(Avatar); // Default to Avatar
+  const [failedUrls, setFailedUrls] = useState(new Set()); // Track URLs that have failed
 
   // Set image source with fallback logic
   useEffect(() => {
-    if (profilePicture && !imageError) {
-      // Reset error state when we get a new profile picture
-      setImageError(false);
+    if (
+      profilePicture &&
+      profilePicture !== "null" &&
+      !failedUrls.has(profilePicture)
+    ) {
       setImgSrc(profilePicture);
     } else {
       setImgSrc(Avatar);
     }
-  }, [profilePicture, imageError]);
+  }, [profilePicture, failedUrls]);
+
+  // Clear failed URLs when profile picture URL changes to a different one
+  useEffect(() => {
+    if (profilePicture && profilePicture !== "null") {
+      // Only clear if this is a genuinely new URL
+      setFailedUrls((prev) => {
+        if (prev.has(profilePicture)) {
+          return prev; // Keep the failed URLs if this is the same failing URL
+        }
+        // Clear failed URLs for new profile picture
+        return new Set();
+      });
+    }
+  }, [profilePicture]);
 
   // Check for mobile menu state by observing body class
   useEffect(() => {
@@ -62,12 +78,23 @@ function Header() {
               alt="user profile"
               className="w-full h-full rounded-full object-cover shadow-sm"
               onLoad={() => {
-                setImageError(false);
+                // Profile image loaded successfully
               }}
               onError={(e) => {
-                setImageError(true);
+                const failedUrl = e.target.src;
+
+                // Add this URL to the failed URLs set to prevent future retries
+                if (
+                  failedUrl !== Avatar &&
+                  profilePicture &&
+                  failedUrl.includes(profilePicture)
+                ) {
+                  setFailedUrls((prev) => new Set([...prev, profilePicture]));
+                }
+
+                // Switch to default avatar immediately
                 if (e.target.src !== Avatar) {
-                  e.target.src = Avatar; // Fallback to default avatar
+                  e.target.src = Avatar;
                 }
               }}
             />

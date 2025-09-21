@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import axios from "axios";
+import api from "../../utils/axios";
 import {
   Users,
   UserCheck,
@@ -104,12 +104,8 @@ const getYesterdayFormatted = () => {
 
 // Main Admin Component
 function Admin() {
-  console.log("🚀 Admin component rendering");
-
   const navigate = useNavigate();
   const { id, role } = useAuthStore();
-
-  console.log("👤 User data:", { id, role });
 
   // State Management with corrected dynamic trends
   const [stats, setStats] = useState({
@@ -266,9 +262,7 @@ function Admin() {
     try {
       setLoading(true);
 
-      const response = await axios.get(
-        `http://localhost:8000/api/get-all-contact/`
-      );
+      const response = await api.get(`api/get-all-contact/`);
       const contacts = response.data.data || response.data || [];
 
       const csvContent = exportCsv(contacts);
@@ -291,14 +285,12 @@ function Admin() {
       setLoading(false);
     }
   };
-
+  
   const exportContactsToJSON = async () => {
     try {
       setLoading(true);
 
-      const response = await axios.get(
-        `http://localhost:8000/api/get-all-contact/`
-      );
+      const response = await api.get(`api/get-all-contact/`);
       const contacts = response.data.data || response.data || [];
 
       const jsonContent = JSON.stringify(contacts, null, 2);
@@ -340,33 +332,20 @@ function Admin() {
         categoryCResponse,
         allContactsResponse,
       ] = await Promise.all([
-        axios.get(`http://localhost:8000/api/get-all-contact/?limit=5`),
-        axios.get(`http://localhost:8000/api/contacts/${id}`),
-        axios.get("http://localhost:8000/api/get-unverified-contacts/"),
-        axios.get("http://localhost:8000/api/get-unverified-images/"),
-        axios.get(
-          "http://localhost:8000/api/get-contacts-by-category/?category=A"
-        ),
-        axios.get(
-          "http://localhost:8000/api/get-contacts-by-category/?category=B"
-        ),
-        axios.get(
-          "http://localhost:8000/api/get-contacts-by-category/?category=C"
-        ),
-        axios.get("http://localhost:8000/api/get-all-contact/"),
+        api.get(`api/get-all-contact/?limit=5`),
+        api.get(`api/contacts/${id}`),
+        api.get("api/get-unverified-contacts/"),
+        api.get("api/get-unverified-images/"),
+        api.get("api/get-contacts-by-category/?category=A"),
+        api.get("api/get-contacts-by-category/?category=B"),
+        api.get("api/get-contacts-by-category/?category=C"),
+        api.get("api/get-all-contact/"),
       ]);
 
       const allContacts = allContactsResponse.data?.data || [];
       const recentContactsData = recentContactsResponse.data?.data || [];
       const unverifiedContacts = unverifiedContactsResponse.data?.data || [];
       const unverifiedImages = unverifiedImagesResponse.data?.data || [];
-
-      console.log("📊 Dashboard data loaded:", {
-        allContacts: allContacts.length,
-        recentContacts: recentContactsData.length,
-        unverifiedContacts: unverifiedContacts.length,
-        unverifiedImages: unverifiedImages.length,
-      });
 
       setContacts(allContacts);
       setRecentContacts(
@@ -375,8 +354,9 @@ function Admin() {
           role: item.experiences?.[0]?.job_title || "N/A",
           company: item.experiences?.[0]?.company || "N/A",
           location:
-            `${item.address?.city || ""}, ${item.address?.state || ""
-              }`.trim() === ","
+            `${item.address?.city || ""}, ${
+              item.address?.state || ""
+            }`.trim() === ","
               ? "N/A"
               : `${item.address?.city || ""}, ${item.address?.state || ""}`,
           skills: item.skills
@@ -528,7 +508,8 @@ function Admin() {
           (c) => !c.verified || c.contact_status === "pending"
         ).length,
         totalEvents,
-        totalUnverifiedContacts: unverifiedImages.length + unverifiedContacts.length,
+        totalUnverifiedContacts:
+          unverifiedImages.length + unverifiedContacts.length,
         dataQualityScore,
         monthlyAcquisitionRate,
         linkedinConnections,
@@ -559,14 +540,13 @@ function Admin() {
   };
 
   useEffect(() => {
-    console.log("🔄 useEffect running, checking user ID...");
-    console.log("👤 ID available:", !!id, "Value:", id);
-
     if (id) {
-      console.log("✅ User ID found, calling fetchDashboardData");
-      fetchDashboardData();
-    } else {
-      console.log("⚠️ No user ID yet, waiting...");
+      // Small delay to handle rapid authentication state changes during Google Sign-In
+      const timeoutId = setTimeout(() => {
+        fetchDashboardData();
+      }, 100);
+
+      return () => clearTimeout(timeoutId);
     }
   }, [id]);
 
@@ -594,15 +574,11 @@ function Admin() {
       formData.append("csv_file", file);
       formData.append("created_by", id);
 
-      const response = await axios.post(
-        "http://localhost:8000/api/import-csv",
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
+      const response = await api.post("api/import-csv", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
 
       if (response.data.success) {
         const { successCount, errorCount, duplicateCount, totalRows } =
@@ -611,10 +587,10 @@ function Admin() {
         showAlert(
           "success",
           `CSV Import Complete!\n` +
-          `📊 Total rows processed: ${totalRows}\n` +
-          `✅ Successfully added: ${successCount}\n` +
-          `⚠️ Duplicates skipped: ${duplicateCount}\n` +
-          `❌ Errors encountered: ${errorCount}`
+            `📊 Total rows processed: ${totalRows}\n` +
+            `✅ Successfully added: ${successCount}\n` +
+            `⚠️ Duplicates skipped: ${duplicateCount}\n` +
+            `❌ Errors encountered: ${errorCount}`
         );
 
         fetchDashboardData();
@@ -732,7 +708,6 @@ function Admin() {
 
       <div className="p-6">
         <div className="container mx-auto">
-
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 gap-4">
             <div>
               <div className="flex items-center gap-3">
@@ -793,7 +768,7 @@ function Admin() {
               value={stats.monthlyAcquisitionRate}
               icon={Calculator}
               color="bg-gradient-to-r from-orange-500 to-orange-600"
-              trend={stats.monthlyAcquisitionTrend >0 ? "up" : "down"}
+              trend={stats.monthlyAcquisitionTrend > 0 ? "up" : "down"}
               trendValue={stats.monthlyAcquisitionTrend}
               subtext="Contacts per day this month"
             />
@@ -806,7 +781,7 @@ function Admin() {
               value={stats.linkedinConnections.toLocaleString()}
               icon={Globe}
               color="bg-gradient-to-r from-blue-600 to-indigo-600"
-              trend={stats.linkedinTrend >0 ? "up" : "down"}
+              trend={stats.linkedinTrend > 0 ? "up" : "down"}
               trendValue={stats.linkedinTrend}
               subtext="Professional network"
             />
@@ -829,7 +804,7 @@ function Admin() {
               value={stats.totalEvents.toLocaleString()}
               icon={Calendar}
               color="bg-gradient-to-r from-purple-600 to-purple-700"
-              trend={stats.totalEventsTrend >0 ? "up" : "down"}
+              trend={stats.totalEventsTrend > 0 ? "up" : "down"}
               trendValue={stats.totalEventsTrend}
               subtext="Event participations"
             />

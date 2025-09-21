@@ -1,5 +1,11 @@
 import db from "../src/config/db.js";
 import { logContactModification } from "./ModificationHistoryControllers.js";
+
+// Helper function to handle undefined and empty string values
+const sanitizeValue = (value) => {
+  return value === undefined || value === "" || value === null ? null : value;
+};
+
 // In admin
 export const GetAllContact = async (req, res) => {
   const { limit } = req.query;
@@ -169,7 +175,12 @@ export const GetAllContact = async (req, res) => {
 
     // Log the view operation
     try {
-      await logContactModification(db, null, req.user?.id || 'system', "VIEW ALL");
+      await logContactModification(
+        db,
+        null,
+        req.user?.id || "system",
+        "VIEW ALL"
+      );
     } catch (err) {
       console.warn("Contact modification logging failed:", err.message);
     }
@@ -248,36 +259,20 @@ export const CreateContact = async (req, res) => {
             ${name}, 
             ${phone_number}, 
             ${email_address}, 
-            ${dob === undefined ? null : dob}, 
-            ${gender === undefined ? null : gender},
-            ${nationality === undefined ? null : nationality}, 
-            ${marital_status === undefined ? null : marital_status}, 
-            ${category === undefined ? null : category}, 
-            ${secondary_email === undefined ? null : secondary_email},
-            ${
-              secondary_phone_number === undefined
-                ? null
-                : secondary_phone_number
-            }, 
-            ${created_by === undefined ? null : created_by}, 
-            ${
-              emergency_contact_name === undefined
-                ? null
-                : emergency_contact_name
-            },
-            ${
-              emergency_contact_relationship === undefined
-                ? null
-                : emergency_contact_relationship
-            }, 
-            ${
-              emergency_contact_phone_number === undefined
-                ? null
-                : emergency_contact_phone_number
-            }, 
-            ${skills === undefined ? null : skills},
-            ${logger === undefined ? null : logger}, 
-            ${linkedin_url === undefined ? null : linkedin_url}
+            ${sanitizeValue(dob)}, 
+            ${sanitizeValue(gender)},
+            ${sanitizeValue(nationality)}, 
+            ${sanitizeValue(marital_status)}, 
+            ${sanitizeValue(category)}, 
+            ${sanitizeValue(secondary_email)},
+            ${sanitizeValue(secondary_phone_number)}, 
+            ${sanitizeValue(created_by)}, 
+            ${sanitizeValue(emergency_contact_name)},
+            ${sanitizeValue(emergency_contact_relationship)}, 
+            ${sanitizeValue(emergency_contact_phone_number)}, 
+            ${sanitizeValue(skills)},
+            ${sanitizeValue(logger)}, 
+            ${sanitizeValue(linkedin_url)}
           ) RETURNING *
         `;
 
@@ -294,11 +289,11 @@ export const CreateContact = async (req, res) => {
             INSERT INTO contact_address (contact_id, street, city, state, country, zipcode) 
             VALUES (
               ${contactId}, 
-              ${address.street === undefined ? null : address.street}, 
-              ${address.city === undefined ? null : address.city}, 
-              ${address.state === undefined ? null : address.state}, 
-              ${address.country === undefined ? null : address.country}, 
-              ${address.zipcode === undefined ? null : address.zipcode}
+              ${sanitizeValue(address.street)}, 
+              ${sanitizeValue(address.city)}, 
+              ${sanitizeValue(address.state)}, 
+              ${sanitizeValue(address.country)}, 
+              ${sanitizeValue(address.zipcode)}
             ) 
             RETURNING *
           `;
@@ -312,48 +307,16 @@ export const CreateContact = async (req, res) => {
               ug_course_name, ug_college, ug_university, ug_from_date, ug_to_date
             ) VALUES (
               ${contactId}, 
-              ${
-                education.pg_course_name === undefined
-                  ? null
-                  : education.pg_course_name
-              }, 
-              ${
-                education.pg_college === undefined ? null : education.pg_college
-              }, 
-              ${
-                education.pg_university === undefined
-                  ? null
-                  : education.pg_university
-              }, 
-              ${
-                education.pg_from_date === undefined
-                  ? null
-                  : education.pg_from_date
-              }, 
-              ${
-                education.pg_to_date === undefined ? null : education.pg_to_date
-              },
-              ${
-                education.ug_course_name === undefined
-                  ? null
-                  : education.ug_course_name
-              }, 
-              ${
-                education.ug_college === undefined ? null : education.ug_college
-              }, 
-              ${
-                education.ug_university === undefined
-                  ? null
-                  : education.ug_university
-              }, 
-              ${
-                education.ug_from_date === undefined
-                  ? null
-                  : education.ug_from_date
-              }, 
-              ${
-                education.ug_to_date === undefined ? null : education.ug_to_date
-              }
+              ${sanitizeValue(education.pg_course_name)}, 
+              ${sanitizeValue(education.pg_college)}, 
+              ${sanitizeValue(education.pg_university)}, 
+              ${sanitizeValue(education.pg_from_date)}, 
+              ${sanitizeValue(education.pg_to_date)},
+              ${sanitizeValue(education.ug_course_name)}, 
+              ${sanitizeValue(education.ug_college)}, 
+              ${sanitizeValue(education.ug_university)}, 
+              ${sanitizeValue(education.ug_from_date)}, 
+              ${sanitizeValue(education.ug_to_date)}
             ) RETURNING *
           `;
       }
@@ -364,12 +327,12 @@ export const CreateContact = async (req, res) => {
               INSERT INTO contact_experience (
                 contact_id, job_title, company, department, from_date, to_date, company_skills
               ) VALUES (
-                ${contactId}, ${exp.job_title || null}, ${
-            exp.company || null
-          }, ${exp.department || null}, 
-                ${exp.from_date || null}, ${exp.to_date || null}, ${
-            exp.company_skills || null
-          }
+                ${contactId}, ${sanitizeValue(exp.job_title)}, ${sanitizeValue(
+            exp.company
+          )}, ${sanitizeValue(exp.department)}, 
+                ${sanitizeValue(exp.from_date)}, ${sanitizeValue(
+            exp.to_date
+          )}, ${sanitizeValue(exp.company_skills)}
               ) RETURNING *
             `;
           createdExperiences.push(newExp);

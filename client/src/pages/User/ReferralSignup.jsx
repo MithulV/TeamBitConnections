@@ -70,7 +70,7 @@ function ReferralSignup() {
               token: referralToken,
             })
             .catch((error) => {
-              console.log("Heartbeat failed:", error);
+              // Heartbeat failed - silently ignore
             });
         }
       }, 30000);
@@ -93,10 +93,11 @@ function ReferralSignup() {
       hasValidated.current = true;
       validateReferralLink();
     } else if (!referralToken) {
+      setLinkValid(false);
       setAlert({
         isOpen: true,
         severity: "error",
-        message: `No referral token found in URL`,
+        message: `No referral token found in URL. Current URL: ${window.location.href}`,
       });
     }
   }, [referralToken]);
@@ -117,7 +118,9 @@ function ReferralSignup() {
 
   const validateReferralLink = async () => {
     const tokenToValidate = getReferralToken();
+
     if (!tokenToValidate) {
+      setLinkValid(false);
       setAlert({
         isOpen: true,
         severity: "error",
@@ -193,14 +196,11 @@ function ReferralSignup() {
     try {
       const tokenForRegistration = getReferralToken();
 
-      const response = await api.post(
-        "/api/complete-registration",
-        {
-          token: tokenForRegistration,
-          email: invitationData.inviteeEmail,
-          password: password,
-        }
-      );
+      const response = await api.post("/api/complete-registration", {
+        token: tokenForRegistration,
+        email: invitationData.inviteeEmail,
+        password: password,
+      });
 
       if (response.data.success) {
         hasRegistered.current = true;
@@ -233,6 +233,25 @@ function ReferralSignup() {
       setLoading(false);
     }
   };
+
+  // Timeout effect to prevent infinite loading
+  useEffect(() => {
+    if (linkValid === null) {
+      const timeoutId = setTimeout(() => {
+        if (linkValid === null) {
+          setLinkValid(false);
+          setAlert({
+            isOpen: true,
+            severity: "error",
+            message:
+              "Validation timeout. Please check your connection and try again.",
+          });
+        }
+      }, 10000); // 10 second timeout
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [linkValid]);
 
   // Show loading state
   if (linkValid === null && !alert.isOpen) {
