@@ -1,7 +1,19 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import { Clock, UserPlus, Edit, FileText, CheckCircle, Users, Trash2, Phone, Calendar, Activity, X } from 'lucide-react';
-import { format } from 'date-fns';
+import React, { useState, useEffect } from "react";
+import api from "../../utils/axios";
+import {
+  Clock,
+  UserPlus,
+  Edit,
+  FileText,
+  CheckCircle,
+  Users,
+  Trash2,
+  Phone,
+  Calendar,
+  Activity,
+  X,
+} from "lucide-react";
+import { format } from "date-fns";
 
 const RecentEventsTimeline = ({ contacts }) => {
   const [modificationHistory, setModificationHistory] = useState([]);
@@ -12,9 +24,7 @@ const RecentEventsTimeline = ({ contacts }) => {
   useEffect(() => {
     const fetchModificationHistory = async () => {
       try {
-        const response = await axios.get(
-          `http://localhost:8000/api/get-all-modification-history/`
-        );
+        const response = await api.get(`/api/get-all-modification-history/`);
         const data = response.data;
 
         if (data.success && data.data) {

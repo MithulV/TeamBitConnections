@@ -16,6 +16,7 @@
     "axios": "^1.12.2",
     "bcrypt": "^6.0.0",
     "body-parser": "^2.2.0",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "cron": "^4.3.3",
     "crypto": "^1.0.1",
