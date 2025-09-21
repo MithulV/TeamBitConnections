@@ -30,7 +30,7 @@ const RoleBasedHome = () => {
   if (!user || !user.role) {
     return <Navigate to="/login" />;
   }
-
+// check
   switch (user.role) {
     case "user":
       return <UserHome />;
