@@ -2,6 +2,27 @@ import jwt from "jsonwebtoken";
 import { OAuth2Client } from "google-auth-library";
 import db from "../../src/config/db.js";
 
+// Function to validate if a profile picture URL is accessible
+async function validateProfilePictureUrl(url) {
+  if (!url) return false;
+
+  try {
+    // Create AbortController for timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+
+    const response = await fetch(url, {
+      method: "HEAD",
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+    return response.ok;
+  } catch (error) {
+    return false;
+  }
+}
+
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 export const verifyGoogleToken = async (req, res) => {
@@ -24,8 +45,34 @@ export const verifyGoogleToken = async (req, res) => {
       picture,
     } = payload;
 
-    // Use the original picture URL without modification for better compatibility
-    const profilePictureUrl = picture;
+    // Validate and process Google profile picture URL
+    let profilePictureUrl = null;
+    if (picture) {
+      try {
+        // Remove size parameters and add a standard size
+        const processedUrl = picture
+          .replace(/=s\d+-c$/, "=s200-c")
+          .replace(/=s\d+$/, "=s200");
+        
+        // Basic URL validation - ensure it's a valid Google profile picture URL
+        if (
+          processedUrl.includes("googleusercontent.com") &&
+          processedUrl.startsWith("https://")
+        ) {
+          // Test if the URL is actually accessible
+          const isUrlAccessible = await validateProfilePictureUrl(processedUrl);
+          if (isUrlAccessible) {
+            profilePictureUrl = processedUrl;
+          } else {
+            profilePictureUrl = null;
+          }
+        } else {
+          profilePictureUrl = null;
+        }
+      } catch (error) {
+        profilePictureUrl = null;
+      }
+    }
 
     // Check if user exists with Google ID
     const existingUser = await db`
@@ -85,17 +132,24 @@ export const verifyGoogleToken = async (req, res) => {
     // Generate JWT token
     const token = jwt.sign(
       {
-        userId: user.id,
+        id: user.id,
         email: user.email,
         role: user.role || "user",
       },
       process.env.JWT_SECRET,
-      { expiresIn: "24h" }
+      { expiresIn: "1h" }
     );
+
+    // Set token as httpOnly cookie (same as normal login)
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production", // Same as normal login
+      sameSite: "Strict",
+      maxAge: 3600000, // 1 hour to match JWT expiration
+    });
 
     res.json({
       success: true,
-      token,
       user: {
         id: user.id,
         email: user.email,

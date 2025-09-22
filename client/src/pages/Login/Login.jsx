@@ -6,129 +6,84 @@ import { useAuthStore } from "../../store/AuthStore";
 const campusImageUrl =
   "https://images.unsplash.com/photo-1562774053-701939374585?q=80&w=2072&auto=format&fit=crop";
 
-const GoogleIcon = (props) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    viewBox="0 0 48 48"
-    width="24px"
-    height="24px"
-    {...props}
-  >
-    <path
-      fill="#FFC107"
-      d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12s5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24s8.955,20,20,20s20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"
-    />
-    <path
-      fill="#FF3D00"
-      d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"
-    />
-    <path
-      fill="#4CAF50"
-      d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.222,0-9.651-3.358-11.303-7.962H6.389c3.279,6.463,9.932,11,17.611,11z"
-    />
-    <path
-      fill="#1976D2"
-      d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.574l6.19,5.238C42.012,35.197,44,30.024,44,24C44,22.659,43.862,21.35,43.611,20.083z"
-    />
-  </svg>
-);
-
 const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const { setAuth, role } = useAuthStore();
+  const { setAuth, isAuthenticated } = useAuthStore();
 
+  // Redirect if already authenticated
   useEffect(() => {
-    // If a role exists, the user is logged in, so redirect them.
-    if (role) {
+    if (isAuthenticated) {
       navigate("/");
     }
-  }, []);
+  }, [isAuthenticated, navigate]);
 
+  
   const handleLogin = async () => {
+    if (!email || !password) {
+      alert("Please enter both email and password");
+      return;
+    }
+
+    setIsLoading(true);
     try {
-      const res = await api.post("/auth/login", {
-        email,
-        password,
-      });
+      const res = await api.post("/auth/login", { email, password });
+
       if (res.data.success) {
-        const { token, user } = res.data;
-        setAuth(
-          token,
-          user.email,
-          user.role,
-          user.id,
-          user.name,
-          user.firstName,
-          user.lastName,
-          user.profilePicture
-        ); // Update the zustand store
-        localStorage.setItem("token", token); // Persist token
-        navigate("/"); // Redirect on successful login
+        const { user } = res.data;
+        console.log("Login successful:", user);
+
+        // Update Zustand with user info (cookie is automatically set by server)
+        setAuth(user);
+
+        // Navigate to home page
+        navigate("/");
       }
     } catch (error) {
       console.error("Login failed:", error);
-      alert("Login failed. Please check your credentials and try again.");
+      const errorMessage =
+        error.response?.data?.message ||
+        "Login failed. Please check your credentials and try again.";
+      alert(errorMessage);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleGoogleSignIn = async (response) => {
+    setIsLoading(true);
     try {
       const { credential } = response;
-
-      // Send the credential to your backend
       const apiResponse = await api.post("/auth/google/verify", { credential });
 
       if (apiResponse.data.success) {
-        const { token, user } = apiResponse.data;
+        const { user } = apiResponse.data;
+        setAuth(user);
 
-        // Store the token and user data with enhanced profile information
-        localStorage.setItem("token", token);
-        setAuth(
-          token,
-          user.email,
-          user.role,
-          user.id,
-          user.name,
-          user.firstName,
-          user.lastName,
-          user.profilePicture
-        );
-
-        // Redirect based on user role
-        if (user.role === "admin") {
-          navigate("/admin");
-        } else if (user.role === "middleman") {
-          navigate("/middleman");
-        } else {
-          navigate("/user");
-        }
+        // Navigate to home page (role-based routing handled in RoleBasedHome)
+        navigate("/");
       } else {
         throw new Error(apiResponse.data.message || "Authentication failed");
       }
     } catch (error) {
       console.error("Google sign-in failed:", error);
-
-      // More specific error handling
-      if (error.response?.status === 400) {
-        alert("Invalid Google token. Please try again.");
-      } else if (error.response?.status === 500) {
-        alert("Server error. Please try again later.");
-      } else {
-        alert("Google sign-in failed. Please try again.");
-      }
+      const errorMessage =
+        error.response?.data?.message ||
+        "Google sign-in failed. Please try again.";
+      alert(errorMessage);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   // Initialize Google Sign-In when component mounts
   useEffect(() => {
-    if (role) {
-      navigate("/");
+    if (isAuthenticated) {
       return;
     }
 
-    // Initialize Google Sign-In with error handling
     const initializeGoogleSignIn = () => {
       try {
         if (window.google) {
@@ -137,16 +92,14 @@ const LoginPage = () => {
             callback: handleGoogleSignIn,
             auto_select: false,
             cancel_on_tap_outside: true,
-            use_fedcm_for_prompt: false, // Disable FedCM
+            use_fedcm_for_prompt: false,
           });
 
-          // Render the Google Sign-In button
           window.google.accounts.id.renderButton(
             document.getElementById("google-signin-div"),
             {
               theme: "outline",
               size: "large",
-              width: "100%", // Use full width to match container
               text: "signin_with",
               shape: "rectangular",
             }
@@ -159,22 +112,18 @@ const LoginPage = () => {
       }
     };
 
-    // Check if Google script is loaded, if not wait for it
     if (window.google) {
       initializeGoogleSignIn();
     } else {
-      // Wait for Google script to load
       const checkGoogle = setInterval(() => {
         if (window.google) {
           clearInterval(checkGoogle);
           initializeGoogleSignIn();
         }
       }, 100);
-
-      // Clean up interval after 10 seconds
       setTimeout(() => clearInterval(checkGoogle), 10000);
     }
-  }, [role, navigate]);
+  }, [isAuthenticated, navigate]);
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
@@ -244,9 +193,10 @@ const LoginPage = () => {
               </div>
               <button
                 onClick={handleLogin}
-                className="w-full bg-gradient-to-r from-blue-600 to-blue-500 text-white p-3 rounded-lg font-medium hover:from-blue-700 hover:to-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]"
+                disabled={isLoading}
+                className="w-full bg-gradient-to-r from-blue-600 to-blue-500 text-white p-3 rounded-lg font-medium hover:from-blue-700 hover:to-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
               >
-                Sign in
+                {isLoading ? "Signing in..." : "Sign in"}
               </button>
 
               <div className="relative flex items-center justify-center">

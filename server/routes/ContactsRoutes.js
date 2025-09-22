@@ -41,7 +41,6 @@ import {
   ImportContactsFromCSV,
   uploadCSV,
 } from "../controllers/CsvImportControllers.js";
-import verifyToken from "../middlewares/AuthMiddleware.js";
 import {
   getAllContactModificationHistory,
   getContactModificationHistory,
@@ -61,55 +60,61 @@ import {
   GetFilterOptions,
 } from "../controllers/FilterControllers.js";
 
+import { verifyToken, authorizeRoles } from "../middlewares/AuthMiddleware.js";
 
-
-// User routes
-router.get("/contacts/filter/", GetFilteredContacts);
-router.get("/contacts/:userId", GetContacts);
-router.post("/create-contact", CreateContact);
-router.post("/upload-contact/", upload.single("image"), UploadImage);
-router.get("/get-contact-images/:userId", GetPicturesByUserId);
-router.get("/search-contact", SearchContacts);
+// User routes - Allow all authenticated users
+router.get("/contacts/filter/", verifyToken, authorizeRoles("user", "admin", "cata", "catb", "catc"), GetFilteredContacts);
+router.get("/contacts/:userId", verifyToken, authorizeRoles("user", "admin", "cata", "catb", "catc"), GetContacts);
+router.post("/create-contact", verifyToken, authorizeRoles("user", "admin", "cata", "catb", "catc"), CreateContact);
+router.post("/upload-contact/", verifyToken, authorizeRoles("user", "admin", "cata", "catb", "catc"), upload.single("image"), UploadImage);
+router.get("/get-contact-images/:userId", verifyToken, authorizeRoles("user", "admin", "cata", "catb", "catc"), GetPicturesByUserId);
+router.get("/search-contact", verifyToken, authorizeRoles("user", "admin", "cata", "catb", "catc"), SearchContacts);
 router.post(
   "/add-event-existing-contact/:contactId/:userId",
+  verifyToken,
+  authorizeRoles("user", "admin", "cata", "catb", "catc"),
   AddEventToExistingContact
 );
-router.put("/update-contacts-and-events/:id/:userId", UpdateContactAndEvents);
-router.delete("/delete-image/:id", DeleteImage);
-router.get("/get-assignment/:userId", getAssignmentsForUser);
-// Middleman routes
-router.get("/get-unverified-contacts/", GetUnVerifiedContacts);
-router.get("/get-unverified-images/", GetUnVerifiedImages);
-router.get("/get-contacts-by-category/", GetContactsByCategory);
-router.put("/update-contact/:contact_id", UpdateContact);
-router.delete("/delete-contact/:contactId", DeleteContact);
-router.delete("/verified-contact-delete/:contactId", DeleteVerifiedContact);
-router.post("/verify-image/:id", VerifyImages);
-router.post("/assign/", createAssignment);
-router.get("/get-assigned-to/:userId", getAssignedByUser);
-router.delete("/delete-assignment/:assignmentId", revokeAssignment);
-router.get("/get-filter-options", GetFilterOptions);
+router.put("/update-contacts-and-events/:id/:userId", verifyToken, authorizeRoles("user", "admin", "cata", "catb", "catc"), UpdateContactAndEvents);
+router.delete("/delete-image/:id", verifyToken, authorizeRoles("user", "admin", "cata", "catb", "catc"), DeleteImage);
+router.get("/get-assignment/:userId", verifyToken, authorizeRoles("user", "admin", "cata", "catb", "catc"), getAssignmentsForUser);
 
-// Admin routes
-router.get("/get-all-contact/", GetAllContact);
-router.post("/create-contact-by-admin", UpdateContact);
-router.post("/import-csv", uploadCSV, ImportContactsFromCSV);
-router.post("/user/ping/:id", updateUserPing);
-router.get("/users/online", getOnlineUsers);
-router.get("/analyze-contact-network", analyzeContactNetwork);
-// Task routes
-router.get("/get-tasks/", GetTasks);
-router.put("/complete-task/:id", CompleteTask);
-router.post("/create-task", CreateTask);
-// History routes
-router.get("/get-modification-history/:id", getContactModificationHistory);
-router.get("/get-all-modification-history/", getAllContactModificationHistory);
-// Referral routes 
-router.post("/send-referral", sendReferralInvitation);
-router.get("/validate-referral/:token", validateReferralLink);
-router.post("/complete-registration", completeRegistration);
-router.post("/invalidate-invitation", invalidateInvitation);
-router.post("/invitation-heartbeat", invitationHeartbeat);
+// Middleman routes - For verification and management tasks
+router.get("/get-unverified-contacts/", verifyToken, authorizeRoles("admin", "cata", "catb", "catc"), GetUnVerifiedContacts);
+router.get("/get-unverified-images/", verifyToken, authorizeRoles("admin", "cata", "catb", "catc"), GetUnVerifiedImages);
+router.get("/get-contacts-by-category/", verifyToken, authorizeRoles("admin", "cata", "catb", "catc"), GetContactsByCategory);
+router.put("/update-contact/:contact_id", verifyToken, authorizeRoles("admin", "cata", "catb", "catc"), UpdateContact);
+router.delete("/delete-contact/:contactId", verifyToken, authorizeRoles("admin", "cata", "catb", "catc"), DeleteContact);
+router.delete("/verified-contact-delete/:contactId", verifyToken, authorizeRoles("admin", "cata", "catb", "catc"), DeleteVerifiedContact);
+router.post("/verify-image/:id", verifyToken, authorizeRoles("admin", "cata", "catb", "catc"), VerifyImages);
+router.post("/assign/", verifyToken, authorizeRoles("admin", "cata", "catb", "catc"), createAssignment);
+router.get("/get-assigned-to/:userId", verifyToken, authorizeRoles("admin", "cata", "catb", "catc"), getAssignedByUser);
+router.delete("/delete-assignment/:assignmentId", verifyToken, authorizeRoles("admin", "cata", "catb", "catc"), revokeAssignment);
+router.get("/get-filter-options", verifyToken, authorizeRoles("user", "admin", "cata", "catb", "catc"), GetFilterOptions);
+
+// Admin routes - Admin only
+router.get("/get-all-contact/", verifyToken, authorizeRoles("admin"), GetAllContact);
+router.post("/create-contact-by-admin", verifyToken, authorizeRoles("admin"), UpdateContact);
+router.post("/import-csv", verifyToken, authorizeRoles("admin"), uploadCSV, ImportContactsFromCSV);
+router.post("/user/ping/:id", verifyToken, updateUserPing); // No role restriction for ping
+router.get("/users/online", verifyToken, authorizeRoles("admin", "cata", "catb", "catc"), getOnlineUsers);
+router.get("/analyze-contact-network", verifyToken, authorizeRoles("admin"), analyzeContactNetwork);
+
+// Task routes - Admin and middleman access
+router.get("/get-tasks/", verifyToken, authorizeRoles("admin", "cata", "catb", "catc"), GetTasks);
+router.put("/complete-task/:id", verifyToken, authorizeRoles("admin", "cata", "catb", "catc"), CompleteTask);
+router.post("/create-task", verifyToken, authorizeRoles("admin"), CreateTask);
+
+// History routes - Admin and middleman access
+router.get("/get-modification-history/:id", verifyToken, authorizeRoles("admin", "cata", "catb", "catc"), getContactModificationHistory);
+router.get("/get-all-modification-history/", verifyToken, authorizeRoles("admin"), getAllContactModificationHistory);
+
+// Referral routes - User level access
+router.post("/send-referral", verifyToken, authorizeRoles("user", "admin", "cata", "catb", "catc"), sendReferralInvitation);
+router.get("/validate-referral/:token", validateReferralLink); // Public route - no auth needed
+router.post("/complete-registration", completeRegistration); // Public route - no auth needed  
+router.post("/invalidate-invitation", verifyToken, authorizeRoles("admin"), invalidateInvitation);
+router.post("/invitation-heartbeat", invitationHeartbeat); // Public route - no auth needed
 
 startOnlineStatusTask();
 

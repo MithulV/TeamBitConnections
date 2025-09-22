@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { TrendingUp, TrendingDown, Activity, Calendar } from 'lucide-react';
-import { format, parseISO, subDays, subMonths, isAfter, startOfMonth } from 'date-fns';
+import { format, parseISO, subDays, subMonths, isAfter, startOfMonth, isWithinInterval, startOfDay, endOfDay, startOfWeek } from 'date-fns';
 
 // Utility functions
 const calculateTrendPercentage = (current, previous) => {
@@ -18,96 +18,122 @@ const getYesterdayFormatted = () => {
 
 const ContactSourceAnalytics = ({ contacts }) => {
   const sourceData = useMemo(() => {
+    const now = new Date();
     const today = getTodayFormatted();
     const yesterday = getYesterdayFormatted();
-    const thisWeek = subDays(new Date(), 7);
-    const lastWeek = subDays(new Date(), 14);
-    const startOfThisMonth = new Date(
-      new Date().getFullYear(),
-      new Date().getMonth(),
-      1
-    );
-    const startOfLastMonth = new Date(
-      new Date().getFullYear(),
-      new Date().getMonth() - 1,
-      1
-    );
-    const endOfLastMonth = new Date(
-      new Date().getFullYear(),
-      new Date().getMonth(),
-      0
-    );
+
+    // Enhanced date range calculations using date-fns [web:292][web:405]
+    const startOfToday = startOfDay(now);
+    const startOfYesterday = startOfDay(subDays(now, 1));
+    const startOfThisWeek = startOfWeek(now, { weekStartsOn: 1 });
+    const startOfLastWeek = startOfWeek(subDays(now, 7), { weekStartsOn: 1 });
+    const startOfThisMonth = startOfMonth(now);
+    const startOfLastMonth = startOfMonth(subMonths(now, 1));
+    const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
 
     // Calculate days passed in current month
     const daysPassed = Math.max(
       1,
-      Math.floor((new Date() - startOfThisMonth) / (1000 * 60 * 60 * 24)) + 1
+      Math.floor((now - startOfThisMonth) / (1000 * 60 * 60 * 24)) + 1
     );
 
-    // Count new contacts added today vs yesterday for trend
-    const todayNewContacts = contacts.filter((c) => {
-      if (!c.created_at) return false;
-      const createdDate = format(parseISO(c.created_at), "yyyy-MM-dd");
-      return createdDate === today;
+    // Filter contacts with valid creation dates
+    const contactsWithValidDates = contacts.filter(c => c.created_at);
+
+    // Count new contacts added today vs yesterday using contact's created_at
+    const todayNewContacts = contactsWithValidDates.filter((c) => {
+      const createdAt = parseISO(c.created_at);
+      return isWithinInterval(createdAt, {
+        start: startOfToday,
+        end: endOfDay(now)
+      });
     }).length;
 
-    const yesterdayNewContacts = contacts.filter((c) => {
-      if (!c.created_at) return false;
-      const createdDate = format(parseISO(c.created_at), "yyyy-MM-dd");
-      return createdDate === yesterday;
+    const yesterdayNewContacts = contactsWithValidDates.filter((c) => {
+      const createdAt = parseISO(c.created_at);
+      return isWithinInterval(createdAt, {
+        start: startOfYesterday,
+        end: endOfDay(subDays(now, 1))
+      });
     }).length;
 
-    // Weekly growth calculations with proper counts
-    const thisWeekContacts = contacts.filter(
-      (c) => c.created_at && isAfter(parseISO(c.created_at), thisWeek)
-    ).length;
-
-    const lastWeekContacts = contacts.filter(
-      (c) =>
-        c.created_at &&
-        isAfter(parseISO(c.created_at), lastWeek) &&
-        parseISO(c.created_at) <= thisWeek
-    ).length;
-
-    // Count contacts this month
-    const thisMonthContacts = contacts.filter((c) => {
-      if (!c.created_at) return false;
-      const createdDate = parseISO(c.created_at);
-      return createdDate >= startOfThisMonth && createdDate <= new Date();
+    // Weekly growth calculations using contact's created_at
+    const thisWeekContacts = contactsWithValidDates.filter((c) => {
+      const createdAt = parseISO(c.created_at);
+      return isWithinInterval(createdAt, {
+        start: startOfThisWeek,
+        end: endOfDay(now)  // FIXED: Include full day
+      });
     }).length;
 
-    // Count contacts last month for comparison
-    const lastMonthContacts = contacts.filter((c) => {
-      if (!c.created_at) return false;
-      const createdDate = parseISO(c.created_at);
-      return createdDate >= startOfLastMonth && createdDate <= endOfLastMonth;
+    const lastWeekContacts = contactsWithValidDates.filter((c) => {
+      const createdAt = parseISO(c.created_at);
+      return isWithinInterval(createdAt, {
+        start: startOfLastWeek,
+        end: endOfDay(subDays(startOfThisWeek, 1))  // FIXED: End of last week
+      });
+    }).length;
+
+    // FIXED: Count contacts this month using contact's created_at with proper end time [web:396][web:405]
+    const thisMonthContacts = contactsWithValidDates.filter((c) => {
+      const createdAt = parseISO(c.created_at);
+      return isWithinInterval(createdAt, {
+        start: startOfThisMonth,
+        end: endOfDay(now)  // FIXED: Include full current day
+      });
+    }).length;
+
+    // Count contacts last month using contact's created_at
+    const lastMonthContacts = contactsWithValidDates.filter((c) => {
+      const createdAt = parseISO(c.created_at);
+      return isWithinInterval(createdAt, {
+        start: startOfLastMonth,
+        end: endOfLastMonth
+      });
     }).length;
 
     // Calculate dynamic daily average for this month
     const dailyAverage = Math.round((thisMonthContacts / daysPassed) * 10) / 10;
 
-    const sourceAnalysis = {};
-    contacts.forEach((contact) => {
-      const source = contact.added_by || "Direct Entry";
-      sourceAnalysis[source] = (sourceAnalysis[source] || 0) + 1;
+    // TOP UNIQUE CONTRIBUTORS analysis using contact's created_at
+    const contributorAnalysis = new Map();
+
+    contactsWithValidDates.forEach((contact) => {
+      const contributor = contact.added_by || "Direct Entry";
+
+      if (!contributorAnalysis.has(contributor)) {
+        contributorAnalysis.set(contributor, {
+          totalContacts: 0,
+          firstContribution: parseISO(contact.created_at),
+          latestContribution: parseISO(contact.created_at)
+        });
+      }
+
+      const contributorData = contributorAnalysis.get(contributor);
+      contributorData.totalContacts++;
+
+      const createdAt = parseISO(contact.created_at);
+      if (createdAt < contributorData.firstContribution) {
+        contributorData.firstContribution = createdAt;
+      }
+      if (createdAt > contributorData.latestContribution) {
+        contributorData.latestContribution = createdAt;
+      }
     });
 
-    const topSources = Object.entries(sourceAnalysis)
+    // Get top unique contributors sorted by total contacts
+    const topSources = Array.from(contributorAnalysis.entries())
+      .map(([contributor, data]) => [contributor, data.totalContacts])
       .sort(([, a], [, b]) => b - a)
       .slice(0, 3);
 
-    // Count categories for this month only
+    // FIXED: Count categories for this month using contact's created_at with proper end time
     const monthlyCategories = { A: 0, B: 0, C: 0 };
-    contacts.forEach((contact) => {
-      if (contact.created_at) {
-        const createdDate = parseISO(contact.created_at);
-        if (createdDate >= startOfThisMonth && createdDate <= new Date()) {
-          if (
-            contact.category &&
-            monthlyCategories.hasOwnProperty(contact.category)
-          ) {
-            monthlyCategories[contact.category]++;
-          }
+    contactsWithValidDates.forEach((contact) => {
+      const createdAt = parseISO(contact.created_at);
+      if (isWithinInterval(createdAt, { start: startOfThisMonth, end: endOfDay(now) })) {  // FIXED
+        if (contact.category && monthlyCategories.hasOwnProperty(contact.category)) {
+          monthlyCategories[contact.category]++;
         }
       }
     });
@@ -115,15 +141,12 @@ const ContactSourceAnalytics = ({ contacts }) => {
     // Count total categories (all time)
     const totalCategories = { A: 0, B: 0, C: 0 };
     contacts.forEach((contact) => {
-      if (
-        contact.category &&
-        totalCategories.hasOwnProperty(contact.category)
-      ) {
+      if (contact.category && totalCategories.hasOwnProperty(contact.category)) {
         totalCategories[contact.category]++;
       }
     });
 
-    // Calculate daily trend (today vs yesterday new contacts)
+    // Calculate trends
     const dailyNewContactsTrend = calculateTrendPercentage(
       todayNewContacts,
       yesterdayNewContacts
@@ -237,8 +260,8 @@ const ContactSourceAnalytics = ({ contacts }) => {
               </div>
               <div className="mt-3">
                 <p className="text-sm text-blue-800">
-                  <strong>{sourceData.lastWeekCount}</strong> last week vs{" "}
-                  <strong>{sourceData.thisWeekCount}</strong> this week
+                  <strong>{sourceData.thisWeekCount}</strong> this week vs{" "}
+                  <strong>{sourceData.lastWeekCount}</strong> last week
                 </p>
               </div>
             </div>
@@ -289,7 +312,7 @@ const ContactSourceAnalytics = ({ contacts }) => {
 
         <div>
           <h3 className="text-sm font-medium text-gray-700 mb-2">
-            Top Contributors
+            Top Unique Contact Contributors
           </h3>
           <div className="space-y-2">
             {sourceData.topSources.map(([source, count], index) => (
@@ -299,13 +322,12 @@ const ContactSourceAnalytics = ({ contacts }) => {
               >
                 <div className="flex items-center gap-2">
                   <div
-                    className={`w-2 h-2 rounded-full ${
-                      index === 0
+                    className={`w-2 h-2 rounded-full ${index === 0
                         ? "bg-blue-500"
                         : index === 1
-                        ? "bg-green-500"
-                        : "bg-orange-500"
-                    }`}
+                          ? "bg-green-500"
+                          : "bg-orange-500"
+                      }`}
                   ></div>
                   <span className="text-sm font-medium text-gray-900">
                     {source.length > 15

@@ -1,0 +1,16 @@
+// User Login → LoginAuth.js → Creates JWT → Sets HTTP Cookie → 
+// AuthStore updates → PrivateRoutes allows access → Applayout renders → 
+// Every request uses axios → Sends cookies → AuthMiddleware verifies → 
+// Protected routes accessible
+
+
+
+Google Sign-In Flow:
+User → Google → Google ID Token → Your Server → Verify with Google → 
+Create YOUR JWT → Set Cookie → Route Protection uses YOUR JWT
+
+Normal Login Flow:  
+User → Your Server → Verify Credentials → Create YOUR JWT → 
+Set Cookie → Route Protection uses YOUR JWT
+
+Final Result: IDENTICAL session management for both methods! 🎯

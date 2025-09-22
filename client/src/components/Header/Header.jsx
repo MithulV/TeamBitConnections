@@ -5,30 +5,43 @@ import { useAuthStore } from "../../store/AuthStore";
 function Header() {
   const { email, name, profilePicture } = useAuthStore();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [imageError, setImageError] = useState(false);
-  const [imgSrc, setImgSrc] = useState(Avatar); // Default to Avatar
+  const [imgSrc, setImgSrc] = useState(Avatar);
+  const [hasImageError, setHasImageError] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Set image source with fallback logic
+  // Handle image source logic
   useEffect(() => {
-    if (profilePicture && !imageError) {
-      // Reset error state when we get a new profile picture
-      setImageError(false);
+    setHasImageError(false);
+    setIsLoading(true);
+
+    if (profilePicture && profilePicture !== "null") {
       setImgSrc(profilePicture);
     } else {
       setImgSrc(Avatar);
+      setIsLoading(false);
     }
-  }, [profilePicture, imageError]);
+  }, [profilePicture]);
 
-  // Check for mobile menu state by observing body class
+  // Handle image load success
+  const handleImageLoad = () => {
+    setIsLoading(false);
+    setHasImageError(false);
+  };
+
+  // Handle image load error
+  const handleImageError = () => {
+    setIsLoading(false);
+    setHasImageError(true);
+    setImgSrc(Avatar);
+  };
+
+  // Check for mobile menu state
   useEffect(() => {
     const checkMobileMenuState = () => {
       setIsMobileMenuOpen(document.body.classList.contains("mobile-menu-open"));
     };
 
-    // Initial check
     checkMobileMenuState();
-
-    // Create observer to watch for class changes
     const observer = new MutationObserver(checkMobileMenuState);
     observer.observe(document.body, {
       attributes: true,
@@ -38,7 +51,6 @@ function Header() {
     return () => observer.disconnect();
   }, []);
 
-  // Hide header when mobile menu is open
   if (isMobileMenuOpen) {
     return null;
   }
@@ -46,31 +58,56 @@ function Header() {
   return (
     <div className="relative md:sticky top-0 z-50 px-8 py-5 bg-white">
       <div className="flex justify-end w-full">
-        {/* User Info - Hidden on mobile, visible on desktop - Always positioned on the right */}
         <div className="hidden md:flex items-center gap-4">
           <div className="text-right">
             <p className="text-lg font-semibold text-gray-800 whitespace-nowrap">
               {name || email || "user@gmail.com"}
             </p>
             <p className="text-sm text-gray-500 whitespace-nowrap">
-              Welcome back !
+              Welcome back!
             </p>
           </div>
-          <div className="w-12 h-12 flex-shrink-0">
-            <img
-              src={imgSrc}
-              alt="user profile"
-              className="w-full h-full rounded-full object-cover shadow-sm"
-              onLoad={() => {
-                setImageError(false);
-              }}
-              onError={(e) => {
-                setImageError(true);
-                if (e.target.src !== Avatar) {
-                  e.target.src = Avatar; // Fallback to default avatar
-                }
-              }}
-            />
+          <div className="w-12 h-12 flex-shrink-0 relative">
+            {isLoading && (
+              <div className="absolute inset-0 bg-gray-200 rounded-full animate-pulse" />
+            )}
+            
+            {/* Use SVG with foreignObject for Google profile pictures */}
+            <svg 
+              width="48" 
+              height="48" 
+              className="rounded-full overflow-hidden shadow-sm"
+              style={{ display: 'block' }}
+            >
+              <defs>
+                <clipPath id="avatar-clip">
+                  <circle cx="24" cy="24" r="24" />
+                </clipPath>
+              </defs>
+              <foreignObject 
+                x="0" 
+                y="0" 
+                width="48" 
+                height="48"
+                clipPath="url(#avatar-clip)"
+              >
+                <img
+                  xmlns="http://www.w3.org/1999/xhtml"
+                  src={imgSrc}
+                  alt="user profile"
+                  style={{
+                    width: '48px',
+                    height: '48px',
+                    objectFit: 'cover',
+                    display: 'block',
+                    opacity: isLoading ? 0 : 1,
+                    transition: 'opacity 200ms'
+                  }}
+                  onLoad={handleImageLoad}
+                  onError={handleImageError}
+                />
+              </foreignObject>
+            </svg>
           </div>
         </div>
       </div>

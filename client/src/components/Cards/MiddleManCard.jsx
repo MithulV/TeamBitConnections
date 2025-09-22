@@ -17,7 +17,7 @@ const MiddleManCard = ({ contact, onDelete, onEdit }) => {
   const [visibleSkillsCount, setVisibleSkillsCount] = useState(2);
 
   const handleViewProfile = () => {
-    navigate(`/profile/${contact.id}`, { state: contact });
+    navigate(`/profile/${contact.contact_id}`, { state: contact });
   };
 
   const handleDeleteClick = () => {

@@ -28,7 +28,86 @@ export const GetFilteredContacts = async (req, res) => {
     limit = 20,
     sort_by = "name",
     sort_order = "ASC",
+    rejected = "false",
+    include_rejected = "false",
+    // NEW: Add contact_id parameter [web:537][web:539]
+    contact_id,
   } = queryParams;
+
+  // NEW: Handle single contact retrieval by contact_id [web:540][web:542]
+  if (contact_id) {
+    try {
+      console.log("Fetching specific contact by ID:", contact_id);
+
+      const contact = await db`
+        SELECT DISTINCT 
+          c.*,
+          ca.street, ca.city, ca.state, ca.country, ca.zipcode,
+          ce.pg_course_name, ce.pg_college, ce.pg_university, 
+          ce.pg_from_date, ce.pg_to_date,
+          ce.ug_course_name, ce.ug_college, ce.ug_university, 
+          ce.ug_from_date, ce.ug_to_date
+        FROM contact c
+        LEFT JOIN contact_address ca ON c.contact_id = ca.contact_id
+        LEFT JOIN contact_education ce ON c.contact_id = ce.contact_id
+        LEFT JOIN contact_experience exp ON c.contact_id = exp.contact_id
+        LEFT JOIN event e ON c.contact_id = e.contact_id
+        WHERE c.contact_id = ${contact_id}
+        ORDER BY c.name ASC
+      `;
+
+      if (contact.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "Contact not found",
+          error: `No contact found with ID: ${contact_id}`
+        });
+      }
+
+      const contactsWithDetails = await Promise.all(
+        contact.map(async (contactRecord) => {
+          const experiences = await db`
+            SELECT * FROM contact_experience 
+            WHERE contact_id = ${contactRecord.contact_id} 
+            ORDER BY from_date DESC
+          `;
+
+          const events = await db`
+            SELECT * FROM event 
+            WHERE contact_id = ${contactRecord.contact_id} 
+            ORDER BY event_date DESC
+          `;
+
+          return {
+            ...contactRecord,
+            experiences: experiences,
+            events: events,
+          };
+        })
+      );
+
+      return res.status(200).json({
+        success: true,
+        message: "Contact retrieved successfully!",
+        data: {
+          contact: contactsWithDetails[0],
+          is_single_contact: true,
+        },
+        filters_applied: {
+          contact_id: contact_id,
+          single_contact_fetch: true
+        },
+      });
+
+    } catch (contactError) {
+      console.error("Error fetching contact by ID:", contactError);
+      return res.status(500).json({
+        success: false,
+        message: "Error retrieving contact data",
+        error: contactError.message
+      });
+    }
+  }
 
   const category = normalizeParam(queryParams.category);
   const gender = normalizeParam(queryParams.gender);
@@ -54,6 +133,20 @@ export const GetFilteredContacts = async (req, res) => {
 
   try {
     const conditions = [];
+
+    // NEW: Add rejected filter by default
+    if (include_rejected === "true") {
+      // Don't filter by rejected status - show all
+      console.log("Including both rejected and non-rejected contacts");
+    } else if (rejected === "true") {
+      // Only show rejected contacts
+      conditions.push(`(c.rejected = true OR c.rejected IS NULL)`);
+      console.log("Filtering to show only rejected contacts");
+    } else {
+      // Default: Only show non-rejected contacts
+      conditions.push(`(c.rejected = false OR c.rejected IS NULL)`);
+      console.log("Default filter: showing only non-rejected contacts");
+    }
 
     if (name) conditions.push(`c.name ILIKE '%${name}%'`);
     if (phone_number)
@@ -312,6 +405,14 @@ export const GetFilteredContacts = async (req, res) => {
           has_next: page < totalPages,
           has_previous: page > 1,
         },
+        filters_applied: {
+          rejected_filter: include_rejected === "true" 
+            ? "All contacts (rejected and non-rejected)" 
+            : rejected === "true" 
+              ? "Only rejected contacts"
+              : "Only non-rejected contacts (default)",
+          other_filters: conditions.length - 1, // Subtract 1 for the rejected filter
+        },
       },
     });
   } catch (err) {
@@ -324,9 +425,10 @@ export const GetFilteredContacts = async (req, res) => {
   }
 };
 
+
 export const GetFilterOptions = async (req, res) => {
   try {
-    // Get the user's category from request (could be from auth middleware, query param, or body)
+    // Get the user's category from request
     const userCategory = req.query.category;
     console.log(userCategory);
     if (!userCategory) {
@@ -335,6 +437,9 @@ export const GetFilterOptions = async (req, res) => {
         error: "User category is required",
       });
     }
+
+    // NEW: Add rejected filter for filter options as well
+    const { rejected = "false", include_rejected = "false" } = req.query;
 
     // Build the category filter condition
     let categoryFilter = "";
@@ -357,110 +462,123 @@ export const GetFilterOptions = async (req, res) => {
       });
     }
 
+    // NEW: Add rejected filter for all filter options queries
+    let rejectedFilter = "";
+    if (include_rejected === "true") {
+      // Don't filter by rejected status - show all
+      rejectedFilter = "";
+    } else if (rejected === "true") {
+      // Only show rejected contacts
+      rejectedFilter = "AND (c.rejected = true OR c.rejected IS NULL)";
+    } else {
+      // Default: Only show non-rejected contacts
+      rejectedFilter = "AND (c.rejected = false OR c.rejected IS NULL)";
+    }
+
     const genders = await db`
             SELECT DISTINCT gender as value, COUNT(*)::text as count 
-            FROM contact c WHERE gender IS NOT NULL ${
-              categoryFilter ? db.unsafe(categoryFilter) : db``
-            }
+            FROM contact c WHERE gender IS NOT NULL 
+            ${categoryFilter ? db.unsafe(categoryFilter) : db``}
+            ${rejectedFilter ? db.unsafe(rejectedFilter) : db``}
             GROUP BY gender ORDER BY count DESC
         `;
 
     const categories = await db`
             SELECT DISTINCT category as value, COUNT(*)::text as count 
-            FROM contact c WHERE category IS NOT NULL ${
-              categoryFilter ? db.unsafe(categoryFilter) : db``
-            }
+            FROM contact c WHERE category IS NOT NULL 
+            ${categoryFilter ? db.unsafe(categoryFilter) : db``}
+            ${rejectedFilter ? db.unsafe(rejectedFilter) : db``}
             GROUP BY category ORDER BY count DESC
         `;
 
     const nationalities = await db`
             SELECT DISTINCT nationality as value, COUNT(*)::text as count 
             FROM contact c 
-            WHERE nationality IS NOT NULL ${
-              categoryFilter ? db.unsafe(categoryFilter) : db``
-            }
+            WHERE nationality IS NOT NULL 
+            ${categoryFilter ? db.unsafe(categoryFilter) : db``}
+            ${rejectedFilter ? db.unsafe(rejectedFilter) : db``}
             GROUP BY nationality ORDER BY count DESC
         `;
 
     const maritalStatuses = await db`
             SELECT DISTINCT marital_status as value, COUNT(*)::text as count 
             FROM contact c 
-            WHERE marital_status IS NOT NULL ${
-              categoryFilter ? db.unsafe(categoryFilter) : db``
-            }
+            WHERE marital_status IS NOT NULL 
+            ${categoryFilter ? db.unsafe(categoryFilter) : db``}
+            ${rejectedFilter ? db.unsafe(rejectedFilter) : db``}
             GROUP BY marital_status ORDER BY count DESC
         `;
 
     const countries = await db`
             SELECT DISTINCT ca.country as value, COUNT(DISTINCT c.contact_id)::text as count
             FROM contact c JOIN contact_address ca ON c.contact_id = ca.contact_id
-            WHERE ca.country IS NOT NULL ${
-              categoryFilter ? db.unsafe(categoryFilter) : db``
-            }
+            WHERE ca.country IS NOT NULL 
+            ${categoryFilter ? db.unsafe(categoryFilter) : db``}
+            ${rejectedFilter ? db.unsafe(rejectedFilter) : db``}
             GROUP BY ca.country ORDER BY count DESC
         `;
 
     const states = await db`
             SELECT DISTINCT ca.state as value, COUNT(DISTINCT c.contact_id)::text as count
             FROM contact c JOIN contact_address ca ON c.contact_id = ca.contact_id
-            WHERE ca.state IS NOT NULL ${
-              categoryFilter ? db.unsafe(categoryFilter) : db``
-            }
+            WHERE ca.state IS NOT NULL 
+            ${categoryFilter ? db.unsafe(categoryFilter) : db``}
+            ${rejectedFilter ? db.unsafe(rejectedFilter) : db``}
             GROUP BY ca.state ORDER BY count DESC
         `;
 
     const cities = await db`
             SELECT DISTINCT ca.city as value, COUNT(DISTINCT c.contact_id)::text as count
             FROM contact c JOIN contact_address ca ON c.contact_id = ca.contact_id
-            WHERE ca.city IS NOT NULL ${
-              categoryFilter ? db.unsafe(categoryFilter) : db``
-            }
+            WHERE ca.city IS NOT NULL 
+            ${categoryFilter ? db.unsafe(categoryFilter) : db``}
+            ${rejectedFilter ? db.unsafe(rejectedFilter) : db``}
             GROUP BY ca.city ORDER BY count DESC
         `;
 
     const companies = await db`
             SELECT DISTINCT exp.company as value, COUNT(DISTINCT c.contact_id)::text as count
             FROM contact c JOIN contact_experience exp ON c.contact_id = exp.contact_id
-            WHERE exp.company IS NOT NULL ${
-              categoryFilter ? db.unsafe(categoryFilter) : db``
-            }
+            WHERE exp.company IS NOT NULL 
+            ${categoryFilter ? db.unsafe(categoryFilter) : db``}
+            ${rejectedFilter ? db.unsafe(rejectedFilter) : db``}
             GROUP BY exp.company ORDER BY count DESC
         `;
 
     const jobTitles = await db`
             SELECT DISTINCT exp.job_title as value, COUNT(DISTINCT c.contact_id)::text as count
             FROM contact c JOIN contact_experience exp ON c.contact_id = exp.contact_id
-            WHERE exp.job_title IS NOT NULL ${
-              categoryFilter ? db.unsafe(categoryFilter) : db``
-            }
+            WHERE exp.job_title IS NOT NULL 
+            ${categoryFilter ? db.unsafe(categoryFilter) : db``}
+            ${rejectedFilter ? db.unsafe(rejectedFilter) : db``}
             GROUP BY exp.job_title ORDER BY count DESC
         `;
 
     const pgCourses = await db`
             SELECT DISTINCT ce.pg_course_name as value, COUNT(DISTINCT c.contact_id)::text as count
             FROM contact c JOIN contact_education ce ON c.contact_id = ce.contact_id
-            WHERE ce.pg_course_name IS NOT NULL ${
-              categoryFilter ? db.unsafe(categoryFilter) : db``
-            }
+            WHERE ce.pg_course_name IS NOT NULL 
+            ${categoryFilter ? db.unsafe(categoryFilter) : db``}
+            ${rejectedFilter ? db.unsafe(rejectedFilter) : db``}
             GROUP BY ce.pg_course_name ORDER BY count DESC
         `;
 
     const ugCourses = await db`
             SELECT DISTINCT ce.ug_course_name as value, COUNT(DISTINCT c.contact_id)::text as count
             FROM contact c JOIN contact_education ce ON c.contact_id = ce.contact_id
-            WHERE ce.ug_course_name IS NOT NULL ${
-              categoryFilter ? db.unsafe(categoryFilter) : db``
-            }
+            WHERE ce.ug_course_name IS NOT NULL 
+            ${categoryFilter ? db.unsafe(categoryFilter) : db``}
+            ${rejectedFilter ? db.unsafe(rejectedFilter) : db``}
             GROUP BY ce.ug_course_name ORDER BY count DESC
         `;
 
     // For skills, we need to get the data first and then filter
     const skillsQuery =
       userCategory.toLowerCase() === "admin"
-        ? db`SELECT skills FROM contact WHERE skills IS NOT NULL AND skills != ''`
-        : db`SELECT skills FROM contact c WHERE skills IS NOT NULL AND skills != '' ${db.unsafe(
-            categoryFilter
-          )}`;
+        ? rejectedFilter
+          ? db`SELECT skills FROM contact c WHERE skills IS NOT NULL AND skills != '' ${db.unsafe(rejectedFilter)}`
+          : db`SELECT skills FROM contact WHERE skills IS NOT NULL AND skills != ''`
+        : db`SELECT skills FROM contact c WHERE skills IS NOT NULL AND skills != '' ${db.unsafe(categoryFilter)} ${rejectedFilter ? db.unsafe(rejectedFilter) : db``}`;
 
     const skillsData = await skillsQuery;
 
@@ -497,10 +615,17 @@ export const GetFilterOptions = async (req, res) => {
         ug_courses: ugCourses,
         skills,
       },
-      filter_applied:
-        userCategory !== "admin"
-          ? `Category filtered for ${userCategory}`
-          : "No category filter (admin access)",
+      filters_applied: {
+        category_filter:
+          userCategory !== "admin"
+            ? `Category filtered for ${userCategory}`
+            : "No category filter (admin access)",
+        rejected_filter: include_rejected === "true" 
+          ? "All contacts (rejected and non-rejected)" 
+          : rejected === "true" 
+            ? "Only rejected contacts"
+            : "Only non-rejected contacts (default)",
+      },
     });
   } catch (err) {
     console.error("GetFilterOptions error:", err);
