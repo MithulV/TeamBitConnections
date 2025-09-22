@@ -16,21 +16,23 @@ const NetworkTreeVisualization = ({ networkData, searchTerm, filterType }) => {
   const [nodeDragStart, setNodeDragStart] = useState({ x: 0, y: 0 });
   const [nodePositions, setNodePositions] = useState(new Map());
   
+  // Image cache state
+  const [primedImages, setPrimedImages] = useState(new Set());
+  
   const svgRef = useRef(null);
   const containerRef = useRef(null);
   const canvasRef = useRef(null);
 
   // Infinite canvas dimensions
-  const CANVAS_SIZE = 20000; // Large canvas size for infinite feel
+  const CANVAS_SIZE = 20000;
   const CANVAS_CENTER = CANVAS_SIZE / 2;
 
-  // Default avatar generator based on name/email
+  // Generate default avatar
   const generateDefaultAvatar = (name, email) => {
     const initials = name 
       ? name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
       : email ? email[0].toUpperCase() : '?';
     
-    // Generate a consistent color based on the name/email
     const colors = [
       '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FECA57',
       '#FF9FF3', '#54A0FF', '#5F27CD', '#00D2D3', '#FF9F43'
@@ -48,26 +50,52 @@ const NetworkTreeVisualization = ({ networkData, searchTerm, filterType }) => {
     `)}`;
   };
 
-  // Enhanced avatar URL function with better profile picture handling
+  // **KEY FIX**: Hidden iframe technique to prime the browser cache
+  const primeImageCache = useCallback((imageUrls) => {
+    imageUrls.forEach(url => {
+      if (!url || primedImages.has(url)) return;
+      
+      // Method 1: Create hidden iframe to prime cache
+      const iframe = document.createElement('iframe');
+      iframe.style.display = 'none';
+      iframe.style.width = '1px';
+      iframe.style.height = '1px';
+      iframe.style.position = 'absolute';
+      iframe.style.left = '-9999px';
+      iframe.src = `data:text/html,<html><body><img src="${url}" style="width:1px;height:1px;"></body></html>`;
+      
+      document.body.appendChild(iframe);
+      
+      // Remove iframe after cache priming
+      setTimeout(() => {
+        if (iframe.parentNode) {
+          document.body.removeChild(iframe);
+        }
+      }, 3000);
+      
+      // Method 2: Also use invisible Image object as backup
+      const img = new Image();
+      img.crossOrigin = 'Anonymous'; // This might fail but primes cache anyway
+      img.onload = () => setPrimedImages(prev => new Set(prev).add(url));
+      img.onerror = () => setPrimedImages(prev => new Set(prev).add(url)); // Still mark as primed
+      img.src = url;
+    });
+  }, [primedImages]);
+
+  // Enhanced avatar URL function
   const getAvatarUrl = (node) => {
     console.log('Getting avatar for node:', node.name, 'Profile picture:', node.profile_picture || node.nodeData?.profile_picture);
     
-    // For users, try profile_picture from multiple possible sources
     if (node.type === 'user') {
-      // Try direct property first
       let profilePicture = node.profile_picture;
       
-      // Then try from nodeData
       if (!profilePicture && node.nodeData) {
         profilePicture = node.nodeData.profile_picture;
       }
       
-      // If we have a profile picture URL, validate and use it
       if (profilePicture && typeof profilePicture === 'string' && profilePicture.trim() !== '') {
-        // Clean up the URL - remove any surrounding brackets or extra characters
         const cleanUrl = profilePicture.trim().replace(/^\[|\]$/g, '');
         
-        // Validate that it looks like a URL
         if (cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://')) {
           console.log('Using profile picture:', cleanUrl);
           return cleanUrl;
@@ -75,7 +103,6 @@ const NetworkTreeVisualization = ({ networkData, searchTerm, filterType }) => {
       }
     }
     
-    // For contacts or if no profile picture, generate default avatar
     console.log('Using default avatar for:', node.name);
     return generateDefaultAvatar(node.name, node.email);
   };
@@ -89,11 +116,10 @@ const NetworkTreeVisualization = ({ networkData, searchTerm, filterType }) => {
     return colors[index % colors.length];
   };
 
-  // More reliable text measurement using Canvas API
+  // Text measurement
   const measureTextWidth = (text, fontSize = 14, fontFamily = "Arial, sans-serif", fontWeight = "bold") => {
     if (!text) return 0;
     
-    // Create canvas for text measurement if not exists
     if (!canvasRef.current) {
       canvasRef.current = document.createElement('canvas');
     }
@@ -101,31 +127,26 @@ const NetworkTreeVisualization = ({ networkData, searchTerm, filterType }) => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     
-    // Set font properties
     ctx.font = `${fontWeight} ${fontSize}px ${fontFamily}`;
     
-    // Measure text width
     const metrics = ctx.measureText(text);
     const width = metrics.width;
     
     return width;
   };
 
-  // Calculate node dimensions to fit full text with proper padding
+  // Calculate node dimensions
   const getNodeDimensions = (node) => {
-    const minWidth = 200; // Minimum width
-    const avatarSpace = 85; // Space from left edge to start of text
-    const rightPadding = 30; // Right padding for safety
+    const minWidth = 200;
+    const avatarSpace = 85;
+    const rightPadding = 30;
     
-    // Measure both name and title using canvas
     const nameWidth = measureTextWidth(node.name || "Unknown", 14, "Arial, sans-serif", "bold");
     const titleWidth = measureTextWidth(node.title || "user", 11, "Arial, sans-serif", "normal");
     
-    // Use the larger of the two text widths
     const maxTextWidth = Math.max(nameWidth, titleWidth);
     const requiredWidth = avatarSpace + maxTextWidth + rightPadding;
     
-    // Final width calculation
     const finalWidth = Math.max(requiredWidth, minWidth);
     
     return {
@@ -136,7 +157,7 @@ const NetworkTreeVisualization = ({ networkData, searchTerm, filterType }) => {
 
   const NODE_HEIGHT = 100;
 
-  // Convert data to tree format with unique IDs
+  // Convert data to tree format
   const convertToTreeFormat = (data) => {
     if (!data?.networkData?.nodes?.length) return null;
     
@@ -158,7 +179,6 @@ const NetworkTreeVisualization = ({ networkData, searchTerm, filterType }) => {
 
     const rootNodes = nodes.filter(node => !hasParent.has(node.id) && node.type === "user");
 
-    // Counter for generating unique node IDs
     let nodeCounter = 0;
 
     const buildNode = (nodeId, level = 0, index = 0) => {
@@ -170,18 +190,17 @@ const NetworkTreeVisualization = ({ networkData, searchTerm, filterType }) => {
         buildNode(childId, level + 1, childIndex)
       ).filter(Boolean);
 
-      // Generate unique ID for React keys
       const uniqueId = `node-${nodeCounter++}-${nodeId}`;
 
       const nodeData = {
-        id: uniqueId, // Use unique ID for React keys
-        originalId: node.id.toString(), // Keep original ID for reference
+        id: uniqueId,
+        originalId: node.id.toString(),
         name: node.name || node.email?.split('@')[0] || "Unknown",
         fullName: node.name || node.email || "Unknown",
         email: node.email,
         title: node.title || node.type || "user",
-        imageURL: getAvatarUrl(node), // Use enhanced avatar logic
-        nodeData: { ...node }, // Store all original data
+        imageURL: getAvatarUrl(node),
+        nodeData: { ...node },
         children: childNodes,
         x: 0,
         y: 0,
@@ -190,7 +209,6 @@ const NetworkTreeVisualization = ({ networkData, searchTerm, filterType }) => {
         color: getNodeColor(node, level === 0 ? 0 : index + 1)
       };
 
-      // Calculate dimensions to fit full text
       const dimensions = getNodeDimensions(nodeData);
       nodeData.width = dimensions.width;
       nodeData.height = dimensions.height;
@@ -226,7 +244,7 @@ const NetworkTreeVisualization = ({ networkData, searchTerm, filterType }) => {
     }
   };
 
-  // Enhanced positioning algorithm - center the tree in the infinite canvas
+  // Enhanced positioning algorithm
   const calculatePositions = (node, x = CANVAS_CENTER, y = CANVAS_CENTER + 100, siblingIndex = 0, siblingCount = 1) => {
     if (!node) return;
 
@@ -270,6 +288,21 @@ const NetworkTreeVisualization = ({ networkData, searchTerm, filterType }) => {
     }
   };
 
+  // Collect all image URLs from tree
+  const collectImageUrls = (node, urls = []) => {
+    if (!node) return urls;
+    
+    if (node.imageURL && node.imageURL.startsWith('http')) {
+      urls.push(node.imageURL);
+    }
+    
+    if (node.children) {
+      node.children.forEach(child => collectImageUrls(child, urls));
+    }
+    
+    return urls;
+  };
+
   const getAllNodeIds = (node, ids = []) => {
     if (!node) return ids;
     ids.push(node.id);
@@ -300,7 +333,6 @@ const NetworkTreeVisualization = ({ networkData, searchTerm, filterType }) => {
   // Node drag handlers
   const handleNodeMouseDown = (e, node) => {
     if (e.shiftKey || e.ctrlKey) {
-      // Only allow dragging when Shift or Ctrl is held
       e.stopPropagation();
       e.preventDefault();
       
@@ -321,7 +353,6 @@ const NetworkTreeVisualization = ({ networkData, searchTerm, filterType }) => {
       
       console.log('Started dragging node:', node.name);
     } else {
-      // Normal click behavior
       selectNode(node, e);
     }
   };
@@ -352,25 +383,22 @@ const NetworkTreeVisualization = ({ networkData, searchTerm, filterType }) => {
     }
   };
 
-  // FIXED: Enhanced touch handlers that properly handle both tap and drag on mobile
+  // Enhanced touch handlers
   const handleNodeTouchStart = (e, node) => {
     if (e.touches.length === 1) {
       const touch = e.touches[0];
       
       e.stopPropagation();
       
-      // Store initial touch position to detect movement
       const initialTouch = {
         x: touch.clientX,
         y: touch.clientY,
         time: Date.now()
       };
       
-      // Store on the element for later reference
       e.currentTarget.initialTouch = initialTouch;
       e.currentTarget.nodeRef = node;
       
-      // Set up for potential dragging
       setIsDraggingNode(true);
       setDraggedNode(node);
       
@@ -393,13 +421,11 @@ const NetworkTreeVisualization = ({ networkData, searchTerm, filterType }) => {
       const touch = e.touches[0];
       const initialTouch = e.currentTarget.initialTouch;
       
-      // Calculate movement distance
       const moveDistance = Math.sqrt(
         Math.pow(touch.clientX - initialTouch.x, 2) + 
         Math.pow(touch.clientY - initialTouch.y, 2)
       );
       
-      // Only start preventing default and dragging if moved more than 10px
       if (moveDistance > 10) {
         e.preventDefault();
         
@@ -414,7 +440,6 @@ const NetworkTreeVisualization = ({ networkData, searchTerm, filterType }) => {
         
         updateNodePosition(draggedNode.id, newX, newY);
         
-        // Mark that we actually dragged
         e.currentTarget.didDrag = true;
       }
     }
@@ -426,20 +451,17 @@ const NetworkTreeVisualization = ({ networkData, searchTerm, filterType }) => {
       const node = e.currentTarget.nodeRef;
       const initialTouch = e.currentTarget.initialTouch;
       
-      // Clean up drag state
       setIsDraggingNode(false);
       setDraggedNode(null);
       setNodeDragStart({ x: 0, y: 0 });
       
-      // Clean up element references
       delete e.currentTarget.didDrag;
       delete e.currentTarget.nodeRef;
       delete e.currentTarget.initialTouch;
       
-      // If no dragging occurred and it was a quick tap, select the node
       if (!didDrag && node && initialTouch) {
         const timeDiff = Date.now() - initialTouch.time;
-        if (timeDiff < 300) { // Quick tap (less than 300ms)
+        if (timeDiff < 300) {
           console.log('Mobile tap detected, selecting node:', node.name);
           selectNode(node, e);
         }
@@ -526,14 +548,7 @@ const NetworkTreeVisualization = ({ networkData, searchTerm, filterType }) => {
     }).filter(Boolean);
   };
 
-  // Enhanced avatar image handler with better error handling
-  const handleAvatarError = (e, node) => {
-    console.log('Avatar failed to load for:', node.name, 'Original URL:', e.target.src);
-    const fallbackUrl = generateDefaultAvatar(node.name, node.email);
-    e.target.src = fallbackUrl;
-  };
-
-  // FIXED: Main effect for tree generation (only when data changes) - NO ZOOM DEPENDENCY
+  // **CRITICAL**: Main effect for tree generation with cache priming
   useEffect(() => {
     if (networkData) {
       const tree = convertToTreeFormat(networkData);
@@ -542,12 +557,29 @@ const NetworkTreeVisualization = ({ networkData, searchTerm, filterType }) => {
         setExpandedNodes(new Set(allNodeIds));
         
         calculatePositions(tree, CANVAS_CENTER, CANVAS_CENTER + 100);
-        setTreeData(tree);
+        
+        // **KEY**: Prime cache with all external image URLs BEFORE setting tree data
+        const imageUrls = collectImageUrls(tree).filter(url => 
+          url.startsWith('http') && 
+          (url.includes('googleusercontent.com') || url.includes('googleapis.com'))
+        );
+        
+        if (imageUrls.length > 0) {
+          console.log('Priming cache for images:', imageUrls);
+          primeImageCache(imageUrls);
+          
+          // Delay setting tree data to allow cache priming
+          setTimeout(() => {
+            setTreeData(tree);
+          }, 2000); // 2 second delay for cache priming
+        } else {
+          setTreeData(tree);
+        }
       }
     }
-  }, [networkData]); // 👈 REMOVED zoom dependency to prevent re-renders
+  }, [networkData, primeImageCache]);
 
-  // FIXED: Separate effect for initial view centering (only when tree is first created)
+  // Separate effect for initial view centering
   useEffect(() => {
     if (treeData && containerRef.current) {
       const containerRect = containerRef.current.getBoundingClientRect();
@@ -556,15 +588,14 @@ const NetworkTreeVisualization = ({ networkData, searchTerm, filterType }) => {
         y: containerRect.height / 2 - CANVAS_CENTER * zoom
       });
     }
-  }, [treeData]); // 👈 Only when tree data changes, not zoom
+  }, [treeData]);
 
-  // Event handlers for canvas panning
+  // Event handlers for canvas controls
   const handleZoomIn = () => setZoom(prev => Math.min(prev + 0.1, 3.0));
   const handleZoomOut = () => setZoom(prev => Math.max(prev - 0.1, 0.1));
   
   const handleResetView = () => {
     setZoom(0.9);
-    // Reset node positions
     setNodePositions(new Map());
     if (containerRef.current) {
       const containerRect = containerRef.current.getBoundingClientRect();
@@ -686,7 +717,7 @@ const NetworkTreeVisualization = ({ networkData, searchTerm, filterType }) => {
     if (e) {
       e.stopPropagation();
     }
-    console.log('Node selected:', node.name); // Debug log
+    console.log('Node selected:', node.name);
     setSelectedNode(node);
   };
 
@@ -733,11 +764,17 @@ const NetworkTreeVisualization = ({ networkData, searchTerm, filterType }) => {
     }
   };
 
+  const handleAvatarError = (e, node) => {
+    console.log('Avatar error for:', node.name);
+    e.target.src = generateDefaultAvatar(node.name, node.email);
+  };
+
   if (!treeData) {
     return (
       <div className="loading-container">
         <div className="loading-spinner"></div>
-        <p>Loading network tree...</p>
+        <p>Loading network tree and priming image cache...</p>
+        <small>This ensures Google profile pictures load properly</small>
       </div>
     );
   }
@@ -782,7 +819,7 @@ const NetworkTreeVisualization = ({ networkData, searchTerm, filterType }) => {
               height: `${CANVAS_SIZE}px`
             }}
           >
-            {/* Infinite grid background pattern */}
+            {/* Grid background */}
             <div 
               className="grid-background"
               style={{
@@ -822,7 +859,7 @@ const NetworkTreeVisualization = ({ networkData, searchTerm, filterType }) => {
                 ))}
               </g>
 
-              {/* Nodes with enhanced mobile touch handling */}
+              {/* Nodes */}
               <g className="nodes">
                 {visibleNodes.map((node) => {
                   const isSelected = selectedNode?.id === node.id;
@@ -832,10 +869,7 @@ const NetworkTreeVisualization = ({ networkData, searchTerm, filterType }) => {
                   const textStartX = -nodeWidth / 2 + 85;
                   const isBeingDragged = draggedNode?.id === node.id;
                   
-                  // Get node position (custom or original)
                   const nodePos = getNodePosition(node);
-                  
-                  // Online status indicator
                   const isOnline = node.nodeData?.is_online;
 
                   return (
@@ -878,7 +912,7 @@ const NetworkTreeVisualization = ({ networkData, searchTerm, filterType }) => {
                         <circle cx={-nodeWidth / 2 + 40} cy={-5} r={23} />
                       </clipPath>
                       
-                      {/* Avatar Image using foreignObject for better external URL support */}
+                      {/* Avatar Image using foreignObject - Now cache-primed */}
                       <foreignObject
                         x={-nodeWidth / 2 + 17}
                         y={-28}
@@ -887,9 +921,9 @@ const NetworkTreeVisualization = ({ networkData, searchTerm, filterType }) => {
                         clipPath={`url(#clip-${node.id})`}
                       >
                         <img
+                          xmlns="http://www.w3.org/1999/xhtml"
                           src={node.imageURL}
                           alt={node.name}
-                          className="avatar-image"
                           style={{
                             width: '46px',
                             height: '46px',
@@ -1005,7 +1039,7 @@ const NetworkTreeVisualization = ({ networkData, searchTerm, filterType }) => {
           </div>
         </div>
 
-        {/* Enhanced Details Panel */}
+        {/* Details Panel */}
         <div className="details-panel">
           <div className="panel-content">
             <h3 className="panel-title">Node Details</h3>
@@ -1026,7 +1060,6 @@ const NetworkTreeVisualization = ({ networkData, searchTerm, filterType }) => {
                       }}
                       onLoad={() => console.log('Details panel avatar loaded successfully')}
                     />
-                    {/* Online status for details panel */}
                     {selectedNode.nodeData?.is_online !== undefined && (
                       <div className={`online-indicator ${selectedNode.nodeData.is_online ? 'online' : 'offline'}`}>
                         {selectedNode.nodeData.is_online ? '🟢' : '🔴'}
