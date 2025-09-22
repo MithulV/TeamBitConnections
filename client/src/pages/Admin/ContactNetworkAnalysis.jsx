@@ -16,7 +16,7 @@ function ContactNetworkAnalysis() {
   const fetchNetworkData = async () => {
     try {
       setLoading(true);
-      const response = await api.get("/analyze-contact-network");
+      const response = await api.get("/api/analyze-contact-network");
       setNetworkData(response.data);
       console.log("Network data loaded:", response.data);
     } catch (err) {
