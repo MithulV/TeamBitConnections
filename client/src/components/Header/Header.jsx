@@ -8,7 +8,7 @@ function Header() {
   const [imgSrc, setImgSrc] = useState(Avatar);
   const [hasImageError, setHasImageError] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-
+  console.log("name:", name);
   // Handle image source logic
   useEffect(() => {
     setHasImageError(false);

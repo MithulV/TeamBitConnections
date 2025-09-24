@@ -83,6 +83,7 @@ function Navbar() {
         path: "/verify-records",
       },
       { name: "Tasks", icon: <NotebookText size={20} />, path: "/tasks" },
+      { name: "Refer Others", icon: <Waypoints size={20} />, path: "/refer" },
     ],
     catb: [
       { name: "Home", icon: <House size={20} />, path: "/" },
@@ -92,6 +93,7 @@ function Navbar() {
         path: "/verify-records",
       },
       { name: "Tasks", icon: <NotebookText size={20} />, path: "/tasks" },
+      { name: "Refer Others", icon: <Waypoints size={20} />, path: "/refer" },
     ],
     catc: [
       { name: "Home", icon: <House size={20} />, path: "/" },
@@ -101,6 +103,7 @@ function Navbar() {
         path: "/verify-records",
       },
       { name: "Tasks", icon: <NotebookText size={20} />, path: "/tasks" },
+      { name: "Refer Others", icon: <Waypoints size={20} />, path: "/refer" },
     ],
     admin: [
       { name: "Admin Panel", icon: <Shield size={20} />, path: "/" },
@@ -115,9 +118,10 @@ function Navbar() {
         path: "/all-entries",
       },
       { name: "Analysis", icon: <Microscope size={20} />, path: "/analysis" },
+      { name: "Refer Others", icon: <Waypoints size={20} />, path: "/refer" },
     ],
   };
-
+  
   // Get the menu items for the current role
   const currentMenuItems = menuItemsByRole[role] || [];
 
