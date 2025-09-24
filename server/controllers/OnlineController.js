@@ -75,7 +75,7 @@ export const markOfflineUsers = async () => {
             UPDATE login 
             SET is_online = FALSE, 
                 updated_at = NOW() 
-            WHERE last_seen < NOW() - INTERVAL '2 minutes'
+            WHERE last_seen < NOW() - INTERVAL '30 seconds'
             AND is_online = TRUE
         `;
         

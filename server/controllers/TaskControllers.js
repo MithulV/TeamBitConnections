@@ -6,11 +6,14 @@ import { logContactModification } from "./ModificationHistoryControllers.js";
 
 
 // Schedule updated_at 2 month check daily at 9:00 AM
-cron.schedule("0 9 * * *", async () => {
-    console.log("task : ", new Date());
-    await checkForTask();
+cron.schedule("* * * * *", async () => {
+    console.log("Running 2-month update check at:", new Date());
+    try {
+        await checkForTwoMonthUpdates();
+    } catch (error) {
+        console.error("Two month update check failed:", error);
+    }
 });
-
 
 // Schedule birthday check daily at 6:00 AM
 cron.schedule("0 6 * * *", async () => {
@@ -22,9 +25,8 @@ cron.schedule("0 6 * * *", async () => {
     }
 });
 
-
 // Schedule contact check daily at 7:00 AM (checks for 30 day intervals)
-cron.schedule("0 7 * * *", async () => {
+cron.schedule("* * * * *", async () => {
     console.log("Running daily contact check at:", new Date());
     try {
         await checkLastContactDate();
@@ -33,71 +35,190 @@ cron.schedule("0 7 * * *", async () => {
     }
 });
 
-
-const checkForTask = async () => {
+// Updated function to check for contacts needing updates (2 month check)
+const checkForTwoMonthUpdates = async () => {
     try {
-        const rows =
-            await db`SELECT DISTINCT c.contact_id FROM contact c INNER JOIN event e ON c.contact_id=e.contact_id WHERE e.verified = TRUE`;
-        console.log(`Found ${rows.length} verified contacts:`, rows);
+        console.log("Checking for contacts not updated in the last 2 months...");
 
-        // records whose updated_at date > 2 months will be handled here
-        for (const contact of rows) {
-            console.log(contact.contact_id);
-            if (contact.contact_id != undefined) {
-                await checkForUpdatedAtOneMonth(contact.contact_id);
-            }
+        // Query to find contacts where last UPDATE modification was more than 2 months ago
+        const contactsNeedingUpdate = await db`
+            WITH last_update_dates AS (
+                SELECT 
+                    c.contact_id,
+                    c.name,
+                    c.phone_number,
+                    c.email_address,
+                    c.category,
+                    c.created_at as contact_created_at,
+                    c.updated_at as contact_updated_at,
+                    MAX(CASE 
+                        WHEN cmh.modification_type = 'UPDATE' 
+                        THEN cmh.created_at 
+                        ELSE NULL 
+                    END) as last_update_date,
+                    COUNT(CASE 
+                        WHEN cmh.modification_type = 'UPDATE' 
+                        THEN 1 
+                        ELSE NULL 
+                    END) as total_updates
+                FROM contact c
+                LEFT JOIN contact_modification_history cmh ON c.contact_id = cmh.contact_id
+                WHERE c.contact_id IN (
+                    SELECT DISTINCT contact_id 
+                    FROM event 
+                    WHERE verified = TRUE
+                )
+                GROUP BY c.contact_id, c.name, c.phone_number, c.email_address, c.category, c.created_at, c.updated_at
+            )
+            SELECT 
+                contact_id,
+                name,
+                phone_number,
+                email_address,
+                category,
+                contact_created_at,
+                contact_updated_at,
+                last_update_date,
+                total_updates,
+                CASE 
+                    WHEN last_update_date IS NULL THEN 
+                        EXTRACT(DAY FROM (NOW() - COALESCE(contact_updated_at, contact_created_at)))
+                    ELSE 
+                        EXTRACT(DAY FROM (NOW() - GREATEST(last_update_date, COALESCE(contact_updated_at, contact_created_at))))
+                END as days_since_last_update
+            FROM last_update_dates
+            WHERE 
+                -- If no UPDATE traces in cmh, check contact table dates against 2 months
+                -- If UPDATE traces exist in cmh, check the most recent one against 2 months
+                (
+                    (total_updates = 0 AND COALESCE(contact_updated_at, contact_created_at) <= NOW() - INTERVAL '2 months')
+                    OR 
+                    (total_updates > 0 AND GREATEST(last_update_date, COALESCE(contact_updated_at, contact_created_at)) <= NOW() - INTERVAL '2 months')
+                )
+            ORDER BY days_since_last_update DESC
+        `;
+
+        console.log(`Found ${contactsNeedingUpdate.length} contacts needing detail updates:`,
+            contactsNeedingUpdate.map(c => ({
+                name: c.name,
+                days: Math.floor(c.days_since_last_update),
+                totalUpdates: c.total_updates,
+                lastUpdateDate: c.last_update_date ? new Date(c.last_update_date).toLocaleDateString() : 'Never',
+                contactUpdatedAt: c.contact_updated_at ? new Date(c.contact_updated_at).toLocaleDateString() : 'Never',
+                hasUpdateTraces: c.total_updates > 0 ? 'Yes' : 'No'
+            })));
+
+        // Create tasks for each contact that needs detail update
+        for (const contact of contactsNeedingUpdate) {
+            await createContactUpdateTask(contact);
         }
+
+        return {
+            total: contactsNeedingUpdate.length,
+            contacts: contactsNeedingUpdate
+        };
+
     } catch (error) {
-        console.error("Error in checkForTask:", error);
+        console.error("Error in checkForTwoMonthUpdates:", error);
+        throw error;
     }
 };
 
-
-const checkForUpdatedAtOneMonth = async (id) => {
+// Helper function to create contact update tasks
+const createContactUpdateTask = async (contact) => {
     try {
-        let result =
-            await db`SELECT * FROM contact WHERE contact_id=${id} AND updated_at <= NOW() - INTERVAL '2 month'`;
-        console.log(result);
+        const deadline = new Date();
+        deadline.setDate(deadline.getDate() + 5); // 5 days from now
+        const formattedDeadline = deadline.toISOString().split("T")[0]; // Format: YYYY-MM-DD
 
-        if (result && result.length > 0) {
-            const deadline = new Date();
-            deadline.setDate(deadline.getDate() + 5); // 5 days from now
-            const formattedDeadline = deadline.toISOString().split("T")[0]; // Format: YYYY-MM-DD
-
-            const taskDescription = `Update the details of ${result[0].name} whose phone number and email is ${result[0].phone_number} and ${result[0].email_address}`;
-
-            // First, check if the task already exists
-            const existingTask = await db`
-                SELECT 1 FROM tasks 
-                WHERE task_assigned_category = ${result[0].category}
-                AND task_title = ${"Contact Details Updations"}
-                AND task_type = ${"automated"}
-                AND task_description = ${taskDescription}
-                LIMIT 1`;
-
-            // Only insert if no existing task found
-            if (!existingTask || existingTask.length === 0) {
-                const insertResult = await db`
-                    INSERT INTO tasks (task_assigned_category, task_title, task_description, task_deadline, task_type, contact_id) 
-                    VALUES (
-                        ${result[0].category},
-                        ${"Monthly Personal Check of Details"},
-                        ${taskDescription},
-                        ${formattedDeadline},
-                        ${"automated"},
-                        ${result[0].contact_id}
-                    )`;
-
-                console.log("Task created:", insertResult);
+        const daysSince = Math.floor(contact.days_since_last_update);
+        
+        // Determine which date was used and provide context
+        let updateHistory;
+        if (contact.total_updates === 0) {
+            // No UPDATE traces in modification history - use contact table
+            if (contact.contact_updated_at) {
+                updateHistory = `No update history found - using contact table date (${new Date(contact.contact_updated_at).toLocaleDateString()}). ${daysSince} days since last update`;
             } else {
-                console.log("Task already exists, skipping insertion");
+                updateHistory = `Never been updated since creation (${daysSince} days since creation)`;
+            }
+        } else {
+            // Has UPDATE traces - compare dates
+            if (contact.last_update_date && contact.contact_updated_at) {
+                const cmhDate = new Date(contact.last_update_date);
+                const contactDate = new Date(contact.contact_updated_at);
+                const moreRecentDate = cmhDate > contactDate ? cmhDate : contactDate;
+                const sourceInfo = cmhDate > contactDate ? "latest UPDATE activity" : "contact table";
+                updateHistory = `Last updated ${daysSince} days ago via ${sourceInfo} (${moreRecentDate.toLocaleDateString()})`;
+            } else if (contact.last_update_date) {
+                updateHistory = `Last updated ${daysSince} days ago via latest UPDATE activity (${new Date(contact.last_update_date).toLocaleDateString()})`;
+            } else if (contact.contact_updated_at) {
+                updateHistory = `Last updated ${daysSince} days ago via contact table (${new Date(contact.contact_updated_at).toLocaleDateString()})`;
+            } else {
+                updateHistory = `Never been updated (${daysSince} days since creation)`;
             }
         }
+
+        const taskDescription = `Update the details of ${contact.name} whose phone number and email is ${contact.phone_number} and ${contact.email_address}. ${updateHistory}. Total previous updates: ${contact.total_updates}. Please verify and update contact information.`;
+
+        // First, check if the task already exists (more specific check)
+        const existingTask = await db`
+            SELECT 1 FROM tasks 
+            WHERE task_assigned_category = ${contact.category}
+            AND task_title = ${"Monthly Personal Check of Details"}
+            AND task_type = ${"automated"}
+            AND contact_id = ${contact.contact_id}
+            AND task_completion = false
+            LIMIT 1`;
+
+        // Only insert if no existing task found
+        if (!existingTask || existingTask.length === 0) {
+            const insertResult = await db`
+                INSERT INTO tasks (
+                    task_assigned_category, 
+                    task_title, 
+                    task_description, 
+                    task_deadline, 
+                    task_type, 
+                    task_completion,
+                    contact_id
+                ) 
+                VALUES (
+                    ${contact.category},
+                    ${"Monthly Personal Check of Details"},
+                    ${taskDescription},
+                    ${formattedDeadline},
+                    ${"automated"},
+                    false,
+                    ${contact.contact_id}
+                )`;
+
+            console.log(`Update task created for: ${contact.name} (${daysSince} days since last update) - Update traces: ${contact.total_updates > 0 ? 'Found' : 'Missing'}`);
+            return {
+                success: true,
+                contact: contact.name,
+                taskCreated: true,
+                daysSince: daysSince,
+                hasUpdateTraces: contact.total_updates > 0
+            };
+        } else {
+            console.log(`Update task already exists for: ${contact.name}`);
+            return {
+                success: true,
+                contact: contact.name,
+                taskCreated: false,
+                reason: "Task already exists"
+            };
+        }
     } catch (error) {
-        console.error("Error in checkForUpdatedAtOneMonth:", error);
+        console.error(`Error creating update task for contact ${contact.name}:`, error);
+        return {
+            success: false,
+            contact: contact.name,
+            error: error.message
+        };
     }
 };
-
 
 // Function to check contacts that haven't been contacted in 30 days (1 month)
 const checkLastContactDate = async () => {
@@ -150,11 +271,13 @@ const checkLastContactDate = async () => {
                 END as days_since_last_contact
             FROM last_contact_dates
             WHERE 
-                -- Never been contacted and contact created more than 30 days ago
-                (last_contact_date IS NULL AND contact_created_at <= NOW() - INTERVAL '30 days')
-                OR 
-                -- Last contact was more than 30 days ago
-                (last_contact_date IS NOT NULL AND last_contact_date <= NOW() - INTERVAL '30 days')
+                -- If no CONTACT traces in cmh, check if contact created more than 30 days ago
+                -- If CONTACT traces exist in cmh, check the most recent one against 30 days
+                (
+                    (total_contacts = 0 AND contact_created_at <= NOW() - INTERVAL '30 days')
+                    OR 
+                    (total_contacts > 0 AND last_contact_date <= NOW() - INTERVAL '30 days')
+                )
             ORDER BY days_since_last_contact DESC
         `;
 
@@ -162,7 +285,9 @@ const checkLastContactDate = async () => {
             contactsNeedingContact.map(c => ({
                 name: c.name,
                 days: Math.floor(c.days_since_last_contact),
-                totalContacts: c.total_contacts
+                totalContacts: c.total_contacts,
+                lastContactDate: c.last_contact_date ? new Date(c.last_contact_date).toLocaleDateString() : 'Never',
+                hasContactTraces: c.total_contacts > 0 ? 'Yes' : 'No'
             })));
 
         // Create tasks for each contact that needs follow-up
@@ -181,7 +306,6 @@ const checkLastContactDate = async () => {
     }
 };
 
-
 // Function to create tasks for contacts needing follow-up contact
 const createContactFollowupTask = async (contact) => {
     try {
@@ -190,9 +314,16 @@ const createContactFollowupTask = async (contact) => {
         const formattedDeadline = deadline.toISOString().split("T")[0];
 
         const daysSince = Math.floor(contact.days_since_last_contact);
-        const contactHistory = contact.total_contacts > 0 ?
-            `Last contacted ${daysSince} days ago` :
-            `Never been contacted (${daysSince} days since added)`;
+        
+        let contactHistory;
+        if (contact.total_contacts === 0) {
+            // No CONTACT traces in modification history
+            contactHistory = `Never been contacted - no contact history found (${daysSince} days since added)`;
+        } else {
+            // Has CONTACT traces
+            const lastContactDateStr = new Date(contact.last_contact_date).toLocaleDateString();
+            contactHistory = `Last contacted ${daysSince} days ago on ${lastContactDateStr} (latest CONTACT activity)`;
+        }
 
         const taskDescription = `Follow-up contact needed for ${contact.name} (Phone: ${contact.phone_number}, Email: ${contact.email_address}). ${contactHistory}. Total previous contacts: ${contact.total_contacts}. Please reach out to maintain relationship.`;
 
@@ -202,8 +333,8 @@ const createContactFollowupTask = async (contact) => {
             WHERE task_assigned_category = ${contact.category}
             AND task_title = ${"Contact Follow-up Required"}
             AND task_type = ${"automated"}
-            AND task_description LIKE ${'%' + contact.name + '%'}
-            AND task_completion = FALSE
+            AND contact_id = ${contact.contact_id}
+            AND task_completion = false
             LIMIT 1`;
 
         // Only create task if it doesn't exist
@@ -224,23 +355,37 @@ const createContactFollowupTask = async (contact) => {
                     ${taskDescription},
                     ${formattedDeadline},
                     ${"automated"},
-                    FALSE,
+                    false,
                     ${contact.contact_id}
                 )`;
 
-            console.log(`Contact follow-up task created for: ${contact.name} (${daysSince} days since last contact)`);
-            return insertResult;
+            console.log(`Contact follow-up task created for: ${contact.name} (${daysSince} days since last contact) - Contact traces: ${contact.total_contacts > 0 ? 'Found' : 'Missing'}`);
+            return {
+                success: true,
+                contact: contact.name,
+                taskCreated: true,
+                daysSince: daysSince,
+                hasContactTraces: contact.total_contacts > 0
+            };
         } else {
             console.log(`Contact follow-up task already exists for: ${contact.name}`);
-            return null;
+            return {
+                success: true,
+                contact: contact.name,
+                taskCreated: false,
+                reason: "Task already exists"
+            };
         }
 
     } catch (error) {
         console.error(`Error creating contact follow-up task for contact ${contact.contact_id}:`, error);
-        throw error;
+        return {
+            success: false,
+            contact: contact.name,
+            error: error.message
+        };
     }
 };
-
 
 // Create manual task
 export const CreateTask = async (req, res) => {

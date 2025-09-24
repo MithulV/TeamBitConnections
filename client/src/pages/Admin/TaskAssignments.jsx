@@ -78,27 +78,34 @@ function TaskAssignments() {
 
       if (role === "admin" && response.data.adminData) {
         setAllTasks({
-          pending: response.data.adminData.pendingTasks,
-          completed: response.data.adminData.completedTasks,
-          total: response.data.adminData.totalTasks,
-          manual: response.data.adminData.manualTasks,
-          automated: response.data.adminData.automatedTasks,
+          pending: response.data.adminData.pendingTasks || [],
+          completed: response.data.adminData.completedTasks || [],
+          total: response.data.adminData.totalTasks || [],
+          manual: response.data.adminData.manualTasks || [],
+          automated: response.data.adminData.automatedTasks || [],
         });
+        
+        // Calculate category stats from all admin data
+        calculateCategoryStats(response.data.adminData.totalTasks || [], response.data.adminData);
       } else {
         setAllTasks({
-          pending: response.data.data,
-          total: response.data.data,
-          manual: response.data.data.filter(
+          pending: response.data.data || [],
+          total: response.data.data || [],
+          manual: (response.data.data || []).filter(
             (task) => task.task_type === "assigned"
           ),
-          automated: response.data.data.filter(
+          automated: (response.data.data || []).filter(
             (task) => task.task_type === "automated"
           ),
-          completed: [],
+          completed: (response.data.data || []).filter(
+            (task) => task.task_completion === true
+          ),
         });
+        
+        // Calculate category stats from user data
+        calculateCategoryStats(response.data.data || []);
       }
 
-      calculateCategoryStats(response.data.data, response.data.adminData);
       console.log(response.data);
     } catch (error) {
       console.error(error);
@@ -108,25 +115,59 @@ function TaskAssignments() {
     }
   };
 
-  const calculateCategoryStats = (tasks, adminData) => {
+  const calculateCategoryStats = (tasks, adminData = null) => {
     const categories = ['A', 'B', 'C'];
     const categoryPerformance = {};
 
     categories.forEach(category => {
-      const categoryTasks = tasks?.filter(task => task.task_assigned_category === category) || [];
-      const completedTasks = categoryTasks.filter(task => task.task_completion);
-      const totalTasks = categoryTasks.length;
-      const completionPercentage = totalTasks > 0 ? Math.round((completedTasks.length / totalTasks) * 100) : 0;
+      let allCategoryTasks = [];
+      
+      if (role === "admin" && adminData) {
+        // For admin, combine all tasks from different sources
+        const allAdminTasks = [
+          ...(adminData.pendingTasks || []),
+          ...(adminData.completedTasks || []),
+          ...(adminData.totalTasks || [])
+        ];
+        
+        // Remove duplicates based on task_id
+        const uniqueTasks = allAdminTasks.reduce((acc, task) => {
+          const taskId = task.task_id || task.id;
+          if (!acc.some(t => (t.task_id || t.id) === taskId)) {
+            acc.push(task);
+          }
+          return acc;
+        }, []);
+        
+        allCategoryTasks = uniqueTasks.filter(task => 
+          task.task_assigned_category === category
+        );
+      } else {
+        // For regular users, use the tasks data
+        allCategoryTasks = (tasks || []).filter(task => 
+          task.task_assigned_category === category
+        );
+      }
+
+      const completedTasks = allCategoryTasks.filter(task => 
+        task.task_completion === true || task.task_completion === 1
+      );
+      
+      const totalTasks = allCategoryTasks.length;
+      const completedCount = completedTasks.length;
+      const pendingCount = totalTasks - completedCount;
+      const completionPercentage = totalTasks > 0 ? Math.round((completedCount / totalTasks) * 100) : 0;
 
       categoryPerformance[category] = {
         total: totalTasks,
-        completed: completedTasks.length,
-        pending: totalTasks - completedTasks.length,
+        completed: completedCount,
+        pending: pendingCount,
         percentage: completionPercentage,
         isUnderperforming: completionPercentage < 80,
       };
     });
 
+    console.log("Category Performance Stats:", categoryPerformance);
     setCategoryStats(categoryPerformance);
   };
 
