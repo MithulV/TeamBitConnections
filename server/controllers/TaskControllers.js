@@ -6,7 +6,7 @@ import { logContactModification } from "./ModificationHistoryControllers.js";
 
 
 // Schedule updated_at 2 month check daily at 9:00 AM
-cron.schedule("* * * * *", async () => {
+cron.schedule("0 9 * * *", async () => {
     console.log("Running 2-month update check at:", new Date());
     try {
         await checkForTwoMonthUpdates();
@@ -26,7 +26,7 @@ cron.schedule("0 6 * * *", async () => {
 });
 
 // Schedule contact check daily at 7:00 AM (checks for 30 day intervals)
-cron.schedule("* * * * *", async () => {
+cron.schedule("0 9 * * *", async () => {
     console.log("Running daily contact check at:", new Date());
     try {
         await checkLastContactDate();
