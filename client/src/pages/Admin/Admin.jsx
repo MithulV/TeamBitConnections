@@ -867,8 +867,6 @@ function Admin() {
               value={stats.totalEvents.toLocaleString()}
               icon={Calendar}
               color="bg-gradient-to-r from-purple-600 to-purple-700"
-              trend={stats.totalEventsTrend > 0 ? "up" : "down"}
-              trendValue={stats.totalEventsTrend}
               subtext="Event participations"
             />
             <StatCard
