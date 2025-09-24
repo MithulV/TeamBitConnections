@@ -14,6 +14,7 @@ import {
   Handshake,
   Download,
   BarChart3,
+  FileText,
 } from "lucide-react";
 import Header from "../../components/Header/Header";
 import Alert from "../../components/Alert/Alert";
@@ -326,6 +327,68 @@ function Admin() {
     }
   };
 
+  // CSV Template download function
+  const downloadCSVTemplate = () => {
+    try {
+      const headers = [
+        "Name",
+        "Phone Number",
+        "Secondary Phone Number",
+        "Email Address",
+        "Secondary Email",
+        "Skills",
+        "Linkedin Url",
+        "Job Title",
+        "Company Name",
+        "Department Type",
+        "From Date",
+        "To Date",
+        "Event Name",
+        "Event Role",
+        "Event held Organization",
+        "Event location",
+        "Date of Birth",
+        "Gender",
+        "Nationality",
+        "Marital Status",
+        "Category",
+        "Emergency Contact Name",
+        "Emergency Contact Relationship",
+        "Street",
+        "City",
+        "State",
+        "Country",
+        "ZipCode",
+        "Pg Course Name",
+        "Pg College Name",
+        "Pg University Type",
+        "Pg Start Date",
+        "Pg End Date",
+        "Ug Course Name",
+        "Ug College Name",
+        "Ug University Type",
+        "Ug Start Date",
+        "Ug End Date",
+      ];
+
+      const csvContent = headers.join(",");
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const fileName = `contacts-import-template-${format(
+        new Date(),
+        "yyyy-MM-dd"
+      )}.csv`;
+
+      saveAs(blob, fileName);
+      showAlert(
+        "success",
+        "CSV template downloaded successfully! Fill in the data and use 'Bulk CSV Import' to upload."
+      );
+    } catch (error) {
+      console.error("Error downloading CSV template:", error);
+      showAlert("error", "Failed to download CSV template");
+    }
+  };
+
   // CORRECTED: Fetch Dashboard Data with proper verification and acquisition calculations
   const fetchDashboardData = async () => {
     if (!id) return;
@@ -621,6 +684,13 @@ function Admin() {
       icon: UserCheck,
       color: "bg-orange-500",
       onClick: () => csvInputRef.current?.click(),
+    },
+    {
+      title: "Download CSV Template",
+      description: "Get empty CSV template for bulk import",
+      icon: FileText,
+      color: "bg-teal-500",
+      onClick: () => downloadCSVTemplate(),
     },
     {
       title: "Task Management",
