@@ -104,7 +104,7 @@ function Applayout() {
           console.error("Ping failed:", error);
         }
       }
-    }, 10000); // 10 seconds
+    }, 10000);
 
     return () => clearInterval(pingInterval);
   }, [id]);

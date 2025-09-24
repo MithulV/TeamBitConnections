@@ -3,10 +3,10 @@ import jwt from 'jsonwebtoken';
 
 export const loginUser = async (req, res) => {
     const { email, password } = req.body;
-
-    try {
-        // Query the login table
-        const rows = await db`
+  
+  try {
+    // Query the login table
+    const rows = await db`
             SELECT * FROM login 
             WHERE email = ${email} AND password = ${password}
         `;

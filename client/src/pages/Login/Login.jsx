@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { Mail, Lock } from "lucide-react";
 import api from "../../utils/axios";
 import { useAuthStore } from "../../store/AuthStore";
-
 const campusImageUrl =
   "https://images.unsplash.com/photo-1562774053-701939374585?q=80&w=2072&auto=format&fit=crop";
 

@@ -33,7 +33,6 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use("/auth", authRoute);
 app.use("/api", ContactRoute);
 app.use("/auth", googleAuthRoute);
-
 app.listen(8000, () => {
   console.log("Server is running on port 8000");
 });
