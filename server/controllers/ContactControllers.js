@@ -328,19 +328,6 @@ export const GetAllContact = async (req, res) => {
           event_count: contactEvents.length,
         };
       });
-
-      // Log the view operation
-      try {
-        await logContactModification(
-          db,
-          null,
-          req.user?.id || "system",
-          "VIEW ALL"
-        );
-      } catch (err) {
-        console.warn("Contact modification logging failed:", err.message);
-      }
-
       return res.status(200).json({
         success: true,
         data: result,

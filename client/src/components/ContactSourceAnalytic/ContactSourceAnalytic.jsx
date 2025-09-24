@@ -22,7 +22,7 @@ const ContactSourceAnalytics = ({ contacts }) => {
     const today = getTodayFormatted();
     const yesterday = getYesterdayFormatted();
 
-    // Enhanced date range calculations using date-fns [web:292][web:405]
+    // Enhanced date range calculations using date-fns
     const startOfToday = startOfDay(now);
     const startOfYesterday = startOfDay(subDays(now, 1));
     const startOfThisWeek = startOfWeek(now, { weekStartsOn: 1 });
@@ -62,7 +62,7 @@ const ContactSourceAnalytics = ({ contacts }) => {
       const createdAt = parseISO(c.created_at);
       return isWithinInterval(createdAt, {
         start: startOfThisWeek,
-        end: endOfDay(now)  // FIXED: Include full day
+        end: endOfDay(now)
       });
     }).length;
 
@@ -70,16 +70,16 @@ const ContactSourceAnalytics = ({ contacts }) => {
       const createdAt = parseISO(c.created_at);
       return isWithinInterval(createdAt, {
         start: startOfLastWeek,
-        end: endOfDay(subDays(startOfThisWeek, 1))  // FIXED: End of last week
+        end: endOfDay(subDays(startOfThisWeek, 1))
       });
     }).length;
 
-    // FIXED: Count contacts this month using contact's created_at with proper end time [web:396][web:405]
+    // Count contacts this month using contact's created_at with proper end time
     const thisMonthContacts = contactsWithValidDates.filter((c) => {
       const createdAt = parseISO(c.created_at);
       return isWithinInterval(createdAt, {
         start: startOfThisMonth,
-        end: endOfDay(now)  // FIXED: Include full current day
+        end: endOfDay(now)
       });
     }).length;
 
@@ -127,22 +127,26 @@ const ContactSourceAnalytics = ({ contacts }) => {
       .sort(([, a], [, b]) => b - a)
       .slice(0, 3);
 
-    // FIXED: Count categories for this month using contact's created_at with proper end time
+    // FIXED: Count categories for this month using contact's created_at with UPPERCASE normalization
     const monthlyCategories = { A: 0, B: 0, C: 0 };
     contactsWithValidDates.forEach((contact) => {
       const createdAt = parseISO(contact.created_at);
-      if (isWithinInterval(createdAt, { start: startOfThisMonth, end: endOfDay(now) })) {  // FIXED
-        if (contact.category && monthlyCategories.hasOwnProperty(contact.category)) {
-          monthlyCategories[contact.category]++;
+      if (isWithinInterval(createdAt, { start: startOfThisMonth, end: endOfDay(now) })) {
+        // Always convert category to uppercase before checking and counting
+        const categoryUpper = contact.category ? contact.category.toUpperCase() : null;
+        if (categoryUpper && monthlyCategories.hasOwnProperty(categoryUpper)) {
+          monthlyCategories[categoryUpper]++;
         }
       }
     });
 
-    // Count total categories (all time)
+    // Count total categories (all time) with UPPERCASE normalization
     const totalCategories = { A: 0, B: 0, C: 0 };
     contacts.forEach((contact) => {
-      if (contact.category && totalCategories.hasOwnProperty(contact.category)) {
-        totalCategories[contact.category]++;
+      // Always convert category to uppercase before checking and counting
+      const categoryUpper = contact.category ? contact.category.toUpperCase() : null;
+      if (categoryUpper && totalCategories.hasOwnProperty(categoryUpper)) {
+        totalCategories[categoryUpper]++;
       }
     });
 
@@ -323,10 +327,10 @@ const ContactSourceAnalytics = ({ contacts }) => {
                 <div className="flex items-center gap-2">
                   <div
                     className={`w-2 h-2 rounded-full ${index === 0
-                        ? "bg-blue-500"
-                        : index === 1
-                          ? "bg-green-500"
-                          : "bg-orange-500"
+                      ? "bg-blue-500"
+                      : index === 1
+                        ? "bg-green-500"
+                        : "bg-orange-500"
                       }`}
                   ></div>
                   <span className="text-sm font-medium text-gray-900">
