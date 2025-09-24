@@ -278,7 +278,7 @@ export const ImportContactsFromCSV = async (req, res) => {
               row.nationality || null
             }, 
                             ${row.marital_status || null}, ${
-              row.category || null
+              row.toUpperCase(category) || null
             },
                             ${row.secondary_email || null}, ${
               row.secondary_phone_number || null
