@@ -1,26 +1,38 @@
-import db from '../src/config/db.js'
+import db from "../src/config/db.js";
 // Create a separate utility file for database operations (utils/contactModification.js)
-export const logContactModification = async (db, contact_id, modified_by, modification_type, transaction, assigned_to) => {
+export const logContactModification = async (
+  db,
+  contact_id,
+  modified_by,
+  modification_type,
+  transaction,
+  assigned_to
+) => {
   try {
-console.log(
-  db ? "db here" : "db not here",
-  contact_id ? "contact_id here" : "contact_id not here",
-  modified_by ? "modified_by here" : "modified_by not here",
-  modification_type ? "modification_type here" : "modification_type not here",
-  transaction ? "transaction here" : "transaction not here",
-  assigned_to ? "assigned_to here" : "assigned_to not here"
-);
-    const query = transaction 
+    // Handle undefined values by converting them to null
+    const safeContactId = contact_id || null;
+    const safeModifiedBy = modified_by || null;
+    const safeModificationType = modification_type || "UNKNOWN";
+    const safeAssignedTo = assigned_to || null;
+
+    console.log("Logging contact modification:", {
+      contact_id: safeContactId,
+      modified_by: safeModifiedBy,
+      modification_type: safeModificationType,
+      assigned_to: safeAssignedTo,
+    });
+
+    const query = transaction
       ? transaction`INSERT INTO contact_modification_history (contact_id, modified_by, modification_type, created_at, assigned_to) 
-                    VALUES (${contact_id}, ${modified_by}, ${modification_type}, NOW(), ${assigned_to || null}) 
+                    VALUES (${safeContactId}, ${safeModifiedBy}, ${safeModificationType}, NOW(), ${safeAssignedTo}) 
                     RETURNING *`
       : db`INSERT INTO contact_modification_history (contact_id, modified_by, modification_type, created_at, assigned_to) 
-                    VALUES (${contact_id}, ${modified_by}, ${modification_type}, NOW(), ${assigned_to || null}) 
+                    VALUES (${safeContactId}, ${safeModifiedBy}, ${safeModificationType}, NOW(), ${safeAssignedTo}) 
                     RETURNING *`;
-    
+
     return query;
   } catch (error) {
-    console.error('Error logging contact modification:', error);
+    console.error("Error logging contact modification:", error);
     throw error;
   }
 };
@@ -72,7 +84,7 @@ export const getModificationHistory = async (db, contact_id) => {
 
     return await query;
   } catch (error) {
-    console.error('Error fetching contact modification history:', error);
+    console.error("Error fetching contact modification history:", error);
     throw error;
   }
 };
@@ -124,7 +136,7 @@ export const getAllModificationHistory = async (db, limit = 50, offset = 0) => {
 
     return await query;
   } catch (error) {
-    console.error('Error fetching all modification history:', error);
+    console.error("Error fetching all modification history:", error);
     throw error;
   }
 };
@@ -140,7 +152,7 @@ export const getTotalModificationHistoryCount = async (db) => {
     const result = await query;
     return result[0]?.total || 0;
   } catch (error) {
-    console.error('Error getting total modification history count:', error);
+    console.error("Error getting total modification history count:", error);
     throw error;
   }
 };

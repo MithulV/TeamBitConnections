@@ -354,7 +354,7 @@ export const GetFilteredContacts = async (req, res) => {
       LEFT JOIN event e ON c.contact_id = e.contact_id
       ${whereClause ? db.unsafe(whereClause) : db``}
       ORDER BY ${db.unsafe(`c.${sortField} ${sortDirection}`)}
-      LIMIT ${limit} OFFSET ${offset}
+     
     `;
 
     const [countResult] = await db`

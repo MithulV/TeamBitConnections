@@ -388,7 +388,8 @@ const VisitingCardDetails = () => {
       console.error("OCR extraction error:", error);
 
       showAlert(
-        "error","OCR text extraction failed. Please fill in the form manually or try again later.This may be due to image quality or server issues."
+        "error",
+        "OCR text extraction failed. Please fill in the form manually or try again later.This may be due to image quality or server issues."
       );
     } finally {
       setIsExtracting(false);
@@ -465,8 +466,9 @@ const VisitingCardDetails = () => {
         name: visitingCardDetails.name,
         phone_number: visitingCardDetails.phone_number,
         email_address: visitingCardDetails.email_address,
-        dob: visitingCardDetails.dob,
-        gender: visitingCardDetails.gender,
+        dob: visitingCardDetails.dob === "" ? null : visitingCardDetails.dob,
+        gender:
+          visitingCardDetails.gender === "" ? null : visitingCardDetails.gender ,
         nationality: visitingCardDetails.nationality,
         marital_status: visitingCardDetails.marital_status,
         category: visitingCardDetails.category,

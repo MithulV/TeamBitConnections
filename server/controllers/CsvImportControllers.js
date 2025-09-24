@@ -278,7 +278,7 @@ export const ImportContactsFromCSV = async (req, res) => {
               row.nationality || null
             }, 
                             ${row.marital_status || null}, ${
-              row.toUpperCase(category) || null
+              row.category.toUpperCase() || null
             },
                             ${row.secondary_email || null}, ${
               row.secondary_phone_number || null
@@ -377,7 +377,7 @@ export const ImportContactsFromCSV = async (req, res) => {
               await t`
                               INSERT INTO event (
                                 contact_id, event_name, event_role, event_held_organization, 
-                                event_location, event_date,verified,contact_status, created_at, updated_at
+                                event_location, event_date,verified,contact_status, created_at, updated_at,created_by
                               ) VALUES (
                                 ${contactId}, ${row.event_name}, ${
                 row.event_role || null
@@ -387,7 +387,7 @@ export const ImportContactsFromCSV = async (req, res) => {
               }, 
                                 ${
                                   row.event_date || null
-                                },${true},${"approved"}, NOW(), NOW()
+                                },${true},${"approved"}, NOW(), NOW(),${created_by}
                               )
                             `;
               console.log(`✅ Inserted event for contact ${contactId}`);
