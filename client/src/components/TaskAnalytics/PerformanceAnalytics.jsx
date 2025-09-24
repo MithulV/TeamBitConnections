@@ -30,6 +30,7 @@ const ProgressBar = ({ percentage, category }) => {
 };
 
 const PerformanceAnalytics = ({ categoryStats }) => {
+  console.log(categoryStats);
   const underperformingCategories = Object.entries(categoryStats).filter(
     ([_, stats]) => stats.isUnderperforming
   );
