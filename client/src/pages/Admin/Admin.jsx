@@ -330,45 +330,59 @@ function Admin() {
   // CSV Template download function
   const downloadCSVTemplate = () => {
     try {
+      // Headers in the EXACT order that backend processes (matches database insert order)
       const headers = [
-        "Name",
-        "Phone Number",
-        "Secondary Phone Number",
-        "Email Address",
-        "Secondary Email",
-        "Skills",
-        "Linkedin Url",
-        "Job Title",
-        "Company Name",
-        "Department Type",
-        "From Date",
-        "To Date",
-        "Event Name",
-        "Event Role",
-        "Event held Organization",
-        "Event location",
-        "Date of Birth",
-        "Gender",
-        "Nationality",
-        "Marital Status",
-        "Category",
-        "Emergency Contact Name",
-        "Emergency Contact Relationship",
-        "Street",
-        "City",
-        "State",
-        "Country",
-        "ZipCode",
-        "Pg Course Name",
-        "Pg College Name",
-        "Pg University Type",
-        "Pg Start Date",
-        "Pg End Date",
-        "Ug Course Name",
-        "Ug College Name",
-        "Ug University Type",
-        "Ug Start Date",
-        "Ug End Date",
+        // REQUIRED FIELDS (Must be filled)
+        "name",
+        "phone_number",
+        "email_address",
+
+        // PERSONAL INFO (contact table - order matters)
+        "dob",
+        "gender",
+        "nationality",
+        "marital_status",
+        "category",
+        "secondary_email",
+        "secondary_phone_number",
+        "emergency_contact_name",
+        "emergency_contact_relationship",
+        "emergency_contact_phone_number",
+        "skills",
+        "linkedin_url",
+
+        // ADDRESS INFO (contact_address table)
+        "street",
+        "city",
+        "state",
+        "country",
+        "zipcode",
+
+        // EDUCATION INFO (contact_education table)
+        "pg_course_name",
+        "pg_college_name",
+        "pg_university_type",
+        "pg_start_date",
+        "pg_end_date",
+        "ug_course_name",
+        "ug_college_name",
+        "ug_university_type",
+        "ug_start_date",
+        "ug_end_date",
+
+        // EXPERIENCE INFO (contact_experience table)
+        "job_title",
+        "company_name",
+        "department_type",
+        "from_date",
+        "to_date",
+
+        // EVENT INFO (event table)
+        "event_name",
+        "event_role",
+        "event_held_organization",
+        "event_location",
+        "event_date",
       ];
 
       const csvContent = headers.join(",");
