@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 
-const RecentEventsTimeline = ({ contacts }) => {
+const RecentEventsTimeline = () => {
   const [modificationHistory, setModificationHistory] = useState([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
   const [showFullHistory, setShowFullHistory] = useState(false);

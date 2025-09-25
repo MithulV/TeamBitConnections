@@ -1,86 +1,103 @@
 import React, { useMemo } from 'react';
 import { Line } from 'react-chartjs-2';
 import DatePicker from 'react-datepicker';
-import { format, parseISO, subDays, subMonths, isAfter, startOfDay, endOfDay } from 'date-fns';
+import { format, parseISO, subDays, subMonths, isAfter, startOfDay, endOfDay, isValid } from 'date-fns';
 import "react-datepicker/dist/react-datepicker.css";
 
-// Utility functions
-const getDedupedUpdatesPerDay = (contacts) => {
-  const updatedDatesMap = new Map(); // contactId -> Set of unique days
-
-  contacts.forEach((contact) => {
-    const contactId = contact.contact_id;
-
-    if (!updatedDatesMap.has(contactId)) {
-      updatedDatesMap.set(contactId, new Set());
-    }
-
-    const dateSet = updatedDatesMap.get(contactId);
-
-    // Collect all update dates from all related tables
-    const updateCandidates = [];
-
-    if (contact.updated_at) updateCandidates.push(contact.updated_at);
-    if (contact.address_updated_at)
-      updateCandidates.push(contact.address_updated_at);
-
-    // Handle multiple dates from education
-    if (contact.education_updated_at) {
-      const eduUpdates = contact.education_updated_at
-        .split("; ")
-        .filter(Boolean);
-      updateCandidates.push(...eduUpdates);
-    }
-
-    // Handle multiple dates from experience
-    if (contact.experience_updated_at) {
-      const expUpdates = contact.experience_updated_at
-        .split("; ")
-        .filter(Boolean);
-      updateCandidates.push(...expUpdates);
-    }
-
-    // Handle multiple dates from events
-    if (contact.event_details_updated_at) {
-      const eventUpdates = contact.event_details_updated_at
-        .split("; ")
-        .filter(Boolean);
-      updateCandidates.push(...eventUpdates);
-    }
-
-    // Deduplicate per contact per day
-    updateCandidates.forEach((dateStr) => {
-      if (!dateStr) return;
-      try {
-        const dateObj = parseISO(dateStr);
-        if (!isNaN(dateObj)) {
-          const dayKey = format(dateObj, "yyyy-MM-dd");
-          dateSet.add(dayKey); // Set automatically deduplicates
-        }
-      } catch (error) {
-        console.warn("Invalid date:", dateStr);
+// Utility functions for processing modification history
+const processModificationHistory = (modificationHistory, startDate, endDate) => {
+  const createdDates = {};
+  const updatedDates = {};
+  
+  console.log("🔍 Processing modification history sample:", modificationHistory.slice(0, 3));
+  
+  // Filter and process modification history within date range
+  modificationHistory.forEach((modification, index) => {
+    // Try different possible timestamp field names
+    let timestampValue = modification.timestamp || 
+                        modification.created_at || 
+                        modification.modified_at ||
+                        modification.date ||
+                        modification.updated_at;
+    
+    if (!timestampValue) {
+      if (index < 3) {
+        console.warn("⚠️ No timestamp found in modification record:", modification);
       }
-    });
+      return;
+    }
+    
+    try {
+      let date;
+      
+      // Handle different date formats
+      if (typeof timestampValue === 'string') {
+        date = parseISO(timestampValue);
+      } else if (timestampValue instanceof Date) {
+        date = timestampValue;
+      } else {
+        if (index < 3) {
+          console.warn("⚠️ Invalid timestamp format:", timestampValue);
+        }
+        return;
+      }
+      
+      // Validate the parsed date
+      if (!isValid(date)) {
+        if (index < 3) {
+          console.warn("⚠️ Invalid parsed date:", date, "from:", timestampValue);
+        }
+        return;
+      }
+      
+      // Check if date is within range
+      if (isAfter(date, startOfDay(startDate)) && date <= endOfDay(endDate)) {
+        const dayKey = format(date, "yyyy-MM-dd");
+        const modificationType = modification.modification_type;
+        
+        if (index < 3) {
+          console.log("✅ Processing record:", {
+            type: modificationType,
+            date: dayKey,
+            originalTimestamp: timestampValue
+          });
+        }
+        
+        // Count CREATE operations
+        if (modificationType === 'CREATE') {
+          createdDates[dayKey] = (createdDates[dayKey] || 0) + 1;
+        }
+        
+        // Count UPDATE operations (including various update types)
+        else if (
+          modificationType === 'UPDATE' || 
+          modificationType === 'UPDATE USER EVENT' || 
+          modificationType === 'USER VERIFY' ||
+          modificationType === 'ASSIGN' ||
+          modificationType.includes('UPDATE')
+        ) {
+          updatedDates[dayKey] = (updatedDates[dayKey] || 0) + 1;
+        }
+      }
+    } catch (error) {
+      if (index < 3) {
+        console.error("❌ Error processing modification record:", error, modification);
+      }
+    }
   });
 
-  // Aggregate counts across all contacts per day
-  const aggregateCounts = {};
+  console.log("📊 Processed dates:", {
+    createdDates: Object.keys(createdDates).length,
+    updatedDates: Object.keys(updatedDates).length,
+    createdSample: Object.entries(createdDates).slice(0, 3),
+    updatedSample: Object.entries(updatedDates).slice(0, 3)
+  });
 
-  for (const dateSet of updatedDatesMap.values()) {
-    dateSet.forEach((day) => {
-      aggregateCounts[day] = (aggregateCounts[day] || 0) + 1;
-    });
-  }
-
-  return aggregateCounts;
-};
-
-const getAllCreatedDates = (contacts) => {
-  return contacts.map((contact) => contact.created_at).filter(Boolean);
+  return { createdDates, updatedDates };
 };
 
 const ContactsChart = ({
-  contacts,
+  modificationHistory = [],
   startDate,
   endDate,
   dateRangeType,
@@ -121,45 +138,35 @@ const ContactsChart = ({
   };
 
   const processChartData = useMemo(() => {
-    const contactsArray = Array.isArray(contacts) ? contacts : [];
+    // Ensure we have a valid array
+    const historyArray = Array.isArray(modificationHistory) ? modificationHistory : [];
     
-    // Get created dates (only from contacts table)
-    const allCreatedDates = getAllCreatedDates(contactsArray);
-
-    // Get deduplicated updated dates per contact per day
-    const allUpdatesPerDay = getDedupedUpdatesPerDay(contactsArray);
-    const createdDates = {};
-    const updatedDates = {};
+    console.log("🔍 Processing modification history:", {
+      totalRecords: historyArray.length,
+      dateRange: `${format(startDate, "yyyy-MM-dd")} to ${format(endDate, "yyyy-MM-dd")}`,
+      sampleRecord: historyArray[0],
+      allFieldsInFirstRecord: historyArray[0] ? Object.keys(historyArray[0]) : []
+    });
     
-    // Process created dates within date range
-    allCreatedDates.forEach((dateStr) => {
-      if (!dateStr) return;
-      try {
-        const date = parseISO(dateStr);
-        if (isAfter(date, startOfDay(startDate)) && date <= endOfDay(endDate)) {
-          const dayKey = format(date, "yyyy-MM-dd");
-          createdDates[dayKey] = (createdDates[dayKey] || 0) + 1;
-        }
-      } catch (error) {
-        console.warn("Invalid created date:", dateStr);
-      }
-    });
+    // Process the modification history data
+    const { createdDates, updatedDates } = processModificationHistory(
+      historyArray, 
+      startDate, 
+      endDate
+    );
 
-    // Process updated dates within date range (already deduplicated)
-    Object.entries(allUpdatesPerDay).forEach(([dayKey, count]) => {
-      try {
-        const date = parseISO(dayKey);
-        if (isAfter(date, startOfDay(startDate)) && date <= endOfDay(endDate)) {
-          updatedDates[dayKey] = count;
-        }
-      } catch (error) {
-        console.warn("Invalid updated date:", dayKey);
-      }
-    });
-
+    // Get all unique dates from both datasets
     const allDates = Array.from(
       new Set([...Object.keys(createdDates), ...Object.keys(updatedDates)])
     ).sort();
+
+    console.log("📊 Chart data processed:", {
+      totalDays: allDates.length,
+      createOperations: Object.values(createdDates).reduce((sum, count) => sum + count, 0),
+      updateOperations: Object.values(updatedDates).reduce((sum, count) => sum + count, 0),
+      dateRange: allDates.length > 0 ? `${allDates[0]} to ${allDates[allDates.length - 1]}` : 'No data',
+      allDates: allDates.slice(0, 5) // Show first 5 dates
+    });
 
     return {
       labels: allDates,
@@ -171,18 +178,26 @@ const ContactsChart = ({
           backgroundColor: "rgba(59, 130, 246, 0.1)",
           tension: 0.4,
           fill: true,
+          pointBackgroundColor: "rgb(59, 130, 246)",
+          pointBorderColor: "#fff",
+          pointHoverBackgroundColor: "#fff",
+          pointHoverBorderColor: "rgb(59, 130, 246)",
         },
         {
           label: "Records Updated",
           data: allDates.map((date) => updatedDates[date] || 0),
-          borderColor: "rgb(139, 69, 19)",
-          backgroundColor: "rgba(139, 69, 19, 0.1)",
+          borderColor: "rgb(34, 197, 94)",
+          backgroundColor: "rgba(34, 197, 94, 0.1)",
           tension: 0.4,
           fill: true,
+          pointBackgroundColor: "rgb(34, 197, 94)",
+          pointBorderColor: "#fff",
+          pointHoverBackgroundColor: "#fff",
+          pointHoverBorderColor: "rgb(34, 197, 94)",
         },
       ],
     };
-  }, [contacts, startDate, endDate]);
+  }, [modificationHistory, startDate, endDate]);
 
   const chartOptions = {
     responsive: true,
@@ -190,9 +205,30 @@ const ContactsChart = ({
     plugins: {
       legend: {
         position: "top",
+        labels: {
+          padding: 20,
+          usePointStyle: true,
+        },
       },
       title: {
         display: false,
+      },
+      tooltip: {
+        mode: 'index',
+        intersect: false,
+        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        titleColor: '#fff',
+        bodyColor: '#fff',
+        borderColor: 'rgba(255, 255, 255, 0.1)',
+        borderWidth: 1,
+        callbacks: {
+          title: function(context) {
+            return `Date: ${context[0].label}`;
+          },
+          label: function(context) {
+            return `${context.dataset.label}: ${context.parsed.y}`;
+          }
+        }
       },
       filler: {
         propagate: false,
@@ -203,16 +239,40 @@ const ContactsChart = ({
         beginAtZero: true,
         ticks: {
           stepSize: 1,
+          callback: function(value) {
+            return Number.isInteger(value) ? value : '';
+          }
+        },
+        grid: {
+          color: 'rgba(0, 0, 0, 0.1)',
         },
       },
       x: {
         ticks: {
           maxTicksLimit: 15,
+          callback: function(value, index, values) {
+            const date = this.getLabelForValue(value);
+            try {
+              return format(parseISO(date), 'MMM dd');
+            } catch {
+              return date;
+            }
+          }
+        },
+        grid: {
+          color: 'rgba(0, 0, 0, 0.1)',
         },
       },
     },
     interaction: {
+      mode: 'nearest',
       intersect: false,
+    },
+    elements: {
+      point: {
+        radius: 4,
+        hoverRadius: 6,
+      },
     },
   };
 
@@ -225,8 +285,14 @@ const ContactsChart = ({
     { key: "lastYear", label: "Last Year" },
   ];
 
+  // Calculate summary statistics
+  const totalCreated = processChartData.datasets[0].data.reduce((a, b) => a + b, 0);
+  const totalUpdated = processChartData.datasets[1].data.reduce((a, b) => a + b, 0);
+  const totalOperations = totalCreated + totalUpdated;
+
   return (
     <div>
+      {/* Date Range Controls */}
       <div className="mb-4 space-y-3">
         <div className="flex flex-wrap gap-2">
           {predefinedRanges.map(({ key, label }) => (
@@ -235,7 +301,7 @@ const ContactsChart = ({
               onClick={() => handlePredefinedRange(key)}
               className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
                 dateRangeType === key
-                  ? "bg-blue-600 text-white"
+                  ? "bg-blue-600 text-white shadow-md"
                   : "bg-gray-200 text-gray-700 hover:bg-gray-300"
               }`}
             >
@@ -246,7 +312,7 @@ const ContactsChart = ({
             onClick={() => setDateRangeType("custom")}
             className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
               dateRangeType === "custom"
-                ? "bg-blue-600 text-white"
+                ? "bg-blue-600 text-white shadow-md"
                 : "bg-gray-200 text-gray-700 hover:bg-gray-300"
             }`}
           >
@@ -255,7 +321,7 @@ const ContactsChart = ({
         </div>
 
         {dateRangeType === "custom" && (
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3 p-3 bg-gray-50 rounded-lg">
             <div className="flex items-center gap-2">
               <label className="text-sm font-medium text-gray-700">From:</label>
               <DatePicker
@@ -265,7 +331,7 @@ const ContactsChart = ({
                 startDate={startDate}
                 endDate={endDate}
                 maxDate={endDate}
-                className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 dateFormat="MMM dd, yyyy"
               />
             </div>
@@ -279,7 +345,7 @@ const ContactsChart = ({
                 endDate={endDate}
                 minDate={startDate}
                 maxDate={new Date()}
-                className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 dateFormat="MMM dd, yyyy"
               />
             </div>
@@ -287,21 +353,32 @@ const ContactsChart = ({
         )}
       </div>
 
-      <div className="h-64">
-        <Line data={processChartData} options={chartOptions} />
+      {/* Chart */}
+      <div className="h-80 bg-white rounded-lg border border-gray-200 p-4">
+        {processChartData.labels.length === 0 ? (
+          <div className="h-full flex items-center justify-center">
+            <div className="text-center text-gray-500">
+              <div className="text-lg font-medium">No Data Available</div>
+              <div className="text-sm">No modification history found for the selected date range</div>
+              <div className="text-xs mt-2 text-gray-400">
+                Check browser console for debugging information
+              </div>
+            </div>
+          </div>
+        ) : (
+          <Line data={processChartData} options={chartOptions} />
+        )}
       </div>
 
-      <div className="mt-3 text-xs text-gray-500 flex justify-between">
+      {/* Footer Information */}
+      <div className="mt-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 text-xs text-gray-500">
         <span>
-          Range: {format(startDate, "MMM dd, yyyy")} -{" "}
-          {format(endDate, "MMM dd, yyyy")}
+          📅 Range: {format(startDate, "MMM dd, yyyy")} - {format(endDate, "MMM dd, yyyy")}
         </span>
-        <span>
-          Total in range:{" "}
-          {processChartData.datasets[0].data.reduce((a, b) => a + b, 0)}{" "}
-          created,{" "}
-          {processChartData.datasets[1].data.reduce((a, b) => a + b, 0)} updated
-        </span>
+        <div className="flex gap-4">
+          <span>📊 {modificationHistory.length} total history records</span>
+          <span>📈 {processChartData.labels.length} active days</span>
+        </div>
       </div>
     </div>
   );

@@ -95,7 +95,7 @@ const calculateCompletionPercentage = (complete, total) => {
   return Math.round((complete / total) * 100);
 };
 
-// Date calculation utilities [web:281][web:286][web:289]
+// Date calculation utilities
 const calculateAcquisitionRates = (contacts) => {
   const now = new Date();
   const startOfToday = startOfDay(now);
@@ -182,20 +182,46 @@ function Admin() {
   const [endDate, setEndDate] = useState(new Date());
   const [dateRangeType, setDateRangeType] = useState("custom");
 
-const [alert, setAlert] = useState({
-  isOpen: false,
-  severity: "success",
-  message: "",
-});
+  // New state for modification history
+  const [modificationHistory, setModificationHistory] = useState([]);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(true);
 
-// Alert Functions - Modified to handle persistent info alerts
-const showAlert = (severity, message) => {
-  setAlert({ isOpen: true, severity, message });
-};
+  const [alert, setAlert] = useState({
+    isOpen: false,
+    severity: "success",
+    message: "",
+  });
 
-const closeAlert = () => {
-  setAlert((prev) => ({ ...prev, isOpen: false }));
-};
+  // Alert Functions - Modified to handle persistent info alerts
+  const showAlert = (severity, message) => {
+    setAlert({ isOpen: true, severity, message });
+  };
+
+  const closeAlert = () => {
+    setAlert((prev) => ({ ...prev, isOpen: false }));
+  };
+
+  // Fetch modification history
+  useEffect(() => {
+    const fetchModificationHistory = async () => {
+      try {
+        setIsLoadingHistory(true);
+        const response = await api.get("/api/get-all-modification-history/");
+        const data = response.data;
+        console.log(data.data)
+        if (data.success && data.data) {
+          setModificationHistory(data.data);
+          console.log("📊 Modification history loaded:", data.data.length, "records");
+        }
+      } catch (error) {
+        console.error("Failed to fetch modification history:", error);
+      } finally {
+        setIsLoadingHistory(false);
+      }
+    };
+
+    fetchModificationHistory();
+  }, []);
 
   // CSV export function
   const exportCsv = (contacts) => {
@@ -492,7 +518,7 @@ const closeAlert = () => {
           if (contact.events && Array.isArray(contact.events)) {
             contact.events.forEach((event) => {
               if (event.event_name) {
-                // Advanced normalization: Unicode, trim, lowercase, remove special chars [web:409][web:414]
+                // Advanced normalization: Unicode, trim, lowercase, remove special chars
                 const normalizedEventName = event.event_name
                   .normalize("NFD") // Unicode normalization
                   .trim() // Remove leading/trailing spaces
@@ -623,52 +649,52 @@ const closeAlert = () => {
   // CSV Upload Handler
   const csvInputRef = useRef(null);
 
-const handleCSVUpload = async (event) => {
-  const file = event.target.files[0];
-  if (!file) return;
+  const handleCSVUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
 
-  if (!file.name.endsWith(".csv") && file.type !== "text/csv") {
-    showAlert("error", "Please select a valid CSV file");
-    return;
-  }
-
-  if (file.size > 10 * 1024 * 1024) {
-    showAlert("error", "File size too large. Maximum 10MB allowed.");
-    return;
-  }
-
-  showAlert("info", "Processing CSV file...");
-
-  try {
-    const formData = new FormData();
-    formData.append("csv_file", file);
-    formData.append("created_by", id);
-
-    const response = await api.post("/api/import-csv", formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
-
-    if (response.data.success) {
-      const { successCount, errorCount, duplicateCount, totalRows } =
-        response.data.data;
-      showAlert(
-        "success",
-        `CSV Import Complete!\n📊 Total rows processed: ${totalRows}\n✅ Successfully added: ${successCount}\n⚠️ Duplicates skipped: ${duplicateCount}\n❌ Errors encountered: ${errorCount}`
-      );
-      fetchDashboardData();
-    } else {
-      showAlert("error", `Import failed: ${response.data.message}`);
+    if (!file.name.endsWith(".csv") && file.type !== "text/csv") {
+      showAlert("error", "Please select a valid CSV file");
+      return;
     }
-  } catch (error) {
-    console.error("CSV import error:", error);
-    showAlert(
-      "error",
-      `CSV Import Error: ${error.response?.data?.message || error.message}`
-    );
-  }
 
-  event.target.value = "";
-};
+    if (file.size > 10 * 1024 * 1024) {
+      showAlert("error", "File size too large. Maximum 10MB allowed.");
+      return;
+    }
+
+    showAlert("info", "Processing CSV file...");
+
+    try {
+      const formData = new FormData();
+      formData.append("csv_file", file);
+      formData.append("created_by", id);
+
+      const response = await api.post("/api/import-csv", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      if (response.data.success) {
+        const { successCount, errorCount, duplicateCount, totalRows } =
+          response.data.data;
+        showAlert(
+          "success",
+          `CSV Import Complete!\n📊 Total rows processed: ${totalRows}\n✅ Successfully added: ${successCount}\n⚠️ Duplicates skipped: ${duplicateCount}\n❌ Errors encountered: ${errorCount}`
+        );
+        fetchDashboardData();
+      } else {
+        showAlert("error", `Import failed: ${response.data.message}`);
+      }
+    } catch (error) {
+      console.error("CSV import error:", error);
+      showAlert(
+        "error",
+        `CSV Import Error: ${error.response?.data?.message || error.message}`
+      );
+    }
+
+    event.target.value = "";
+  };
 
   // Quick Actions
   const quickActions = [
@@ -723,7 +749,7 @@ const handleCSVUpload = async (event) => {
   ];
 
   // Loading State
-  if (loading) {
+  if (loading || isLoadingHistory) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
         <div className="text-center">
@@ -761,7 +787,7 @@ const handleCSVUpload = async (event) => {
         message={alert.message}
         onClose={closeAlert}
         position="bottom"
-        duration={alert.severity === "info" ? 0 : 4000} 
+        duration={alert.severity === "info" ? 0 : 4000}
       />
 
       <div className="w-full bg-white shadow-sm sticky top-0 z-50 border-b-2 border-b-gray-50">
@@ -909,7 +935,7 @@ const handleCSVUpload = async (event) => {
             </div>
           </div>
 
-          {/* Contact Activity Over Time */}
+          {/* Contact Activity Over Time - NOW USING MODIFICATION HISTORY */}
           <div className="mt-8">
             <div className="bg-white rounded-lg p-6 shadow-lg border border-gray-200">
               <div className="flex items-center gap-2 mb-4">
@@ -919,7 +945,7 @@ const handleCSVUpload = async (event) => {
                 </h2>
               </div>
               <ContactsChart
-                contacts={contacts}
+                modificationHistory={modificationHistory}
                 startDate={startDate}
                 endDate={endDate}
                 dateRangeType={dateRangeType}
