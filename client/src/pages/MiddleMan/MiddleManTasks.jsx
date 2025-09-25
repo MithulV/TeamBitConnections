@@ -48,7 +48,7 @@ const TasksPage = () => {
   // Helper functions for contact formatting [web:574][web:581]
   const getInitials = (name) => {
     if (!name) return "??";
-    const names = name.split(' ');
+    const names = name.split(" ");
     const initials = names[0].substring(0, 1).toUpperCase();
     if (names.length > 1) {
       return initials + names[names.length - 1].substring(0, 1).toUpperCase();
@@ -58,8 +58,16 @@ const TasksPage = () => {
 
   const getAvatarColor = (contactId) => {
     const colors = [
-      '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FECA57',
-      '#FF9FF3', '#54A0FF', '#5F27CD', '#00D2D3', '#FF9F43'
+      "#FF6B6B",
+      "#4ECDC4",
+      "#45B7D1",
+      "#96CEB4",
+      "#FECA57",
+      "#FF9FF3",
+      "#54A0FF",
+      "#5F27CD",
+      "#00D2D3",
+      "#FF9F43",
     ];
     return colors[contactId % colors.length];
   };
@@ -70,8 +78,10 @@ const TasksPage = () => {
       console.log("Fetching complete contact data for ID:", contactId);
 
       // Use the updated GetFilteredContacts API with contact_id parameter
-      const response = await api.get(`/api/contacts/filter/?contact_id=${contactId}`);
-      
+      const response = await api.get(
+        `/api/contacts/filter/?contact_id=${contactId}`
+      );
+
       if (!response.data.success) {
         console.error("Failed to fetch contact data:", response.data.message);
         alert("Failed to load contact information");
@@ -80,7 +90,7 @@ const TasksPage = () => {
 
       // Extract the single contact data from the response [web:573][web:574]
       const contactData = response.data.data.contact;
-      
+
       if (!contactData) {
         console.error("Contact data not found in response");
         alert("Contact information not available");
@@ -113,14 +123,13 @@ const TasksPage = () => {
         location: formattedContact.location,
         skills_count: formattedContact.skills.length,
         experiences_count: formattedContact.experiences?.length || 0,
-        events_count: formattedContact.events?.length || 0
+        events_count: formattedContact.events?.length || 0,
       });
 
       // Navigate to profile with formatted contact data [web:577][web:582]
-      navigate(`/profile/${formattedContact.contact_id}`, { 
-        state: formattedContact 
+      navigate(`/profile/${formattedContact.contact_id}`, {
+        state: formattedContact,
       });
-
     } catch (error) {
       console.error("Error fetching contact data:", error);
 
@@ -149,9 +158,13 @@ const TasksPage = () => {
         const category = getCategory(authStore.role);
 
         if (category) {
-          const response = await api.get(`/api/get-tasks/?category=${category}`);
+          const response = await api.get(
+            `/api/get-tasks/?category=${category}`
+          );
           setTasks(response.data.data || []);
-          setTaskStats(response.data.stats || { total: 0, completed: 0, pending: 0 });
+          setTaskStats(
+            response.data.stats || { total: 0, completed: 0, pending: 0 }
+          );
         } else {
           setTasks([]);
           setTaskStats({ total: 0, completed: 0, pending: 0 });
@@ -243,9 +256,13 @@ const TasksPage = () => {
         pending: taskStats.pending,
       };
     } else if (filterType === "Assigned") {
-      return taskStats.breakdown?.assigned || { completed: 0, total: 0, pending: 0 };
+      return (
+        taskStats.breakdown?.assigned || { completed: 0, total: 0, pending: 0 }
+      );
     } else if (filterType === "Automated") {
-      return taskStats.breakdown?.automated || { completed: 0, total: 0, pending: 0 };
+      return (
+        taskStats.breakdown?.automated || { completed: 0, total: 0, pending: 0 }
+      );
     }
     return { completed: 0, total: 0, pending: 0 };
   };
@@ -254,7 +271,9 @@ const TasksPage = () => {
   const filteredCompletedCount = filteredStats.completed;
   const filteredTotalTasks = filteredStats.total;
   const progressPercentage =
-    filteredTotalTasks > 0 ? (filteredCompletedCount / filteredTotalTasks) * 100 : 0;
+    filteredTotalTasks > 0
+      ? (filteredCompletedCount / filteredTotalTasks) * 100
+      : 100;
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -294,7 +313,7 @@ const TasksPage = () => {
               <button
                 onClick={() => navigateToContactProfile(task.contact_id)}
                 className="ml-2 p-1 text-gray-400 hover:text-blue-600 transition-colors rounded-full hover:bg-blue-50"
-                title={`View profile of ${task.assigned_to_name || 'Contact'}`}
+                title={`View profile of ${task.assigned_to_name || "Contact"}`}
               >
                 <ExternalLink size={16} />
               </button>
@@ -304,10 +323,15 @@ const TasksPage = () => {
           {task.assigned_to_name && (
             <div className="flex items-center gap-2 mb-2">
               <span className="text-sm text-gray-600">
-                Assigned to: <span className="font-medium text-gray-800">{task.assigned_to_name}</span>
+                Assigned to:{" "}
+                <span className="font-medium text-gray-800">
+                  {task.assigned_to_name}
+                </span>
               </span>
               {task.assigned_to_email && (
-                <span className="text-xs text-gray-500">({task.assigned_to_email})</span>
+                <span className="text-xs text-gray-500">
+                  ({task.assigned_to_email})
+                </span>
               )}
             </div>
           )}
@@ -455,7 +479,8 @@ const TasksPage = () => {
                 ></div>
               </div>
               <div className="text-sm text-gray-500 mt-1">
-                {progressPercentage.toFixed(0)}% complete • {filteredTasks.length} pending
+                {progressPercentage.toFixed(0)}% complete •{" "}
+                {filteredTasks.length} pending
               </div>
             </div>
           </div>
@@ -464,8 +489,12 @@ const TasksPage = () => {
           {filteredTasks.length === 0 && searchTerm ? (
             <div className="text-center py-12">
               <Search className="mx-auto text-gray-400 mb-4" size={48} />
-              <h3 className="text-xl font-semibold text-gray-500 mb-2">No tasks found</h3>
-              <p className="text-gray-400">Try adjusting your search or filter criteria</p>
+              <h3 className="text-xl font-semibold text-gray-500 mb-2">
+                No tasks found
+              </h3>
+              <p className="text-gray-400">
+                Try adjusting your search or filter criteria
+              </p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -484,7 +513,9 @@ const TasksPage = () => {
             {/* Modal Header */}
             <div className="flex items-center justify-between p-6 border-b border-gray-200">
               <div className="flex items-center gap-3">
-                <h2 className="text-2xl font-semibold text-gray-900">Task Details</h2>
+                <h2 className="text-2xl font-semibold text-gray-900">
+                  Task Details
+                </h2>
                 {selectedTask.contact_id && (
                   <button
                     onClick={() => {
@@ -492,7 +523,9 @@ const TasksPage = () => {
                       closeModal();
                     }}
                     className="p-2 text-gray-400 hover:text-blue-600 transition-colors rounded-full hover:bg-blue-50"
-                    title={`View profile of ${selectedTask.assigned_to_name || 'Contact'}`}
+                    title={`View profile of ${
+                      selectedTask.assigned_to_name || "Contact"
+                    }`}
                   >
                     <ExternalLink size={18} />
                   </button>
@@ -516,14 +549,22 @@ const TasksPage = () => {
               {/* Contact Info Section */}
               {selectedTask.assigned_to_name && (
                 <div className="mb-4 p-4 bg-blue-50 rounded-lg">
-                  <h4 className="text-sm font-medium text-blue-800 mb-2">Assigned Contact</h4>
+                  <h4 className="text-sm font-medium text-blue-800 mb-2">
+                    Assigned Contact
+                  </h4>
                   <div className="space-y-1">
-                    <p className="text-blue-900 font-medium">{selectedTask.assigned_to_name}</p>
+                    <p className="text-blue-900 font-medium">
+                      {selectedTask.assigned_to_name}
+                    </p>
                     {selectedTask.assigned_to_email && (
-                      <p className="text-blue-700 text-sm">{selectedTask.assigned_to_email}</p>
+                      <p className="text-blue-700 text-sm">
+                        {selectedTask.assigned_to_email}
+                      </p>
                     )}
                     {selectedTask.assigned_to_phone && (
-                      <p className="text-blue-700 text-sm">{selectedTask.assigned_to_phone}</p>
+                      <p className="text-blue-700 text-sm">
+                        {selectedTask.assigned_to_phone}
+                      </p>
                     )}
                   </div>
                 </div>
@@ -556,22 +597,30 @@ const TasksPage = () => {
                 <div className="flex items-center gap-2 p-3 bg-green-50 rounded-lg">
                   <Calendar size={18} className="text-green-600" />
                   <div>
-                    <p className="text-sm text-green-600 font-medium">Assigned Date</p>
-                    <p className="text-green-800">{formatDate(selectedTask.created_at)}</p>
+                    <p className="text-sm text-green-600 font-medium">
+                      Assigned Date
+                    </p>
+                    <p className="text-green-800">
+                      {formatDate(selectedTask.created_at)}
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 p-3 bg-red-50 rounded-lg">
                   <Clock size={18} className="text-red-600" />
                   <div>
                     <p className="text-sm text-red-600 font-medium">Due Date</p>
-                    <p className="text-red-800">{formatDate(selectedTask.task_deadline)}</p>
+                    <p className="text-red-800">
+                      {formatDate(selectedTask.task_deadline)}
+                    </p>
                   </div>
                 </div>
               </div>
 
               {/* Description */}
               <div className="mb-6">
-                <h4 className="text-lg font-medium text-gray-900 mb-3">Description</h4>
+                <h4 className="text-lg font-medium text-gray-900 mb-3">
+                  Description
+                </h4>
                 <div className="bg-gray-50 rounded-lg p-4">
                   <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
                     {selectedTask.task_description}
