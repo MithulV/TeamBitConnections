@@ -130,27 +130,9 @@ const RecentEventsTimeline = ({ contacts }) => {
       contactName: item.contact_name || "Unknown Contact",
       created_at: item.created_at,
     })),
-    // Add recent contact additions
-    ...contacts.slice(0, 10).map((contact) => ({
-      id: `contact-${contact.contact_id}`,
-      type: "contact_added",
-      modificationType: "CREATE",
-      initiator: contact.added_by || "System",
-      title: `${contact.name || "Unknown"} joined`,
-      description: contact.event_name
-        ? `Event: ${contact.event_name.split(";")[0]}`
-        : `Category: ${contact.category || "N/A"}`,
-      contactName: contact.name,
-      date: formatDate(contact.created_at),
-      time: contact.created_at
-        ? new Date(contact.created_at).toLocaleTimeString()
-        : "Unknown",
-      category: contact.category,
-      created_at: contact.created_at,
-    })),
+    // Add recent contact addition
   ]
     .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-    .slice(0, 15);
 
   // Full History Modal Component
   const FullHistoryModal = () => (

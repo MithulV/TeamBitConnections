@@ -131,7 +131,6 @@ export const getAllModificationHistory = async (db, limit = 50, offset = 0) => {
       LEFT JOIN contact c ON c.contact_id = cmh.contact_id
       LEFT JOIN login assigned_user ON assigned_user.id = cmh.assigned_to  -- join to get assigned user details
       ORDER BY cmh.created_at DESC
-      LIMIT ${limit} OFFSET ${offset}
     `;
 
     return await query;

@@ -182,20 +182,20 @@ function Admin() {
   const [endDate, setEndDate] = useState(new Date());
   const [dateRangeType, setDateRangeType] = useState("custom");
 
-  const [alert, setAlert] = useState({
-    isOpen: false,
-    severity: "success",
-    message: "",
-  });
+const [alert, setAlert] = useState({
+  isOpen: false,
+  severity: "success",
+  message: "",
+});
 
-  // Alert Functions
-  const showAlert = (severity, message) => {
-    setAlert({ isOpen: true, severity, message });
-  };
+// Alert Functions - Modified to handle persistent info alerts
+const showAlert = (severity, message) => {
+  setAlert({ isOpen: true, severity, message });
+};
 
-  const closeAlert = () => {
-    setAlert((prev) => ({ ...prev, isOpen: false }));
-  };
+const closeAlert = () => {
+  setAlert((prev) => ({ ...prev, isOpen: false }));
+};
 
   // CSV export function
   const exportCsv = (contacts) => {
@@ -623,52 +623,52 @@ function Admin() {
   // CSV Upload Handler
   const csvInputRef = useRef(null);
 
-  const handleCSVUpload = async (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
+const handleCSVUpload = async (event) => {
+  const file = event.target.files[0];
+  if (!file) return;
 
-    if (!file.name.endsWith(".csv") && file.type !== "text/csv") {
-      showAlert("error", "Please select a valid CSV file");
-      return;
-    }
+  if (!file.name.endsWith(".csv") && file.type !== "text/csv") {
+    showAlert("error", "Please select a valid CSV file");
+    return;
+  }
 
-    if (file.size > 10 * 1024 * 1024) {
-      showAlert("error", "File size too large. Maximum 10MB allowed.");
-      return;
-    }
+  if (file.size > 10 * 1024 * 1024) {
+    showAlert("error", "File size too large. Maximum 10MB allowed.");
+    return;
+  }
 
-    showAlert("info", "Processing CSV file...");
+  showAlert("info", "Processing CSV file...");
 
-    try {
-      const formData = new FormData();
-      formData.append("csv_file", file);
-      formData.append("created_by", id);
+  try {
+    const formData = new FormData();
+    formData.append("csv_file", file);
+    formData.append("created_by", id);
 
-      const response = await api.post("/api/import-csv", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+    const response = await api.post("/api/import-csv", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
 
-      if (response.data.success) {
-        const { successCount, errorCount, duplicateCount, totalRows } =
-          response.data.data;
-        showAlert(
-          "success",
-          `CSV Import Complete!\n📊 Total rows processed: ${totalRows}\n✅ Successfully added: ${successCount}\n⚠️ Duplicates skipped: ${duplicateCount}\n❌ Errors encountered: ${errorCount}`
-        );
-        fetchDashboardData();
-      } else {
-        showAlert("error", `Import failed: ${response.data.message}`);
-      }
-    } catch (error) {
-      console.error("CSV import error:", error);
+    if (response.data.success) {
+      const { successCount, errorCount, duplicateCount, totalRows } =
+        response.data.data;
       showAlert(
-        "error",
-        `CSV Import Error: ${error.response?.data?.message || error.message}`
+        "success",
+        `CSV Import Complete!\n📊 Total rows processed: ${totalRows}\n✅ Successfully added: ${successCount}\n⚠️ Duplicates skipped: ${duplicateCount}\n❌ Errors encountered: ${errorCount}`
       );
+      fetchDashboardData();
+    } else {
+      showAlert("error", `Import failed: ${response.data.message}`);
     }
+  } catch (error) {
+    console.error("CSV import error:", error);
+    showAlert(
+      "error",
+      `CSV Import Error: ${error.response?.data?.message || error.message}`
+    );
+  }
 
-    event.target.value = "";
-  };
+  event.target.value = "";
+};
 
   // Quick Actions
   const quickActions = [
@@ -761,7 +761,7 @@ function Admin() {
         message={alert.message}
         onClose={closeAlert}
         position="bottom"
-        duration={4000}
+        duration={alert.severity === "info" ? 0 : 4000} 
       />
 
       <div className="w-full bg-white shadow-sm sticky top-0 z-50 border-b-2 border-b-gray-50">

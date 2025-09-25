@@ -2,7 +2,8 @@ import multer from "multer";
 import fs from "fs";
 import path from "path";
 import db from "../src/config/db.js";
-
+import { logContactModification } from "./ModificationHistoryControllers.js";
+// Multer storage configuration
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     const uploadDir = "uploads/";
@@ -17,6 +18,7 @@ const storage = multer.diskStorage({
   },
 });
 
+// Multer upload configuration
 const upload = multer({
   storage,
   fileFilter: (req, file, cb) => {
@@ -35,6 +37,7 @@ const upload = multer({
   },
 });
 
+// Main CSV Import Function
 export const ImportContactsFromCSV = async (req, res) => {
   try {
     if (!req.file) {
@@ -246,12 +249,12 @@ export const ImportContactsFromCSV = async (req, res) => {
 
             // Check for existing contact (duplicate prevention)
             const existingContact = await t`
-                          SELECT contact_id, name FROM contact 
-                          WHERE (email_address = ${row.email_address} AND email_address IS NOT NULL)
-                             OR (phone_number = ${row.phone_number} AND phone_number IS NOT NULL)
-                          LIMIT 1
-                        `;
-            // console.log(row.date);
+              SELECT contact_id, name FROM contact 
+              WHERE (email_address = ${row.email_address} AND email_address IS NOT NULL)
+                 OR (phone_number = ${row.phone_number} AND phone_number IS NOT NULL)
+              LIMIT 1
+            `;
+
             if (existingContact.length > 0) {
               duplicates.push({
                 row: rowNumber,
@@ -264,167 +267,151 @@ export const ImportContactsFromCSV = async (req, res) => {
 
             // ✅ INSERT NEW CONTACT - Main contact table
             const [newContact] = await t`
-                          INSERT INTO contact (
-                            created_by, name, phone_number, email_address, 
-                            dob, gender, nationality, marital_status, category,
-                            secondary_email, secondary_phone_number, 
-                            emergency_contact_name, emergency_contact_relationship, emergency_contact_phone_number,
-                            skills, linkedin_url, created_at, updated_at
-                          ) VALUES (
-                            ${created_by || null}, ${row.name}, ${
-              row.phone_number
-            }, ${row.email_address},
-                            ${row.dob || null}, ${row.gender || null}, ${
-              row.nationality || null
-            }, 
-                            ${row.marital_status || null}, ${
-              row.category.toUpperCase() || null
-            },
-                            ${row.secondary_email || null}, ${
-              row.secondary_phone_number || null
-            },
-                            ${row.emergency_contact_name || null}, ${
-              row.emergency_contact_relationship || null
-            }, 
-                            ${row.emergency_contact_phone_number || null},
-                            ${row.skills || null}, ${
-              row.linkedin_url || null
-            }, NOW(), NOW()
-                          ) RETURNING *
-                        `;
+              INSERT INTO contact (
+                created_by, name, phone_number, email_address, 
+                dob, gender, nationality, marital_status, category,
+                secondary_email, secondary_phone_number, 
+                emergency_contact_name, emergency_contact_relationship, emergency_contact_phone_number,
+                skills, linkedin_url, created_at, updated_at
+              ) VALUES (
+                ${created_by || null}, ${row.name}, ${row.phone_number}, ${row.email_address},
+                ${row.dob || null}, ${row.gender || null}, ${row.nationality || null}, 
+                ${row.marital_status || null}, ${row.category?.toUpperCase() || null},
+                ${row.secondary_email || null}, ${row.secondary_phone_number || null},
+                ${row.emergency_contact_name || null}, ${row.emergency_contact_relationship || null}, 
+                ${row.emergency_contact_phone_number || null},
+                ${row.skills || null}, ${row.linkedin_url || null}, NOW(), NOW()
+              ) RETURNING *
+            `;
 
             const contactId = newContact.contact_id;
             console.log(`✅ Inserted contact ${contactId}: ${row.name}`);
 
+            // ✅ ADD CONTACT MODIFICATION LOGGING
+            try {
+              await logContactModification(db, contactId, created_by, "CREATE", t);
+              console.log(`✅ Contact modification logged for contact ${contactId}`);
+            } catch (err) {
+              console.warn(
+                "Contact modification logging failed, but continuing operation:",
+                err.message
+              );
+              // Execution continues
+            }
+
+
+            // ✅ PARALLEL EXECUTION OF INDEPENDENT OPERATIONS USING PROMISE.ALL
+            // Create array of promises for independent operations
+            const parallelOperations = [];
+
             // ✅ INSERT ADDRESS DATA
-            if (
-              row.street ||
-              row.city ||
-              row.state ||
-              row.country ||
-              row.zipcode
-            ) {
-              await t`
-                              INSERT INTO contact_address (
-                                contact_id, street, city, state, country, zipcode, created_at
-                              ) VALUES (
-                                ${contactId}, ${row.street || null}, ${
-                row.city || null
-              }, 
-                                ${row.state || null}, ${row.country || null}, ${
-                row.zipcode || null
-              }, 
-                                NOW()
-                              )
-                            `;
-              console.log(`✅ Inserted address for contact ${contactId}`);
+            if (row.street || row.city || row.state || row.country || row.zipcode) {
+              parallelOperations.push(
+                t`
+                  INSERT INTO contact_address (
+                    contact_id, street, city, state, country, zipcode, created_at
+                  ) VALUES (
+                    ${contactId}, ${row.street || null}, ${row.city || null}, 
+                    ${row.state || null}, ${row.country || null}, ${row.zipcode || null}, 
+                    NOW()
+                  )
+                `.then(() => {
+                  console.log(`✅ Inserted address for contact ${contactId}`);
+                  return { type: 'address', contactId };
+                }).catch((error) => {
+                  console.error(`❌ Address insertion failed for contact ${contactId}:`, error);
+                  throw error;
+                })
+              );
             }
 
             // ✅ INSERT EDUCATION DATA
-            if (
-              row.pg_course_name ||
-              row.pg_college_name ||
-              row.ug_course_name ||
-              row.ug_college_name
-            ) {
-              await t`
-                              INSERT INTO contact_education (
-                                contact_id, pg_course_name, pg_college, pg_university, 
-                                pg_from_date, pg_to_date, ug_course_name, ug_college, 
-                                ug_university, ug_from_date, ug_to_date
-                              ) VALUES (
-                                ${contactId}, ${row.pg_course_name || null}, ${
-                row.pg_college_name || null
-              }, 
-                                ${row.pg_university_type || null}, ${
-                row.pg_start_date || null
-              }, 
-                                ${row.pg_end_date || null}, ${
-                row.ug_course_name || null
-              }, 
-                                ${row.ug_college_name || null}, ${
-                row.ug_university_type || null
-              }, 
-                                ${row.ug_start_date || null}, ${
-                row.ug_end_date || null
-              }
-                              )
-                            `;
-              console.log(`✅ Inserted education for contact ${contactId}`);
+            if (row.pg_course_name || row.pg_college_name || row.ug_course_name || row.ug_college_name) {
+              parallelOperations.push(
+                t`
+                  INSERT INTO contact_education (
+                    contact_id, pg_course_name, pg_college, pg_university, 
+                    pg_from_date, pg_to_date, ug_course_name, ug_college, 
+                    ug_university, ug_from_date, ug_to_date
+                  ) VALUES (
+                    ${contactId}, ${row.pg_course_name || null}, ${row.pg_college_name || null}, 
+                    ${row.pg_university_type || null}, ${row.pg_start_date || null}, 
+                    ${row.pg_end_date || null}, ${row.ug_course_name || null}, 
+                    ${row.ug_college_name || null}, ${row.ug_university_type || null}, 
+                    ${row.ug_start_date || null}, ${row.ug_end_date || null}
+                  )
+                `.then(() => {
+                  console.log(`✅ Inserted education for contact ${contactId}`);
+                  return { type: 'education', contactId };
+                }).catch((error) => {
+                  console.error(`❌ Education insertion failed for contact ${contactId}:`, error);
+                  throw error;
+                })
+              );
             }
 
             // ✅ INSERT EXPERIENCE DATA
             if (row.job_title || row.company_name) {
-              await t`
-                              INSERT INTO contact_experience (
-                                contact_id, job_title, company, department, 
-                                from_date, to_date, created_at
-                              ) VALUES (
-                                ${contactId}, ${row.job_title || null}, ${
-                row.company_name || null
-              }, 
-                                ${row.department_type || null}, ${
-                row.from_date || null
-              }, 
-                                ${row.to_date || null}, NOW()
-                              )
-                            `;
-              console.log(`✅ Inserted experience for contact ${contactId}`);
+              parallelOperations.push(
+                t`
+                  INSERT INTO contact_experience (
+                    contact_id, job_title, company, department, 
+                    from_date, to_date, created_at
+                  ) VALUES (
+                    ${contactId}, ${row.job_title || null}, ${row.company_name || null}, 
+                    ${row.department_type || null}, ${row.from_date || null}, 
+                    ${row.to_date || null}, NOW()
+                  )
+                `.then(() => {
+                  console.log(`✅ Inserted experience for contact ${contactId}`);
+                  return { type: 'experience', contactId };
+                }).catch((error) => {
+                  console.error(`❌ Experience insertion failed for contact ${contactId}:`, error);
+                  throw error;
+                })
+              );
             }
 
             // ✅ INSERT EVENTS DATA
             if (row.event_name) {
-              await t`
-                              INSERT INTO event (
-                                contact_id, event_name, event_role, event_held_organization, 
-                                event_location, event_date,verified,contact_status, created_at, updated_at,created_by
-                              ) VALUES (
-                                ${contactId}, ${row.event_name}, ${
-                row.event_role || null
-              }, 
-                                ${row.event_held_organization || null}, ${
-                row.event_location || null
-              }, 
-                                ${
-                                  row.event_date || null
-                                },${true},${"approved"}, NOW(), NOW(),${created_by}
-                              )
-                            `;
-              console.log(`✅ Inserted event for contact ${contactId}`);
+              parallelOperations.push(
+                t`
+                  INSERT INTO event (
+                    contact_id, event_name, event_role, event_held_organization, 
+                    event_location, event_date, verified, contact_status, created_at, updated_at, created_by
+                  ) VALUES (
+                    ${contactId}, ${row.event_name}, ${row.event_role || null}, 
+                    ${row.event_held_organization || null}, ${row.event_location || null}, 
+                    ${row.event_date || null}, ${true}, ${"approved"}, NOW(), NOW(), ${created_by}
+                  )
+                `.then(() => {
+                  console.log(`✅ Inserted event for contact ${contactId}`);
+                  return { type: 'event', contactId };
+                }).catch((error) => {
+                  console.error(`❌ Event insertion failed for contact ${contactId}:`, error);
+                  throw error;
+                })
+              );
             }
 
-            // // ✅ INSERT LOGGER DATA (if you have a logger table)
-            // if (row.logger) {
-            //     await t`
-            //       INSERT INTO contact_logs (
-            //         contact_id, logger, log_date, created_at
-            //       ) VALUES (
-            //         ${contactId}, ${row.logger}, NOW(), NOW()
-            //       )
-            //     `;
-            //     console.log(`✅ Inserted logger for contact ${contactId}`);
-            // }
-
-            // // ✅ INSERT DEPARTMENT DATA (if separate table)
-            // if (row.department_type && row.company_name) {
-            //     await t`
-            //       INSERT INTO departments (
-            //         contact_id, department_name, company_name, created_at, updated_at
-            //       ) VALUES (
-            //         ${contactId}, ${row.department_type}, ${row.company_name}, NOW(), NOW()
-            //       )
-            //     `;
-            //     console.log(`✅ Inserted department for contact ${contactId}`);
-            // }
-
-            // ✅ INSERT CONTACT VERIFICATION STATUS
-            // await t`
-            //   INSERT INTO contact_verification (
-            //     contact_id, verified, contact_status, added_by, created_at, updated_at
-            //   ) VALUES (
-            //     ${contactId}, true, 'approved', ${created_by || null}, NOW(), NOW()
-            //   )
-            // `;
+            // ✅ EXECUTE ALL PARALLEL OPERATIONS USING PROMISE.ALL
+            if (parallelOperations.length > 0) {
+              try {
+                console.log(`🚀 Starting ${parallelOperations.length} parallel operations for contact ${contactId}`);
+                const parallelResults = await Promise.all(parallelOperations);
+                console.log(`✅ All ${parallelResults.length} parallel operations completed for contact ${contactId}`);
+                
+                // Log each completed operation
+                parallelResults.forEach((result) => {
+                  console.log(`   ✓ ${result.type} operation completed for contact ${result.contactId}`);
+                });
+              } catch (parallelError) {
+                console.error(`❌ Error in parallel operations for contact ${contactId}:`, parallelError);
+                throw parallelError; // Re-throw to trigger transaction rollback
+              }
+            } else {
+              console.log(`ℹ️ No additional data to insert for contact ${contactId}`);
+            }
 
             processedContacts.push({
               row: rowNumber,
@@ -433,8 +420,9 @@ export const ImportContactsFromCSV = async (req, res) => {
               email: row.email_address,
             });
             successCount++;
+
           } catch (error) {
-            console.error(`Error processing row ${rowNumber}:`, error);
+            console.error(`❌ Error processing row ${rowNumber}:`, error);
             errors.push({
               row: rowNumber,
               message: error.message,
@@ -454,9 +442,9 @@ export const ImportContactsFromCSV = async (req, res) => {
         };
       });
 
-      console.log("✅ CSV Import Transaction Completed Successfully");
+      console.log("🎉 CSV Import Transaction Completed Successfully");
       console.log(
-        `📊 Results: ${result.successCount} success, ${result.errorCount} errors, ${result.duplicateCount} duplicates`
+        `📊 Final Results: ${result.successCount} success, ${result.errorCount} errors, ${result.duplicateCount} duplicates`
       );
 
       return res.status(200).json({
@@ -464,6 +452,7 @@ export const ImportContactsFromCSV = async (req, res) => {
         success: true,
         data: result,
       });
+
     } catch (error) {
       console.error("❌ Database transaction error:", error);
       return res.status(500).json({
@@ -472,6 +461,7 @@ export const ImportContactsFromCSV = async (req, res) => {
         error: error.message,
       });
     }
+
   } catch (error) {
     console.error("❌ CSV import error:", error);
 
@@ -488,10 +478,10 @@ export const ImportContactsFromCSV = async (req, res) => {
   }
 };
 
-//  EXPORT MULTER UPLOAD MIDDLEWARE
+// ✅ EXPORT MULTER UPLOAD MIDDLEWARE
 export const uploadCSV = upload.single("csv_file");
 
-//  OPTIONAL: Helper function to validate CSV headers
+// ✅ HELPER FUNCTION TO VALIDATE CSV HEADERS
 export const validateCSVHeaders = (headers) => {
   const requiredHeaders = ["name", "phone_number", "email_address"];
   const missingHeaders = requiredHeaders.filter(
@@ -505,7 +495,7 @@ export const validateCSVHeaders = (headers) => {
   };
 };
 
-//  OPTIONAL: Helper function to sanitize CSV data
+// ✅ HELPER FUNCTION TO SANITIZE CSV DATA
 export const sanitizeRowData = (row) => {
   const sanitized = {};
 
@@ -524,6 +514,4 @@ export const sanitizeRowData = (row) => {
   return sanitized;
 };
 
-console.log(
-  " CSV Import controller loaded with complete multi-table insert support"
-);
+console.log("🚀 CSV Import controller loaded with complete multi-table insert support and Promise.all optimization");
