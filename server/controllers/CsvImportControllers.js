@@ -3,6 +3,7 @@ import fs from "fs";
 import path from "path";
 import db from "../src/config/db.js";
 import { logContactModification } from "./ModificationHistoryControllers.js";
+
 // Multer storage configuration
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -37,7 +38,7 @@ const upload = multer({
   },
 });
 
-// Main CSV Import Function
+// Main CSV Import Function with Event-Specific Validation
 export const ImportContactsFromCSV = async (req, res) => {
   try {
     if (!req.file) {
@@ -169,13 +170,16 @@ export const ImportContactsFromCSV = async (req, res) => {
       );
     }
 
-    // Process CSV data with database transaction
+    // Process CSV data with database transaction - ENHANCED WITH EVENT VALIDATION
     try {
       const result = await db.begin(async (t) => {
         const processedContacts = [];
         const errors = [];
-        const duplicates = [];
         let successCount = 0;
+        let updatedCount = 0;
+        let insertedCount = 0;
+        let eventsCreated = 0;
+        let eventsUpdated = 0;
 
         for (let i = 0; i < fileRows.length; i++) {
           const row = fileRows[i];
@@ -186,6 +190,7 @@ export const ImportContactsFromCSV = async (req, res) => {
               name: row.name,
               phone: row.phone || row.phone_number,
               email: row.email || row.email_address,
+              event: row.event_name,
             });
 
             // ✅ MAP CSV FIELD NAMES TO DATABASE FIELD NAMES
@@ -213,14 +218,11 @@ export const ImportContactsFromCSV = async (req, res) => {
             if (row.gender && row.gender.trim() !== "") {
               const inputGender = row.gender.toString().trim().toLowerCase();
 
-              // Test common enum formats - we'll try the most likely ones
               if (inputGender === "m" || inputGender === "male") {
-                // Try different possible enum values
-                validGender = "Male"; // Title case - very common in enums
+                validGender = "Male";
               } else if (inputGender === "f" || inputGender === "female") {
-                validGender = "Female"; // Title case - very common in enums
+                validGender = "Female";
               } else {
-                // For any other value (including 'other', 'o', etc.), set to null
                 console.log(
                   `ℹ️ Gender value "${row.gender}" in row ${rowNumber} set to null (only Male/Female accepted)`
                 );
@@ -230,9 +232,8 @@ export const ImportContactsFromCSV = async (req, res) => {
             row.gender = validGender;
 
             // ✅ VALIDATE FIELD LENGTHS TO PREVENT VARCHAR ERRORS
-            // Based on the error "character varying(20)", some fields have a 20-character limit
             const fieldLimits = {
-              phone_number: 20, // Likely the field causing the error
+              phone_number: 20,
               category: 20,
               nationality: 50,
               marital_status: 20,
@@ -247,177 +248,349 @@ export const ImportContactsFromCSV = async (req, res) => {
               }
             });
 
-            // Check for existing contact (duplicate prevention)
-            const existingContact = await t`
-              SELECT contact_id, name FROM contact 
-              WHERE (email_address = ${row.email_address} AND email_address IS NOT NULL)
-                 OR (phone_number = ${row.phone_number} AND phone_number IS NOT NULL)
-              LIMIT 1
-            `;
+            // ✅ ENHANCED CONTACT DETECTION WITH EVENT VALIDATION
+            let existingContact = null;
+            let contactId = null;
+            let wasContactInserted = false;
+            let existingEventForContact = null;
 
-            if (existingContact.length > 0) {
-              duplicates.push({
-                row: rowNumber,
-                message: `Contact already exists: ${existingContact[0].name}`,
-                existingContactId: existingContact[0].contact_id,
-                data: row,
-              });
-              continue;
+            try {
+              // 🔍 STEP 1: Check for existing contact by email address
+              const existingContactResult = await t`
+                SELECT contact_id, name FROM contact 
+                WHERE email_address = ${row.email_address}
+                LIMIT 1
+              `;
+
+              if (existingContactResult.length > 0) {
+                // ✅ CONTACT EXISTS - Now check if this specific event exists for this contact
+                existingContact = existingContactResult[0];
+                contactId = existingContact.contact_id;
+
+                console.log(`🔍 Found existing contact ${contactId} for email ${row.email_address}`);
+
+                // 🔍 STEP 2: Check if the specific event exists for this contact
+                if (row.event_name && row.event_name.trim() !== "") {
+                  const existingEventResult = await t`
+                    SELECT event_id, event_name, event_role, event_held_organization, event_location, event_date
+                    FROM event 
+                    WHERE contact_id = ${contactId} AND event_name = ${row.event_name.trim()}
+                    LIMIT 1
+                  `;
+
+                  if (existingEventResult.length > 0) {
+                    existingEventForContact = existingEventResult[0];
+                    console.log(`🔍 Found existing event "${row.event_name}" for contact ${contactId}`);
+                  } else {
+                    console.log(`ℹ️ Event "${row.event_name}" does not exist for contact ${contactId}, will create new event`);
+                  }
+                }
+
+                // ✅ UPDATE EXISTING CONTACT (only basic contact info, not event-specific)
+                const [updatedContact] = await t`
+                  UPDATE contact SET
+                    name = ${row.name},
+                    phone_number = ${row.phone_number},
+                    dob = ${row.dob || null},
+                    gender = ${row.gender || null},
+                    nationality = ${row.nationality || null},
+                    marital_status = ${row.marital_status || null},
+                    category = ${row.category?.toUpperCase() || null},
+                    secondary_email = ${row.secondary_email || null},
+                    secondary_phone_number = ${row.secondary_phone_number || null},
+                    emergency_contact_name = ${row.emergency_contact_name || null},
+                    emergency_contact_relationship = ${row.emergency_contact_relationship || null},
+                    emergency_contact_phone_number = ${row.emergency_contact_phone_number || null},
+                    skills = ${row.skills || null},
+                    linkedin_url = ${row.linkedin_url || null},
+                    updated_at = NOW()
+                  WHERE contact_id = ${contactId}
+                  RETURNING contact_id, name
+                `;
+
+                console.log(`✅ Updated existing contact ${contactId}: ${row.name}`);
+                updatedCount++;
+                wasContactInserted = false;
+
+              } else {
+                // ✅ INSERT NEW CONTACT
+                const [newContact] = await t`
+                  INSERT INTO contact (
+                    created_by, name, phone_number, email_address, 
+                    dob, gender, nationality, marital_status, category,
+                    secondary_email, secondary_phone_number, 
+                    emergency_contact_name, emergency_contact_relationship, emergency_contact_phone_number,
+                    skills, linkedin_url, created_at, updated_at
+                  ) VALUES (
+                    ${created_by || null}, ${row.name}, ${row.phone_number}, ${row.email_address},
+                    ${row.dob || null}, ${row.gender || null}, ${row.nationality || null}, 
+                    ${row.marital_status || null}, ${row.category?.toUpperCase() || null},
+                    ${row.secondary_email || null}, ${row.secondary_phone_number || null},
+                    ${row.emergency_contact_name || null}, ${row.emergency_contact_relationship || null}, 
+                    ${row.emergency_contact_phone_number || null},
+                    ${row.skills || null}, ${row.linkedin_url || null}, NOW(), NOW()
+                  ) 
+                  RETURNING contact_id, name
+                `;
+
+                contactId = newContact.contact_id;
+                console.log(`✅ Inserted new contact ${contactId}: ${row.name}`);
+                insertedCount++;
+                wasContactInserted = true;
+              }
+
+            } catch (contactError) {
+              console.error(`❌ Error in contact upsert for row ${rowNumber}:`, contactError);
+              throw contactError;
             }
-
-            // ✅ INSERT NEW CONTACT - Main contact table
-            const [newContact] = await t`
-              INSERT INTO contact (
-                created_by, name, phone_number, email_address, 
-                dob, gender, nationality, marital_status, category,
-                secondary_email, secondary_phone_number, 
-                emergency_contact_name, emergency_contact_relationship, emergency_contact_phone_number,
-                skills, linkedin_url, created_at, updated_at
-              ) VALUES (
-                ${created_by || null}, ${row.name}, ${row.phone_number}, ${row.email_address},
-                ${row.dob || null}, ${row.gender || null}, ${row.nationality || null}, 
-                ${row.marital_status || null}, ${row.category?.toUpperCase() || null},
-                ${row.secondary_email || null}, ${row.secondary_phone_number || null},
-                ${row.emergency_contact_name || null}, ${row.emergency_contact_relationship || null}, 
-                ${row.emergency_contact_phone_number || null},
-                ${row.skills || null}, ${row.linkedin_url || null}, NOW(), NOW()
-              ) RETURNING *
-            `;
-
-            const contactId = newContact.contact_id;
-            console.log(`✅ Inserted contact ${contactId}: ${row.name}`);
 
             // ✅ ADD CONTACT MODIFICATION LOGGING
             try {
-              await logContactModification(db, contactId, created_by, "CREATE", t);
-              console.log(`✅ Contact modification logged for contact ${contactId}`);
+              const actionType = wasContactInserted ? "CREATE" : "UPDATE";
+              await logContactModification(db, contactId, created_by, actionType, t);
+              console.log(`✅ Contact modification logged for contact ${contactId} (${actionType})`);
             } catch (err) {
               console.warn(
                 "Contact modification logging failed, but continuing operation:",
                 err.message
               );
-              // Execution continues
             }
 
-
-            // ✅ PARALLEL EXECUTION OF INDEPENDENT OPERATIONS USING PROMISE.ALL
-            // Create array of promises for independent operations
+            // ✅ PARALLEL EXECUTION OF INDEPENDENT OPERATIONS WITH ENHANCED EVENT HANDLING
             const parallelOperations = [];
 
-            // ✅ INSERT ADDRESS DATA
+            // ✅ HANDLE ADDRESS DATA WITH MANUAL UPSERT
             if (row.street || row.city || row.state || row.country || row.zipcode) {
               parallelOperations.push(
-                t`
-                  INSERT INTO contact_address (
-                    contact_id, street, city, state, country, zipcode, created_at
-                  ) VALUES (
-                    ${contactId}, ${row.street || null}, ${row.city || null}, 
-                    ${row.state || null}, ${row.country || null}, ${row.zipcode || null}, 
-                    NOW()
-                  )
-                `.then(() => {
-                  console.log(`✅ Inserted address for contact ${contactId}`);
-                  return { type: 'address', contactId };
-                }).catch((error) => {
-                  console.error(`❌ Address insertion failed for contact ${contactId}:`, error);
-                  throw error;
-                })
+                (async () => {
+                  try {
+                    const existingAddress = await t`
+                      SELECT contact_id FROM contact_address 
+                      WHERE contact_id = ${contactId}
+                      LIMIT 1
+                    `;
+
+                    if (existingAddress.length > 0) {
+                      await t`
+                        UPDATE contact_address SET
+                          street = ${row.street || null},
+                          city = ${row.city || null},
+                          state = ${row.state || null},
+                          country = ${row.country || null},
+                          zipcode = ${row.zipcode || null}
+                        WHERE contact_id = ${contactId}
+                      `;
+                      console.log(`✅ Updated address for contact ${contactId}`);
+                    } else {
+                      await t`
+                        INSERT INTO contact_address (
+                          contact_id, street, city, state, country, zipcode, created_at
+                        ) VALUES (
+                          ${contactId}, ${row.street || null}, ${row.city || null}, 
+                          ${row.state || null}, ${row.country || null}, ${row.zipcode || null}, 
+                          NOW()
+                        )
+                      `;
+                      console.log(`✅ Inserted address for contact ${contactId}`);
+                    }
+                    return { type: 'address', contactId };
+                  } catch (error) {
+                    console.error(`❌ Address operation failed for contact ${contactId}:`, error);
+                    throw error;
+                  }
+                })()
               );
             }
 
-            // ✅ INSERT EDUCATION DATA
+            // ✅ HANDLE EDUCATION DATA WITH MANUAL UPSERT
             if (row.pg_course_name || row.pg_college_name || row.ug_course_name || row.ug_college_name) {
               parallelOperations.push(
-                t`
-                  INSERT INTO contact_education (
-                    contact_id, pg_course_name, pg_college, pg_university, 
-                    pg_from_date, pg_to_date, ug_course_name, ug_college, 
-                    ug_university, ug_from_date, ug_to_date
-                  ) VALUES (
-                    ${contactId}, ${row.pg_course_name || null}, ${row.pg_college_name || null}, 
-                    ${row.pg_university_type || null}, ${row.pg_start_date || null}, 
-                    ${row.pg_end_date || null}, ${row.ug_course_name || null}, 
-                    ${row.ug_college_name || null}, ${row.ug_university_type || null}, 
-                    ${row.ug_start_date || null}, ${row.ug_end_date || null}
-                  )
-                `.then(() => {
-                  console.log(`✅ Inserted education for contact ${contactId}`);
-                  return { type: 'education', contactId };
-                }).catch((error) => {
-                  console.error(`❌ Education insertion failed for contact ${contactId}:`, error);
-                  throw error;
-                })
+                (async () => {
+                  try {
+                    const existingEducation = await t`
+                      SELECT contact_id FROM contact_education 
+                      WHERE contact_id = ${contactId}
+                      LIMIT 1
+                    `;
+
+                    if (existingEducation.length > 0) {
+                      await t`
+                        UPDATE contact_education SET
+                          pg_course_name = ${row.pg_course_name || null},
+                          pg_college = ${row.pg_college_name || null},
+                          pg_university = ${row.pg_university_type || null},
+                          pg_from_date = ${row.pg_start_date || null},
+                          pg_to_date = ${row.pg_end_date || null},
+                          ug_course_name = ${row.ug_course_name || null},
+                          ug_college = ${row.ug_college_name || null},
+                          ug_university = ${row.ug_university_type || null},
+                          ug_from_date = ${row.ug_start_date || null},
+                          ug_to_date = ${row.ug_end_date || null}
+                        WHERE contact_id = ${contactId}
+                      `;
+                      console.log(`✅ Updated education for contact ${contactId}`);
+                    } else {
+                      await t`
+                        INSERT INTO contact_education (
+                          contact_id, pg_course_name, pg_college, pg_university, 
+                          pg_from_date, pg_to_date, ug_course_name, ug_college, 
+                          ug_university, ug_from_date, ug_to_date
+                        ) VALUES (
+                          ${contactId}, ${row.pg_course_name || null}, ${row.pg_college_name || null}, 
+                          ${row.pg_university_type || null}, ${row.pg_start_date || null}, 
+                          ${row.pg_end_date || null}, ${row.ug_course_name || null}, 
+                          ${row.ug_college_name || null}, ${row.ug_university_type || null}, 
+                          ${row.ug_start_date || null}, ${row.ug_end_date || null}
+                        )
+                      `;
+                      console.log(`✅ Inserted education for contact ${contactId}`);
+                    }
+                    return { type: 'education', contactId };
+                  } catch (error) {
+                    console.error(`❌ Education operation failed for contact ${contactId}:`, error);
+                    throw error;
+                  }
+                })()
               );
             }
 
-            // ✅ INSERT EXPERIENCE DATA
+            // ✅ HANDLE EXPERIENCE DATA WITH MANUAL UPSERT
             if (row.job_title || row.company_name) {
               parallelOperations.push(
-                t`
-                  INSERT INTO contact_experience (
-                    contact_id, job_title, company, department, 
-                    from_date, to_date, created_at
-                  ) VALUES (
-                    ${contactId}, ${row.job_title || null}, ${row.company_name || null}, 
-                    ${row.department_type || null}, ${row.from_date || null}, 
-                    ${row.to_date || null}, NOW()
-                  )
-                `.then(() => {
-                  console.log(`✅ Inserted experience for contact ${contactId}`);
-                  return { type: 'experience', contactId };
-                }).catch((error) => {
-                  console.error(`❌ Experience insertion failed for contact ${contactId}:`, error);
-                  throw error;
-                })
+                (async () => {
+                  try {
+                    const existingExperience = await t`
+                      SELECT contact_id FROM contact_experience 
+                      WHERE contact_id = ${contactId}
+                      LIMIT 1
+                    `;
+
+                    if (existingExperience.length > 0) {
+                      await t`
+                        UPDATE contact_experience SET
+                          job_title = ${row.job_title || null},
+                          company = ${row.company_name || null},
+                          department = ${row.department_type || null},
+                          from_date = ${row.from_date || null},
+                          to_date = ${row.to_date || null}
+                        WHERE contact_id = ${contactId}
+                      `;
+                      console.log(`✅ Updated experience for contact ${contactId}`);
+                    } else {
+                      await t`
+                        INSERT INTO contact_experience (
+                          contact_id, job_title, company, department, 
+                          from_date, to_date, created_at
+                        ) VALUES (
+                          ${contactId}, ${row.job_title || null}, ${row.company_name || null}, 
+                          ${row.department_type || null}, ${row.from_date || null}, 
+                          ${row.to_date || null}, NOW()
+                        )
+                      `;
+                      console.log(`✅ Inserted experience for contact ${contactId}`);
+                    }
+                    return { type: 'experience', contactId };
+                  } catch (error) {
+                    console.error(`❌ Experience operation failed for contact ${contactId}:`, error);
+                    throw error;
+                  }
+                })()
               );
             }
 
-            // ✅ INSERT EVENTS DATA
-            if (row.event_name) {
+            // ✅ ENHANCED EVENT HANDLING WITH PROPER VALIDATION
+            if (row.event_name && row.event_name.trim() !== "") {
               parallelOperations.push(
-                t`
-                  INSERT INTO event (
-                    contact_id, event_name, event_role, event_held_organization, 
-                    event_location, event_date, verified, contact_status, created_at, updated_at, created_by
-                  ) VALUES (
-                    ${contactId}, ${row.event_name}, ${row.event_role || null}, 
-                    ${row.event_held_organization || null}, ${row.event_location || null}, 
-                    ${row.event_date || null}, ${true}, ${"approved"}, NOW(), NOW(), ${created_by}
-                  )
-                `.then(() => {
-                  console.log(`✅ Inserted event for contact ${contactId}`);
-                  return { type: 'event', contactId };
-                }).catch((error) => {
-                  console.error(`❌ Event insertion failed for contact ${contactId}:`, error);
-                  throw error;
-                })
+                (async () => {
+                  try {
+                    let eventWasUpdated = false;
+
+                    if (existingEventForContact) {
+                      // ✅ UPDATE EXISTING EVENT (same contact + same event name)
+                      const [updatedEvent] = await t`
+                        UPDATE event SET
+                          event_role = ${row.event_role || null},
+                          event_held_organization = ${row.event_held_organization || null},
+                          event_location = ${row.event_location || null},
+                          event_date = ${row.event_date || null},
+                          updated_at = NOW()
+                        WHERE contact_id = ${contactId} AND event_name = ${row.event_name.trim()}
+                        RETURNING event_id, event_name
+                      `;
+                      
+                      console.log(`✅ Updated existing event "${row.event_name}" for contact ${contactId}`);
+                      eventWasUpdated = true;
+                      eventsUpdated++;
+
+                    } else {
+                      // ✅ CREATE NEW EVENT (either new contact OR existing contact with new event)
+                      const [newEvent] = await t`
+                        INSERT INTO event (
+                          contact_id, event_name, event_role, event_held_organization, 
+                          event_location, event_date, verified, contact_status, created_at, updated_at, created_by
+                        ) VALUES (
+                          ${contactId}, ${row.event_name.trim()}, ${row.event_role || null}, 
+                          ${row.event_held_organization || null}, ${row.event_location || null}, 
+                          ${row.event_date || null}, ${true}, ${"approved"}, NOW(), NOW(), ${created_by}
+                        )
+                        RETURNING event_id, event_name
+                      `;
+                      
+                      console.log(`✅ Created new event "${row.event_name}" for contact ${contactId}`);
+                      eventWasUpdated = false;
+                      eventsCreated++;
+                    }
+
+                    return { 
+                      type: 'event', 
+                      contactId, 
+                      eventName: row.event_name,
+                      operation: eventWasUpdated ? 'updated' : 'created'
+                    };
+                  } catch (error) {
+                    console.error(`❌ Event operation failed for contact ${contactId}:`, error);
+                    throw error;
+                  }
+                })()
               );
             }
 
-            // ✅ EXECUTE ALL PARALLEL OPERATIONS USING PROMISE.ALL
+            // ✅ EXECUTE ALL PARALLEL OPERATIONS
             if (parallelOperations.length > 0) {
               try {
                 console.log(`🚀 Starting ${parallelOperations.length} parallel operations for contact ${contactId}`);
                 const parallelResults = await Promise.all(parallelOperations);
                 console.log(`✅ All ${parallelResults.length} parallel operations completed for contact ${contactId}`);
                 
-                // Log each completed operation
+                // Log each completed operation with details
                 parallelResults.forEach((result) => {
-                  console.log(`   ✓ ${result.type} operation completed for contact ${result.contactId}`);
+                  if (result.type === 'event') {
+                    console.log(`   ✓ ${result.type} operation: ${result.operation} event "${result.eventName}" for contact ${result.contactId}`);
+                  } else {
+                    console.log(`   ✓ ${result.type} operation completed for contact ${result.contactId}`);
+                  }
                 });
               } catch (parallelError) {
                 console.error(`❌ Error in parallel operations for contact ${contactId}:`, parallelError);
-                throw parallelError; // Re-throw to trigger transaction rollback
+                throw parallelError;
               }
             } else {
-              console.log(`ℹ️ No additional data to insert for contact ${contactId}`);
+              console.log(`ℹ️ No additional data to process for contact ${contactId}`);
             }
+
+            // ✅ ADD TO PROCESSED CONTACTS WITH EVENT INFO
+            const eventInfo = row.event_name ? 
+              (existingEventForContact ? 'event updated' : 'event created') : 
+              'no event data';
 
             processedContacts.push({
               row: rowNumber,
               contactId: contactId,
               name: row.name,
               email: row.email_address,
+              event_name: row.event_name || null,
+              contact_operation: wasContactInserted ? 'inserted' : 'updated',
+              event_operation: eventInfo
             });
             successCount++;
 
@@ -434,23 +607,39 @@ export const ImportContactsFromCSV = async (req, res) => {
         return {
           totalRows: fileRows.length,
           successCount,
+          insertedCount,
+          updatedCount,
+          eventsCreated,
+          eventsUpdated,
           errorCount: errors.length,
-          duplicateCount: duplicates.length,
           processedContacts,
-          errors: errors.slice(0, 10), // Limit errors in response
-          duplicates: duplicates.slice(0, 10), // Limit duplicates in response
+          errors: errors.slice(0, 10),
         };
       });
 
       console.log("🎉 CSV Import Transaction Completed Successfully");
-      console.log(
-        `📊 Final Results: ${result.successCount} success, ${result.errorCount} errors, ${result.duplicateCount} duplicates`
+      console.log(`📊 Final Results: 
+        - ${result.successCount} total success 
+        - Contacts: ${result.insertedCount} inserted, ${result.updatedCount} updated
+        - Events: ${result.eventsCreated} created, ${result.eventsUpdated} updated
+        - ${result.errorCount} errors`
       );
 
       return res.status(200).json({
-        message: "CSV import completed successfully",
+        message: "CSV import completed successfully with enhanced event validation",
         success: true,
         data: result,
+        summary: {
+          contacts: {
+            inserted: result.insertedCount,
+            updated: result.updatedCount
+          },
+          events: {
+            created: result.eventsCreated,
+            updated: result.eventsUpdated
+          },
+          errors: result.errorCount
+        }
       });
 
     } catch (error) {
@@ -514,4 +703,33 @@ export const sanitizeRowData = (row) => {
   return sanitized;
 };
 
-console.log("🚀 CSV Import controller loaded with complete multi-table insert support and Promise.all optimization");
+// ✅ HELPER FUNCTION TO CHECK EVENT CONFLICTS
+export const checkEventConflicts = async (t, contactId, eventName) => {
+  try {
+    const existingEvents = await t`
+      SELECT event_id, event_name, event_date, event_location
+      FROM event 
+      WHERE contact_id = ${contactId}
+      ORDER BY created_at DESC
+    `;
+
+    const conflictingEvent = existingEvents.find(
+      event => event.event_name.toLowerCase() === eventName.toLowerCase()
+    );
+
+    return {
+      hasConflict: !!conflictingEvent,
+      conflictingEvent: conflictingEvent,
+      allEvents: existingEvents
+    };
+  } catch (error) {
+    console.error("Error checking event conflicts:", error);
+    return {
+      hasConflict: false,
+      conflictingEvent: null,
+      allEvents: []
+    };
+  }
+};
+
+console.log("🚀 CSV Import controller loaded with enhanced event validation (contact-event relationship properly handled)");

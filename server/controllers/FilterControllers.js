@@ -30,11 +30,9 @@ export const GetFilteredContacts = async (req, res) => {
     sort_order = "ASC",
     rejected = "false",
     include_rejected = "false",
-    // NEW: Add contact_id parameter [web:537][web:539]
     contact_id,
   } = queryParams;
 
-  // NEW: Handle single contact retrieval by contact_id [web:540][web:542]
   if (contact_id) {
     try {
       console.log("Fetching specific contact by ID:", contact_id);
@@ -328,7 +326,17 @@ export const GetFilteredContacts = async (req, res) => {
       conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
     console.log("WHERE clause:", whereClause);
 
-    const offset = (page - 1) * limit;
+    // ✅ PROPERLY IMPLEMENTED PAGINATION
+    const pageNumber = Math.max(1, parseInt(page) || 1);
+    const limitNumber = Math.max(1, Math.min(1000, parseInt(limit) || 20)); // Cap at 1000 for performance
+    const offset = (pageNumber - 1) * limitNumber;
+
+    console.log("Pagination parameters:", {
+      page: pageNumber,
+      limit: limitNumber,
+      offset: offset
+    });
+
     const validSortFields = [
       "name",
       "email_address",
@@ -339,6 +347,7 @@ export const GetFilteredContacts = async (req, res) => {
     const sortField = validSortFields.includes(sort_by) ? sort_by : "name";
     const sortDirection = sort_order.toUpperCase() === "DESC" ? "DESC" : "ASC";
 
+    // ✅ MAIN QUERY WITH LIMIT AND OFFSET
     const contacts = await db`
       SELECT DISTINCT 
         c.*,
@@ -354,9 +363,11 @@ export const GetFilteredContacts = async (req, res) => {
       LEFT JOIN event e ON c.contact_id = e.contact_id
       ${whereClause ? db.unsafe(whereClause) : db``}
       ORDER BY ${db.unsafe(`c.${sortField} ${sortDirection}`)}
-     
+      LIMIT ${limitNumber}
+      OFFSET ${offset}
     `;
 
+    // ✅ COUNT QUERY FOR TOTAL RECORDS
     const [countResult] = await db`
       SELECT COUNT(DISTINCT c.contact_id) as total
       FROM contact c
@@ -368,8 +379,16 @@ export const GetFilteredContacts = async (req, res) => {
     `;
 
     const totalContacts = parseInt(countResult.total);
-    const totalPages = Math.ceil(totalContacts / limit);
+    const totalPages = Math.ceil(totalContacts / limitNumber);
 
+    console.log("Query results:", {
+      contactsReturned: contacts.length,
+      totalContacts: totalContacts,
+      totalPages: totalPages,
+      currentPage: pageNumber
+    });
+
+    // ✅ FETCH RELATED DATA FOR EACH CONTACT
     const contactsWithDetails = await Promise.all(
       contacts.map(async (contact) => {
         const experiences = await db`
@@ -398,12 +417,15 @@ export const GetFilteredContacts = async (req, res) => {
       data: {
         contacts: contactsWithDetails,
         pagination: {
-          current_page: parseInt(page),
+          current_page: pageNumber,
           total_pages: totalPages,
           total_contacts: totalContacts,
-          limit: parseInt(limit),
-          has_next: page < totalPages,
-          has_previous: page > 1,
+          limit: limitNumber,
+          offset: offset,
+          has_next: pageNumber < totalPages,
+          has_previous: pageNumber > 1,
+          showing_from: offset + 1,
+          showing_to: Math.min(offset + limitNumber, totalContacts),
         },
         filters_applied: {
           rejected_filter: include_rejected === "true" 
@@ -412,6 +434,8 @@ export const GetFilteredContacts = async (req, res) => {
               ? "Only rejected contacts"
               : "Only non-rejected contacts (default)",
           other_filters: conditions.length - 1, // Subtract 1 for the rejected filter
+          sort_field: sortField,
+          sort_order: sortDirection,
         },
       },
     });
@@ -425,7 +449,6 @@ export const GetFilteredContacts = async (req, res) => {
   }
 };
 
-
 export const GetFilterOptions = async (req, res) => {
   try {
     // Get the user's category from request
@@ -438,8 +461,17 @@ export const GetFilterOptions = async (req, res) => {
       });
     }
 
-    // NEW: Add rejected filter for filter options as well
-    const { rejected = "false", include_rejected = "false" } = req.query;
+    // ✅ PAGINATION FOR FILTER OPTIONS
+    const {
+      rejected = "false", 
+      include_rejected = "false",
+      page = 1,
+      limit = 50 // Default smaller limit for filter options
+    } = req.query;
+
+    const pageNumber = Math.max(1, parseInt(page) || 1);
+    const limitNumber = Math.max(1, Math.min(100, parseInt(limit) || 50)); // Cap at 100 for filter options
+    const offset = (pageNumber - 1) * limitNumber;
 
     // Build the category filter condition
     let categoryFilter = "";
@@ -475,110 +507,144 @@ export const GetFilterOptions = async (req, res) => {
       rejectedFilter = "AND (c.rejected = false OR c.rejected IS NULL)";
     }
 
+    // ✅ FILTER OPTIONS WITH PAGINATION
     const genders = await db`
-            SELECT DISTINCT gender as value, COUNT(*)::text as count 
-            FROM contact c WHERE gender IS NOT NULL 
-            ${categoryFilter ? db.unsafe(categoryFilter) : db``}
-            ${rejectedFilter ? db.unsafe(rejectedFilter) : db``}
-            GROUP BY gender ORDER BY count DESC
-        `;
+      SELECT DISTINCT gender as value, COUNT(*)::text as count 
+      FROM contact c WHERE gender IS NOT NULL 
+      ${categoryFilter ? db.unsafe(categoryFilter) : db``}
+      ${rejectedFilter ? db.unsafe(rejectedFilter) : db``}
+      GROUP BY gender 
+      ORDER BY count DESC
+      LIMIT ${limitNumber}
+      OFFSET ${offset}
+    `;
 
     const categories = await db`
-            SELECT DISTINCT category as value, COUNT(*)::text as count 
-            FROM contact c WHERE category IS NOT NULL 
-            ${categoryFilter ? db.unsafe(categoryFilter) : db``}
-            ${rejectedFilter ? db.unsafe(rejectedFilter) : db``}
-            GROUP BY category ORDER BY count DESC
-        `;
+      SELECT DISTINCT category as value, COUNT(*)::text as count 
+      FROM contact c WHERE category IS NOT NULL 
+      ${categoryFilter ? db.unsafe(categoryFilter) : db``}
+      ${rejectedFilter ? db.unsafe(rejectedFilter) : db``}
+      GROUP BY category 
+      ORDER BY count DESC
+      LIMIT ${limitNumber}
+      OFFSET ${offset}
+    `;
 
     const nationalities = await db`
-            SELECT DISTINCT nationality as value, COUNT(*)::text as count 
-            FROM contact c 
-            WHERE nationality IS NOT NULL 
-            ${categoryFilter ? db.unsafe(categoryFilter) : db``}
-            ${rejectedFilter ? db.unsafe(rejectedFilter) : db``}
-            GROUP BY nationality ORDER BY count DESC
-        `;
+      SELECT DISTINCT nationality as value, COUNT(*)::text as count 
+      FROM contact c 
+      WHERE nationality IS NOT NULL 
+      ${categoryFilter ? db.unsafe(categoryFilter) : db``}
+      ${rejectedFilter ? db.unsafe(rejectedFilter) : db``}
+      GROUP BY nationality 
+      ORDER BY count DESC
+      LIMIT ${limitNumber}
+      OFFSET ${offset}
+    `;
 
     const maritalStatuses = await db`
-            SELECT DISTINCT marital_status as value, COUNT(*)::text as count 
-            FROM contact c 
-            WHERE marital_status IS NOT NULL 
-            ${categoryFilter ? db.unsafe(categoryFilter) : db``}
-            ${rejectedFilter ? db.unsafe(rejectedFilter) : db``}
-            GROUP BY marital_status ORDER BY count DESC
-        `;
+      SELECT DISTINCT marital_status as value, COUNT(*)::text as count 
+      FROM contact c 
+      WHERE marital_status IS NOT NULL 
+      ${categoryFilter ? db.unsafe(categoryFilter) : db``}
+      ${rejectedFilter ? db.unsafe(rejectedFilter) : db``}
+      GROUP BY marital_status 
+      ORDER BY count DESC
+      LIMIT ${limitNumber}
+      OFFSET ${offset}
+    `;
 
     const countries = await db`
-            SELECT DISTINCT ca.country as value, COUNT(DISTINCT c.contact_id)::text as count
-            FROM contact c JOIN contact_address ca ON c.contact_id = ca.contact_id
-            WHERE ca.country IS NOT NULL 
-            ${categoryFilter ? db.unsafe(categoryFilter) : db``}
-            ${rejectedFilter ? db.unsafe(rejectedFilter) : db``}
-            GROUP BY ca.country ORDER BY count DESC
-        `;
+      SELECT DISTINCT ca.country as value, COUNT(DISTINCT c.contact_id)::text as count
+      FROM contact c JOIN contact_address ca ON c.contact_id = ca.contact_id
+      WHERE ca.country IS NOT NULL 
+      ${categoryFilter ? db.unsafe(categoryFilter) : db``}
+      ${rejectedFilter ? db.unsafe(rejectedFilter) : db``}
+      GROUP BY ca.country 
+      ORDER BY count DESC
+      LIMIT ${limitNumber}
+      OFFSET ${offset}
+    `;
 
     const states = await db`
-            SELECT DISTINCT ca.state as value, COUNT(DISTINCT c.contact_id)::text as count
-            FROM contact c JOIN contact_address ca ON c.contact_id = ca.contact_id
-            WHERE ca.state IS NOT NULL 
-            ${categoryFilter ? db.unsafe(categoryFilter) : db``}
-            ${rejectedFilter ? db.unsafe(rejectedFilter) : db``}
-            GROUP BY ca.state ORDER BY count DESC
-        `;
+      SELECT DISTINCT ca.state as value, COUNT(DISTINCT c.contact_id)::text as count
+      FROM contact c JOIN contact_address ca ON c.contact_id = ca.contact_id
+      WHERE ca.state IS NOT NULL 
+      ${categoryFilter ? db.unsafe(categoryFilter) : db``}
+      ${rejectedFilter ? db.unsafe(rejectedFilter) : db``}
+      GROUP BY ca.state 
+      ORDER BY count DESC
+      LIMIT ${limitNumber}
+      OFFSET ${offset}
+    `;
 
     const cities = await db`
-            SELECT DISTINCT ca.city as value, COUNT(DISTINCT c.contact_id)::text as count
-            FROM contact c JOIN contact_address ca ON c.contact_id = ca.contact_id
-            WHERE ca.city IS NOT NULL 
-            ${categoryFilter ? db.unsafe(categoryFilter) : db``}
-            ${rejectedFilter ? db.unsafe(rejectedFilter) : db``}
-            GROUP BY ca.city ORDER BY count DESC
-        `;
+      SELECT DISTINCT ca.city as value, COUNT(DISTINCT c.contact_id)::text as count
+      FROM contact c JOIN contact_address ca ON c.contact_id = ca.contact_id
+      WHERE ca.city IS NOT NULL 
+      ${categoryFilter ? db.unsafe(categoryFilter) : db``}
+      ${rejectedFilter ? db.unsafe(rejectedFilter) : db``}
+      GROUP BY ca.city 
+      ORDER BY count DESC
+      LIMIT ${limitNumber}
+      OFFSET ${offset}
+    `;
 
     const companies = await db`
-            SELECT DISTINCT exp.company as value, COUNT(DISTINCT c.contact_id)::text as count
-            FROM contact c JOIN contact_experience exp ON c.contact_id = exp.contact_id
-            WHERE exp.company IS NOT NULL 
-            ${categoryFilter ? db.unsafe(categoryFilter) : db``}
-            ${rejectedFilter ? db.unsafe(rejectedFilter) : db``}
-            GROUP BY exp.company ORDER BY count DESC
-        `;
+      SELECT DISTINCT exp.company as value, COUNT(DISTINCT c.contact_id)::text as count
+      FROM contact c JOIN contact_experience exp ON c.contact_id = exp.contact_id
+      WHERE exp.company IS NOT NULL 
+      ${categoryFilter ? db.unsafe(categoryFilter) : db``}
+      ${rejectedFilter ? db.unsafe(rejectedFilter) : db``}
+      GROUP BY exp.company 
+      ORDER BY count DESC
+      LIMIT ${limitNumber}
+      OFFSET ${offset}
+    `;
 
     const jobTitles = await db`
-            SELECT DISTINCT exp.job_title as value, COUNT(DISTINCT c.contact_id)::text as count
-            FROM contact c JOIN contact_experience exp ON c.contact_id = exp.contact_id
-            WHERE exp.job_title IS NOT NULL 
-            ${categoryFilter ? db.unsafe(categoryFilter) : db``}
-            ${rejectedFilter ? db.unsafe(rejectedFilter) : db``}
-            GROUP BY exp.job_title ORDER BY count DESC
-        `;
+      SELECT DISTINCT exp.job_title as value, COUNT(DISTINCT c.contact_id)::text as count
+      FROM contact c JOIN contact_experience exp ON c.contact_id = exp.contact_id
+      WHERE exp.job_title IS NOT NULL 
+      ${categoryFilter ? db.unsafe(categoryFilter) : db``}
+      ${rejectedFilter ? db.unsafe(rejectedFilter) : db``}
+      GROUP BY exp.job_title 
+      ORDER BY count DESC
+      LIMIT ${limitNumber}
+      OFFSET ${offset}
+    `;
 
     const pgCourses = await db`
-            SELECT DISTINCT ce.pg_course_name as value, COUNT(DISTINCT c.contact_id)::text as count
-            FROM contact c JOIN contact_education ce ON c.contact_id = ce.contact_id
-            WHERE ce.pg_course_name IS NOT NULL 
-            ${categoryFilter ? db.unsafe(categoryFilter) : db``}
-            ${rejectedFilter ? db.unsafe(rejectedFilter) : db``}
-            GROUP BY ce.pg_course_name ORDER BY count DESC
-        `;
+      SELECT DISTINCT ce.pg_course_name as value, COUNT(DISTINCT c.contact_id)::text as count
+      FROM contact c JOIN contact_education ce ON c.contact_id = ce.contact_id
+      WHERE ce.pg_course_name IS NOT NULL 
+      ${categoryFilter ? db.unsafe(categoryFilter) : db``}
+      ${rejectedFilter ? db.unsafe(rejectedFilter) : db``}
+      GROUP BY ce.pg_course_name 
+      ORDER BY count DESC
+      LIMIT ${limitNumber}
+      OFFSET ${offset}
+    `;
 
     const ugCourses = await db`
-            SELECT DISTINCT ce.ug_course_name as value, COUNT(DISTINCT c.contact_id)::text as count
-            FROM contact c JOIN contact_education ce ON c.contact_id = ce.contact_id
-            WHERE ce.ug_course_name IS NOT NULL 
-            ${categoryFilter ? db.unsafe(categoryFilter) : db``}
-            ${rejectedFilter ? db.unsafe(rejectedFilter) : db``}
-            GROUP BY ce.ug_course_name ORDER BY count DESC
-        `;
+      SELECT DISTINCT ce.ug_course_name as value, COUNT(DISTINCT c.contact_id)::text as count
+      FROM contact c JOIN contact_education ce ON c.contact_id = ce.contact_id
+      WHERE ce.ug_course_name IS NOT NULL 
+      ${categoryFilter ? db.unsafe(categoryFilter) : db``}
+      ${rejectedFilter ? db.unsafe(rejectedFilter) : db``}
+      GROUP BY ce.ug_course_name 
+      ORDER BY count DESC
+      LIMIT ${limitNumber}
+      OFFSET ${offset}
+    `;
 
-    // For skills, we need to get the data first and then filter
+    // ✅ ENHANCED SKILLS PROCESSING WITH PAGINATION
     const skillsQuery =
       userCategory.toLowerCase() === "admin"
         ? rejectedFilter
-          ? db`SELECT skills FROM contact c WHERE skills IS NOT NULL AND skills != '' ${db.unsafe(rejectedFilter)}`
-          : db`SELECT skills FROM contact WHERE skills IS NOT NULL AND skills != ''`
-        : db`SELECT skills FROM contact c WHERE skills IS NOT NULL AND skills != '' ${db.unsafe(categoryFilter)} ${rejectedFilter ? db.unsafe(rejectedFilter) : db``}`;
+          ? db`SELECT skills FROM contact c WHERE skills IS NOT NULL AND skills != '' ${db.unsafe(rejectedFilter)} LIMIT ${limitNumber * 2} OFFSET ${offset}`
+          : db`SELECT skills FROM contact WHERE skills IS NOT NULL AND skills != '' LIMIT ${limitNumber * 2} OFFSET ${offset}`
+        : db`SELECT skills FROM contact c WHERE skills IS NOT NULL AND skills != '' ${db.unsafe(categoryFilter)} ${rejectedFilter ? db.unsafe(rejectedFilter) : db``} LIMIT ${limitNumber * 2} OFFSET ${offset}`;
 
     const skillsData = await skillsQuery;
 
@@ -595,9 +661,21 @@ export const GetFilterOptions = async (req, res) => {
       }
     });
 
+    // ✅ APPLY PAGINATION TO SKILLS RESULTS
     const skills = Object.entries(skillCounts)
       .map(([skill, count]) => ({ value: skill, count: count.toString() }))
-      .sort((a, b) => parseInt(b.count) - parseInt(a.count));
+      .sort((a, b) => parseInt(b.count) - parseInt(a.count))
+      .slice(0, limitNumber); // Apply limit to skills
+
+    // ✅ GET TOTAL COUNTS FOR PAGINATION INFO
+    const [totalGendersResult] = await db`
+      SELECT COUNT(DISTINCT gender) as total
+      FROM contact c WHERE gender IS NOT NULL 
+      ${categoryFilter ? db.unsafe(categoryFilter) : db``}
+      ${rejectedFilter ? db.unsafe(rejectedFilter) : db``}
+    `;
+
+    const totalPages = Math.ceil(parseInt(totalGendersResult.total) / limitNumber);
 
     return res.json({
       success: true,
@@ -614,6 +692,14 @@ export const GetFilterOptions = async (req, res) => {
         pg_courses: pgCourses,
         ug_courses: ugCourses,
         skills,
+      },
+      pagination: {
+        current_page: pageNumber,
+        total_pages: totalPages,
+        limit: limitNumber,
+        offset: offset,
+        has_next: pageNumber < totalPages,
+        has_previous: pageNumber > 1,
       },
       filters_applied: {
         category_filter:

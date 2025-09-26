@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   Search,
   Trash2,
@@ -8,6 +8,8 @@ import {
   ShieldCheckIcon,
   University,
   FileCheckIcon,
+  Loader,
+  ChevronUp,
 } from "lucide-react";
 import ContactCard from "../../components/Cards/MiddleManCard";
 import DetailsInput from "../../components/Forms/DetailsInput";
@@ -17,6 +19,7 @@ import api from "../../utils/axios";
 import Alert from "../../components/Alert/Alert";
 import { useNavigate } from "react-router-dom";
 import DeleteConfirmationModal from "../../components/Modals/DeleteConfirmationModal";
+
 // Helper function to generate initials from a name
 const getInitials = (name = "") => {
   if (!name) return "";
@@ -524,14 +527,50 @@ const FilterModal = ({
 };
 
 const MiddleManHome = () => {
+  // ✅ PAGINATION AND INFINITE SCROLL STATE
   const [contacts, setContacts] = useState([]);
+  const [allContacts, setAllContacts] = useState([]); // Store all loaded contacts
+  const [pagination, setPagination] = useState({
+    current_page: 1,
+    total_pages: 1,
+    total_contacts: 0,
+    limit: 20,
+    has_next: false,
+    has_previous: false,
+  });
+  
   const [searchTerm, setSearchTerm] = useState("");
   const [isEditing, setIsEditing] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [showScrollTop, setShowScrollTop] = useState(false);
 
   const navigate = useNavigate();
+
+  // ✅ INTERSECTION OBSERVER REFS
+  const observerRef = useRef();
+  const loadingTriggerRef = useRef();
+  const lastContactElementRef = useCallback((node) => {
+    if (loading || loadingMore) return;
+    if (observerRef.current) observerRef.current.disconnect();
+    
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && pagination.has_next) {
+          console.log("🔄 Loading more contacts via Intersection Observer...");
+          loadMoreContacts();
+        }
+      },
+      {
+        rootMargin: '200px', // Start loading 200px before the element is visible
+        threshold: 0.1,
+      }
+    );
+    
+    if (node) observerRef.current.observe(node);
+  }, [loading, loadingMore, pagination.has_next]);
 
   // Filter options from API
   const [filterOptions, setFilterOptions] = useState({
@@ -570,7 +609,7 @@ const MiddleManHome = () => {
   // Delete modal states with loading
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [contactToDelete, setContactToDelete] = useState(null);
-  const [isDeleting, setIsDeleting] = useState(false); // Add isDeleting state
+  const [isDeleting, setIsDeleting] = useState(false);
   const [alert, setAlert] = useState({
     isOpen: false,
     severity: "success",
@@ -594,6 +633,20 @@ const MiddleManHome = () => {
     }));
   };
 
+  // ✅ SCROLL TO TOP FUNCTIONALITY
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowScrollTop(window.scrollY > 500);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   // Fetch filter options with category filtering
   useEffect(() => {
     const fetchFilterOptions = async () => {
@@ -601,7 +654,6 @@ const MiddleManHome = () => {
         const rolesDict = { cata: "A", catb: "B", catc: "C" };
         const category = rolesDict[role];
 
-        // For admin users, fetch all filter options without category filter
         const url = category
           ? `/api/get-filter-options?category=${role}`
           : `/api/get-filter-options?category=${role}`;
@@ -617,26 +669,34 @@ const MiddleManHome = () => {
     if (role) {
       fetchFilterOptions();
     }
-  }, [role]); // Add role as dependency to refetch when role changes
+  }, [role]);
 
-  // Fetch contacts using filtered API
-  const fetchContacts = async () => {
+  // ✅ FETCH CONTACTS WITH PAGINATION
+  const fetchContacts = async (page = 1, shouldAppend = false) => {
     if (!role) return;
 
     const rolesDict = { cata: "A", catb: "B", catc: "C" };
     const category = rolesDict[role];
 
-    // For admin users, we don't filter by category to show all records
     if (!category && role !== "admin") {
       console.error("Invalid role for fetching contacts:", role);
       showAlert("error", "Invalid role for fetching contacts");
       return;
     }
 
-    setLoading(true);
+    if (page === 1) {
+      setLoading(true);
+    } else {
+      setLoadingMore(true);
+    }
+
     try {
       // Build query parameters
       const params = new URLSearchParams();
+
+      // Add pagination
+      params.append("page", page.toString());
+      params.append("limit", "20");
 
       // Add category filter based on user role (skip for admin to show all categories)
       if (category) {
@@ -655,12 +715,22 @@ const MiddleManHome = () => {
         }
       });
 
+      console.log(`🔍 Fetching contacts - Page ${page}, URL: /api/contacts/filter/?${params.toString()}`);
+
       const response = await api.get(
         `/api/contacts/filter/?${params.toString()}`
       );
 
       // Handle the response structure from GetFilteredContacts API
       const contactsData = response.data.data?.contacts || [];
+      const paginationData = response.data.data?.pagination || {};
+
+      console.log("📊 Contacts fetched:", {
+        page,
+        contactsCount: contactsData.length,
+        totalContacts: paginationData.total_contacts,
+        hasNext: paginationData.has_next,
+      });
 
       const formattedContacts = contactsData.map((item) => ({
         ...item,
@@ -677,19 +747,64 @@ const MiddleManHome = () => {
         avatarColor: getAvatarColor(item.contact_id),
       }));
 
-      setContacts(formattedContacts);
+      // Update pagination
+      setPagination(paginationData);
+
+      // Update contacts based on whether we're appending or replacing
+      if (shouldAppend && page > 1) {
+        setContacts((prevContacts) => [...prevContacts, ...formattedContacts]);
+        setAllContacts((prevContacts) => [...prevContacts, ...formattedContacts]);
+      } else {
+        setContacts(formattedContacts);
+        setAllContacts(formattedContacts);
+      }
+
     } catch (error) {
       console.error("Failed to fetch contacts:", error);
       showAlert("error", "Failed to fetch contacts. Please try again.");
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   };
 
-  // Fetch contacts when role, search term, or filters change
+  // ✅ LOAD MORE CONTACTS FUNCTION
+  const loadMoreContacts = async () => {
+    if (loadingMore || !pagination.has_next) return;
+    
+    console.log("🔄 Loading more contacts, next page:", pagination.current_page + 1);
+    await fetchContacts(pagination.current_page + 1, true);
+  };
+
+  // Reset to first page when filters or search change
   useEffect(() => {
-    fetchContacts();
+    console.log("🔄 Filters or search changed, resetting to page 1");
+    fetchContacts(1, false);
   }, [role, searchTerm, activeFilters]);
+
+  // Debounced search to avoid too many API calls
+  const [searchTimeout, setSearchTimeout] = useState(null);
+  
+  useEffect(() => {
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
+    }
+    
+    const timeoutId = setTimeout(() => {
+      if (searchTerm !== undefined) {
+        console.log("🔍 Search debounced, fetching contacts with search:", searchTerm);
+        fetchContacts(1, false);
+      }
+    }, 500);
+    
+    setSearchTimeout(timeoutId);
+    
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
+  }, [searchTerm]);
 
   // Since filtering is now handled by API, we just use contacts directly
   const filteredContacts = contacts;
@@ -730,18 +845,8 @@ const MiddleManHome = () => {
     );
   };
 
-  // Debounced search to avoid too many API calls
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      fetchContacts();
-    }, 500);
-    return () => clearTimeout(timeoutId);
-  }, [searchTerm]);
-
   // Edit handlers
   const handleEditClick = (user) => {
-    // setEditingUser(user || null);
-    // setIsEditing(true);
     navigate("/details-input", {
       state: {
         contact: user,
@@ -809,7 +914,7 @@ const MiddleManHome = () => {
       return;
     }
 
-    setIsDeleting(true); // Start loading
+    setIsDeleting(true);
 
     try {
       console.log(
@@ -863,6 +968,18 @@ const MiddleManHome = () => {
         position="bottom"
         duration={4000}
       />
+      
+      {/* ✅ SCROLL TO TOP BUTTON */}
+      {showScrollTop && (
+        <button
+          onClick={scrollToTop}
+          className="fixed bottom-6 right-6 z-40 p-3 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 transition-all duration-200 hover:scale-110"
+          aria-label="Scroll to top"
+        >
+          <ChevronUp size={20} />
+        </button>
+      )}
+
       <div className="w-full bg-white shadow-sm sticky top-0 z-50 border-b-2 border-b-gray-50">
         <div className="flex justify-end">
           <Header />
@@ -890,120 +1007,132 @@ const MiddleManHome = () => {
 
       <div className="px-6 pb-6">
         <div className="container mx-auto">
-          {
-            <>
-              {/* Search and Filter Controls */}
-              <div className="flex md:flex-row gap-4 items-center mb-6">
-                <div className="flex-1 w-full relative">
-                  <Search
-                    size={20}
-                    className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-                  />
-                  <input
-                    type="text"
-                    placeholder="Search contacts by name, company, role or skill..."
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                </div>
+          {/* Search and Filter Controls */}
+          <div className="flex md:flex-row gap-4 items-center mb-6">
+            <div className="flex-1 w-full relative">
+              <Search
+                size={20}
+                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+              />
+              <input
+                type="text"
+                placeholder="Search contacts by name, company, role or skill..."
+                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
 
-                {/* Filter Button */}
-                <button
-                  onClick={() => setIsFilterModalOpen(true)}
-                  className={`relative flex items-center gap-2 px-4 py-3 border rounded-lg transition-colors ${getActiveFilterCount() > 0
-                    ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700"
-                    : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-                    }`}
-                  title="Open Filters"
-                >
-                  <Filter size={20} />
-                  <span className="hidden md:inline">Filters</span>
-                  {getActiveFilterCount() > 0 && (
-                    <>
-                      <span className="hidden md:flex bg-white text-blue-600 text-xs w-5 h-5 rounded-full font-medium items-center justify-center">
-                        {getActiveFilterCount()}
-                      </span>
-                      <span className="md:hidden absolute -top-2 -right-2 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-medium">
-                        {getActiveFilterCount()}
-                      </span>
-                    </>
+            {/* Filter Button */}
+            <button
+              onClick={() => setIsFilterModalOpen(true)}
+              className={`relative flex items-center gap-2 px-4 py-3 border rounded-lg transition-colors ${getActiveFilterCount() > 0
+                ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700"
+                : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                }`}
+              title="Open Filters"
+            >
+              <Filter size={20} />
+              <span className="hidden md:inline">Filters</span>
+              {getActiveFilterCount() > 0 && (
+                <>
+                  <span className="hidden md:flex bg-white text-blue-600 text-xs w-5 h-5 rounded-full font-medium items-center justify-center">
+                    {getActiveFilterCount()}
+                  </span>
+                  <span className="md:hidden absolute -top-2 -right-2 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-medium">
+                    {getActiveFilterCount()}
+                  </span>
+                </>
+              )}
+            </button>
+          </div>
+
+          {/* Loading indicator */}
+          {loading && (
+            <div className="flex justify-center items-center py-8">
+              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
+              <span className="ml-2 text-gray-600">
+                Loading contacts...
+              </span>
+            </div>
+          )}
+
+          {/* Results Summary */}
+          {!loading && (
+            <div className="flex justify-between items-center mb-6 p-4 bg-white rounded-lg border border-gray-200">
+              <div className="flex items-center gap-4">
+                <div className="text-sm text-gray-500">
+                  <span className="font-medium text-gray-900">
+                    {pagination.total_contacts?.toLocaleString() || filteredContacts.length}
+                  </span>{" "}
+                  contacts found
+                  {role === "admin" && (
+                    <span className="text-gray-500 ml-2">
+                      (All categories: A, B, C)
+                    </span>
                   )}
-                </button>
+                </div>
+                {getActiveFilterCount() > 0 && (
+                  <div className="text-sm text-blue-600">
+                    {getActiveFilterCount()} filter
+                    {getActiveFilterCount() !== 1 ? "s" : ""} applied
+                  </div>
+                )}
               </div>
-
-              {/* Loading indicator */}
-              {loading && (
-                <div className="flex justify-center items-center py-8">
-                  <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
-                  <span className="ml-2 text-gray-600">
-                    Loading contacts...
+              {role === "admin" && (
+                <div className="flex gap-2">
+                  <span className="px-2 py-1 bg-red-100 text-red-700 text-xs rounded-full">
+                    A
+                  </span>
+                  <span className="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs rounded-full">
+                    B
+                  </span>
+                  <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">
+                    C
                   </span>
                 </div>
               )}
+            </div>
+          )}
 
-              {/* Results Summary */}
-              {!loading && (
-                <div className="flex justify-between items-center mb-6 p-4 bg-white rounded-lg border border-gray-200">
-                  <div className="flex items-center gap-4">
-                    <div className="text-sm text-gray-500">
-                      <span className="font-medium text-gray-900">
-                        {filteredContacts.length}
-                      </span>{" "}
-                      contacts found
-                      {role === "admin" && (
-                        <span className="text-gray-500 ml-2">
-                          (All categories: A, B, C)
-                        </span>
-                      )}
-                    </div>
-                    {getActiveFilterCount() > 0 && (
-                      <div className="text-sm text-blue-600">
-                        {getActiveFilterCount()} filter
-                        {getActiveFilterCount() !== 1 ? "s" : ""} applied
-                      </div>
-                    )}
-                  </div>
-                  {role === "admin" && (
-                    <div className="flex gap-2">
-                      <span className="px-2 py-1 bg-red-100 text-red-700 text-xs rounded-full">
-                        A
-                      </span>
-                      <span className="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs rounded-full">
-                        B
-                      </span>
-                      <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">
-                        C
-                      </span>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Contact Cards Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {filteredContacts.map((contact) => (
+          {/* ✅ CONTACT CARDS GRID WITH INTERSECTION OBSERVER */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {filteredContacts.map((contact, index) => {
+              const isLastElement = index === filteredContacts.length - 1;
+              return (
+                <div
+                  key={contact.contact_id}
+                  ref={isLastElement ? lastContactElementRef : null}
+                >
                   <ContactCard
-                    key={contact.contact_id}
                     contact={contact}
                     onEdit={() => handleEditClick(contact)}
                     onDelete={() => handleDeleteClick(contact)}
                   />
-                ))}
-              </div>
-
-              {filteredContacts.length === 0 && !loading && (
-                <div className="text-center py-12 col-span-full">
-                  <div className="text-gray-400 text-lg mb-2">
-                    No contacts found
-                  </div>
-                  <div className="text-gray-500">
-                    Try adjusting your search or filters.
-                  </div>
                 </div>
-              )}
-            </>
-          }
+              );
+            })}
+          </div>
+
+          {/* ✅ LOADING MORE INDICATOR */}
+          {loadingMore && (
+            <div className="flex justify-center items-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <span className="ml-2 text-gray-600">Loading more contacts...</span>
+            </div>
+          )}
+
+          {/* NO RESULTS MESSAGE */}
+          {filteredContacts.length === 0 && !loading && (
+            <div className="text-center py-12 col-span-full">
+              <div className="text-gray-400 text-lg mb-2">
+                No contacts found
+              </div>
+              <div className="text-gray-500">
+                Try adjusting your search or filters.
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -1014,7 +1143,7 @@ const MiddleManHome = () => {
         onCancel={handleDeleteCancel}
         itemName={contactToDelete?.name || "this contact"}
         deleteType="contact"
-        isDeleting={isDeleting} // Pass isDeleting state
+        isDeleting={isDeleting}
       />
 
       {/* Filter Modal */}

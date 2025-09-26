@@ -64,7 +64,7 @@ const EventsBarChart = ({ contacts }) => {
         <BarChart3 className="w-5 h-5 text-blue-600" />
         <h2 className="text-lg font-semibold text-gray-900">Top Events</h2>
       </div>
-      <div className="h-64">
+      <div className="h-84">
         <Bar data={chartData} options={options} />
       </div>
     </div>

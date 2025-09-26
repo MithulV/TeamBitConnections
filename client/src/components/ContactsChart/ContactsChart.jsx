@@ -1,8 +1,16 @@
 import React, { useMemo } from 'react';
 import { Line } from 'react-chartjs-2';
 import DatePicker from 'react-datepicker';
-import { format, parseISO, subDays, subMonths, isAfter, startOfDay, endOfDay, isValid } from 'date-fns';
+import { format, parseISO, subDays, subMonths, isAfter, startOfDay, endOfDay, isValid, eachDayOfInterval, addDays, startOfMonth, endOfMonth } from 'date-fns';
 import "react-datepicker/dist/react-datepicker.css";
+
+// Utility function to generate all dates in range
+const generateDateRange = (startDate, endDate) => {
+  return eachDayOfInterval({
+    start: startOfDay(startDate),
+    end: endOfDay(endDate)
+  }).map(date => format(date, "yyyy-MM-dd"));
+};
 
 // Utility functions for processing modification history
 const processModificationHistory = (modificationHistory, startDate, endDate) => {
@@ -107,33 +115,47 @@ const ContactsChart = ({
 }) => {
   const handlePredefinedRange = (range) => {
     const today = new Date();
-    let newStartDate;
+    let newStartDate, newEndDate;
 
     switch (range) {
       case "last7days":
         newStartDate = subDays(today, 7);
+        newEndDate = today;
         break;
       case "last30days":
         newStartDate = subDays(today, 30);
+        newEndDate = today;
         break;
       case "lastMonth":
-        newStartDate = subMonths(today, 1);
+        // Get first day of last month to last day of last month
+        const lastMonth = subMonths(today, 1);
+        newStartDate = startOfMonth(lastMonth);
+        newEndDate = endOfMonth(lastMonth);
         break;
       case "last3Months":
-        newStartDate = subMonths(today, 3);
+        // Get first day of 3 months ago to last day of last month
+        const threeMonthsAgo = subMonths(today, 3);
+        newStartDate = startOfMonth(threeMonthsAgo);
+        newEndDate = endOfMonth(subMonths(today, 1));
         break;
       case "last6Months":
-        newStartDate = subMonths(today, 6);
+        // Get first day of 6 months ago to last day of last month
+        const sixMonthsAgo = subMonths(today, 6);
+        newStartDate = startOfMonth(sixMonthsAgo);
+        newEndDate = endOfMonth(subMonths(today, 1));
         break;
       case "lastYear":
-        newStartDate = subMonths(today, 12);
+        // Get first day of 12 months ago to last day of last month
+        const twelveMonthsAgo = subMonths(today, 12);
+        newStartDate = startOfMonth(twelveMonthsAgo);
+        newEndDate = endOfMonth(subMonths(today, 1));
         break;
       default:
         return;
     }
 
     setStartDate(startOfDay(newStartDate));
-    setEndDate(endOfDay(today));
+    setEndDate(endOfDay(newEndDate));
     setDateRangeType(range);
   };
 
@@ -148,6 +170,9 @@ const ContactsChart = ({
       allFieldsInFirstRecord: historyArray[0] ? Object.keys(historyArray[0]) : []
     });
     
+    // Generate all dates in the selected range
+    const allDatesInRange = generateDateRange(startDate, endDate);
+    
     // Process the modification history data
     const { createdDates, updatedDates } = processModificationHistory(
       historyArray, 
@@ -155,25 +180,22 @@ const ContactsChart = ({
       endDate
     );
 
-    // Get all unique dates from both datasets
-    const allDates = Array.from(
-      new Set([...Object.keys(createdDates), ...Object.keys(updatedDates)])
-    ).sort();
-
     console.log("📊 Chart data processed:", {
-      totalDays: allDates.length,
+      totalDaysInRange: allDatesInRange.length,
+      daysWithCreatedData: Object.keys(createdDates).length,
+      daysWithUpdatedData: Object.keys(updatedDates).length,
       createOperations: Object.values(createdDates).reduce((sum, count) => sum + count, 0),
       updateOperations: Object.values(updatedDates).reduce((sum, count) => sum + count, 0),
-      dateRange: allDates.length > 0 ? `${allDates[0]} to ${allDates[allDates.length - 1]}` : 'No data',
-      allDates: allDates.slice(0, 5) // Show first 5 dates
+      dateRange: allDatesInRange.length > 0 ? `${allDatesInRange[0]} to ${allDatesInRange[allDatesInRange.length - 1]}` : 'No data',
+      sampleDates: allDatesInRange.slice(0, 5) // Show first 5 dates
     });
 
     return {
-      labels: allDates,
+      labels: allDatesInRange,
       datasets: [
         {
           label: "Contacts Created",
-          data: allDates.map((date) => createdDates[date] || 0),
+          data: allDatesInRange.map((date) => createdDates[date] || 0),
           borderColor: "rgb(59, 130, 246)",
           backgroundColor: "rgba(59, 130, 246, 0.1)",
           tension: 0.4,
@@ -185,7 +207,7 @@ const ContactsChart = ({
         },
         {
           label: "Records Updated",
-          data: allDates.map((date) => updatedDates[date] || 0),
+          data: allDatesInRange.map((date) => updatedDates[date] || 0),
           borderColor: "rgb(34, 197, 94)",
           backgroundColor: "rgba(34, 197, 94, 0.1)",
           tension: 0.4,
@@ -282,7 +304,7 @@ const ContactsChart = ({
     { key: "lastMonth", label: "Last Month" },
     { key: "last3Months", label: "Last 3 Months" },
     { key: "last6Months", label: "Last 6 Months" },
-    { key: "lastYear", label: "Last Year" },
+    { key: "lastYear", label: "Last 12 Months" },
   ];
 
   // Calculate summary statistics
@@ -360,9 +382,6 @@ const ContactsChart = ({
             <div className="text-center text-gray-500">
               <div className="text-lg font-medium">No Data Available</div>
               <div className="text-sm">No modification history found for the selected date range</div>
-              <div className="text-xs mt-2 text-gray-400">
-                Check browser console for debugging information
-              </div>
             </div>
           </div>
         ) : (
@@ -377,7 +396,7 @@ const ContactsChart = ({
         </span>
         <div className="flex gap-4">
           <span>📊 {modificationHistory.length} total history records</span>
-          <span>📈 {processChartData.labels.length} active days</span>
+          <span>📈 {processChartData.labels.length} days displayed</span>
         </div>
       </div>
     </div>

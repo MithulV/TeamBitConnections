@@ -8,81 +8,108 @@ const UserActivitySegmentation = ({ contacts }) => {
     if (total === 0) {
       return {
         labels: [
-          "Email Coverage",
-          "Phone Coverage",
           "LinkedIn Presence",
-          "Event Participation",
-          "Skill Completeness",
-          "Company Info",
+          "Skills Completeness",
+          "Address Information",
+          "Education Background",
+          "Work Experience",
+          "Personal Information",
         ],
         datasets: [
           {
-            label: "Activity Score",
+            label: "Coverage %",
             data: [0, 0, 0, 0, 0, 0],
             backgroundColor: "rgba(59, 130, 246, 0.2)",
             borderColor: "rgba(59, 130, 246, 1)",
             pointBackgroundColor: "rgba(59, 130, 246, 1)",
             borderWidth: 2,
+            pointRadius: 4,
           },
         ],
       };
     }
 
-    const emailCoverage = Math.round(
-      (contacts.filter((c) => c.email_address && c.email_address.trim() !== "")
-        .length /
-        total) *
-        100
-    );
-    const phoneCoverage = Math.round(
-      (contacts.filter((c) => c.phone_number && c.phone_number.trim() !== "")
-        .length /
-        total) *
-        100
-    );
+    // LinkedIn Presence - professional networking completeness
     const linkedinPresence = Math.round(
       (contacts.filter((c) => c.linkedin_url && c.linkedin_url.trim() !== "")
         .length /
         total) *
         100
     );
-    const eventParticipation = Math.round(
-      (contacts.filter((c) => c.event_name && c.event_name.trim() !== "")
-        .length /
-        total) *
-        100
-    );
-    const skillCompleteness = Math.round(
+
+    // Skills Completeness - professional skills documentation
+    const skillsCompleteness = Math.round(
       (contacts.filter((c) => c.skills && c.skills.trim() !== "").length /
         total) *
         100
     );
-    const companyInfo = Math.round(
-      (contacts.filter((c) => c.company_name && c.company_name.trim() !== "")
-        .length /
+
+    // Address Information - location data completeness
+    const addressInfo = Math.round(
+      (contacts.filter((c) => 
+        (c.street && c.street.trim() !== "") &&
+        (c.city && c.city.trim() !== "") &&
+        (c.state && c.state.trim() !== "") &&
+        (c.country && c.country.trim() !== "")
+      ).length /
+        total) *
+        100
+    );
+
+    // Education Background - educational qualification completeness
+    const educationBackground = Math.round(
+      (contacts.filter((c) => 
+        ((c.pg_course_name && c.pg_course_name.trim() !== "") ||
+         (c.ug_course_name && c.ug_course_name.trim() !== "")) &&
+        ((c.pg_college_name && c.pg_college_name.trim() !== "") ||
+         (c.ug_college_name && c.ug_college_name.trim() !== ""))
+      ).length /
+        total) *
+        100
+    );
+
+    // Work Experience - professional employment history
+    const workExperience = Math.round(
+      (contacts.filter((c) => 
+        (c.job_title && c.job_title.trim() !== "") &&
+        (c.company_name && c.company_name.trim() !== "") &&
+        (c.department_type && c.department_type.trim() !== "")
+      ).length /
+        total) *
+        100
+    );
+
+    // Personal Information - personal details completeness (excluding name, email, phone)
+    const personalInfo = Math.round(
+      (contacts.filter((c) => 
+        (c.dob && c.dob.trim() !== "") &&
+        (c.gender && c.gender.trim() !== "") &&
+        (c.nationality && c.nationality.trim() !== "") &&
+        (c.marital_status && c.marital_status.trim() !== "")
+      ).length /
         total) *
         100
     );
 
     return {
       labels: [
-        "Email Coverage",
-        "Phone Coverage",
         "LinkedIn Presence",
-        "Event Participation",
-        "Skill Completeness",
-        "Company Info",
+        "Skills Completeness", 
+        "Address Information",
+        "Education Background",
+        "Work Experience",
+        "Personal Information",
       ],
       datasets: [
         {
           label: "Coverage %",
           data: [
-            emailCoverage,
-            phoneCoverage,
             linkedinPresence,
-            eventParticipation,
-            skillCompleteness,
-            companyInfo,
+            skillsCompleteness,
+            addressInfo,
+            educationBackground,
+            workExperience,
+            personalInfo,
           ],
           backgroundColor: "rgba(59, 130, 246, 0.2)",
           borderColor: "rgba(59, 130, 246, 1)",
@@ -101,6 +128,13 @@ const UserActivitySegmentation = ({ contacts }) => {
       legend: {
         display: false,
       },
+      tooltip: {
+        callbacks: {
+          label: function(context) {
+            return `${context.label}: ${context.parsed.r}%`;
+          }
+        }
+      },
     },
     scales: {
       r: {
@@ -108,7 +142,15 @@ const UserActivitySegmentation = ({ contacts }) => {
         max: 100,
         ticks: {
           stepSize: 20,
+          callback: function(value) {
+            return value + '%';
+          }
         },
+        pointLabels: {
+          font: {
+            size: 12
+          }
+        }
       },
     },
   };
@@ -118,21 +160,12 @@ const UserActivitySegmentation = ({ contacts }) => {
       <div className="flex items-center gap-2 mb-6">
         <Layers className="w-5 h-5 text-indigo-600" />
         <h2 className="text-lg font-semibold text-gray-900">
-          User Activity Segmentation
+          Professional Data Completeness
         </h2>
-        <div className="ml-auto bg-indigo-100 text-indigo-800 px-2 py-1 rounded-full text-xs font-medium">
-          Coverage Analysis
-        </div>
       </div>
 
       <div className="h-80">
         <Radar data={segmentData} options={options} />
-      </div>
-
-      <div className="mt-4 text-center">
-        <p className="text-sm text-gray-600">
-          Comprehensive view of data completeness across all contact fields
-        </p>
       </div>
     </div>
   );
