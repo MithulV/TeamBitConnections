@@ -675,11 +675,12 @@ function Admin() {
       });
 
       if (response.data.success) {
-        const { successCount, errorCount, duplicateCount, totalRows } =
+        console.log(response.data.data)
+        const { successCount, errorCount, duplicateCount, totalRows,updatedCount,insertedCount } =
           response.data.data;
         showAlert(
           "success",
-          `CSV Import Complete!\n📊 Total rows processed: ${totalRows}\n✅ Successfully added: ${successCount}\n⚠️ Duplicates skipped: ${duplicateCount}\n❌ Errors encountered: ${errorCount}`
+          `CSV Import Complete!\n📊 Total rows processed: ${totalRows}\n✅ Successfully added: ${insertedCount}\n⚠️ Updation: ${updatedCount}\n❌ Errors encountered: ${errorCount}`
         );
         fetchDashboardData();
       } else {
@@ -852,29 +853,7 @@ function Admin() {
               color="bg-gradient-to-r from-purple-500 to-purple-600"
               subtext="Complete profiles"
             />
-            <StatCard
-              title="Monthly Acquisition Rate"
-              value={stats.monthlyAcquisitionRate}
-              icon={Calculator}
-              color="bg-gradient-to-r from-orange-500 to-orange-600"
-              trend={stats.monthlyAcquisitionTrend > 0 ? "up" : "down"}
-              trendValue={stats.monthlyAcquisitionTrend}
-              subtext={`${stats.dailyAcquisitionRate} today • ${stats.weeklyAcquisitionRate} weekly avg`}
-            />
-          </div>
-
-          {/* Secondary Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <StatCard
-              title="LinkedIn Connections"
-              value={stats.linkedinConnections.toLocaleString()}
-              icon={Globe}
-              color="bg-gradient-to-r from-blue-600 to-indigo-600"
-              trend={stats.linkedinTrend > 0 ? "up" : "down"}
-              trendValue={stats.linkedinTrend}
-              subtext="Professional network"
-            />
-            <StatCard
+                        <StatCard
               title="Complete Profiles"
               value={stats.completeProfiles.toLocaleString()}
               icon={CheckCircle}
@@ -922,7 +901,7 @@ function Admin() {
                 </div>
               </div>
 
-              <ContactDataQualityMonitor contacts={contacts} />
+            <ContactDiversityOverview contacts={contacts} />
               <div className="mt-9">
                 <OnlineUsersCard />
               </div>
@@ -964,12 +943,12 @@ function Admin() {
           {/* Additional Charts */}
           <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
             <EventsBarChart contacts={contacts} />
-            <ContactDiversityOverview contacts={contacts} />
+            <UserActivitySegmentation contacts={contacts} />
           </div>
 
           {/* User Activity Segmentation */}
           <div className="mt-6">
-            <UserActivitySegmentation contacts={contacts} />
+            
           </div>
         </div>
       </div>
